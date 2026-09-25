@@ -14,7 +14,11 @@ import { createV31App } from '../src/v31/api.ts';
 import {
   buildCandles, decimal, executionPriceE18, fullRangeAmounts, priceAt, spotPriceE18, SQRT_LOWER, SQRT_UPPER, type PricePoint,
 } from '../src/v31/market.ts';
-import { PortexSwapRouterV31Abi } from '../src/generated/v31-abis.ts';
+import { PortexSwapRouterV31Abi, UniswapV4AdapterAbi } from '../src/generated/v31-abis.ts';
+import {
+  getSqrtPriceAtTick, getTickAtSqrtPrice, nextInitializedTickWithinOneWord, ticksFrom, MIN_TICK, MAX_TICK, MIN_SQRT_PRICE, MAX_SQRT_PRICE,
+} from '../src/v31/v4.ts';
+import { readFileSync } from 'node:fs';
 import { A, V31Context, RaiseV31, usd, DAY } from '@portex/tools/lib/v31';
 import { DEPLOYER, snapshot, revert } from '@portex/tools/lib/chain';
 
@@ -71,6 +75,31 @@ describe('market math', () => {
     expect(buildCandles(points, 3600, 10800, 10800).map((x) => x.venue)).toEqual(['stage2', 'pool']);
     expect(buildCandles(points, 86400)).toHaveLength(2);
     expect(buildCandles([], 60)).toEqual([]);
+  });
+  test('v4 TickMath mirror reproduces the canonical bounds and inverts exactly', () => {
+    expect(getSqrtPriceAtTick(MIN_TICK)).toBe(MIN_SQRT_PRICE);
+    expect(getSqrtPriceAtTick(MAX_TICK)).toBe(MAX_SQRT_PRICE);
+    expect(getSqrtPriceAtTick(-887200)).toBe(SQRT_LOWER);
+    expect(getSqrtPriceAtTick(887200)).toBe(SQRT_UPPER);
+    expect(getSqrtPriceAtTick(0)).toBe(Q96);
+    for (const t of [-887271, -200000, -201, -1, 0, 1, 199, 200, 51_199, 51_200, 300_000, 887271]) {
+      const s = getSqrtPriceAtTick(t);
+      expect(getTickAtSqrtPrice(s)).toBe(t);
+      expect(getTickAtSqrtPrice(s - 1n)).toBe(t - 1);
+    }
+  });
+  test('tick-bitmap stepping stops at initialized ticks and at word boundaries', () => {
+    const ticks = ticksFrom([{ tickLower: -887200, tickUpper: 887200, liquidityDelta: 10n }, { tickLower: -400, tickUpper: 51_400, liquidityDelta: 5n }], 200);
+    expect(ticks.compressed).toEqual([-4436, -2, 257, 4436]);
+    expect(ticks.net.get(-400)).toBe(5n);
+    expect(ticks.net.get(51_400)).toBe(-5n);
+    // Leftward (lte) from tick 0: the initialized -400 lies in the previous word, so the step ends at this word's start.
+    expect(nextInitializedTickWithinOneWord(ticks, 0, 200, true)).toEqual({ next: 0, initialized: false });
+    expect(nextInitializedTickWithinOneWord(ticks, -1, 200, true)).toEqual({ next: -400, initialized: true });
+    expect(nextInitializedTickWithinOneWord(ticks, -401, 200, true)).toEqual({ next: -51_200, initialized: false });
+    // Rightward from 0: the rest of word 0 ends at compressed 255; 51_400 (compressed 257) is in the next word.
+    expect(nextInitializedTickWithinOneWord(ticks, 0, 200, false)).toEqual({ next: 51_000, initialized: false });
+    expect(nextInitializedTickWithinOneWord(ticks, 51_000, 200, false)).toEqual({ next: 51_400, initialized: true });
   });
   test('price at a time falls back before the first point', () => {
     const pts = [{ time: 10, price: 5n }, { time: 20, price: 7n }];
@@ -238,6 +267,55 @@ describe('market on a real v4 fixture chain', () => {
     expect(later.change24hBps).toBe(0);
   });
 
+  test('pool quotes mirror quoteExactIn exactly, across tick words and other LPs\' liquidity', async () => {
+    // A v4-core liquidity helper lets a third party add concentrated positions to the Portex pool (the hook allows it).
+    const out = resolve(workspace, 'lp-out');
+    const build = spawnSync([`${process.env.HOME}/.foundry/bin/forge`, 'build', 'lib/v4-core/src/test/PoolModifyLiquidityTest.sol', '--out', out, '--cache-path', resolve(workspace, 'lp-cache')],
+      { cwd: resolve(root, 'packages/contracts'), timeout: 240000 });
+    if (build.exitCode) throw new Error(build.stderr.toString());
+    const artifact = JSON.parse(readFileSync(resolve(out, 'PoolModifyLiquidityTest.sol/PoolModifyLiquidityTest.json'), 'utf8'));
+    const lpAbi = artifact.abi;
+    const deployer = ctx.wallet(ctx.buyer);
+    const hash = await deployer.deployContract({ abi: lpAbi, bytecode: artifact.bytecode.object, args: [ctx.deployment.poolManager], account: ctx.buyer.account, chain: deployer.chain } as never);
+    const lp = (await ctx.client.waitForTransactionReceipt({ hash })).contractAddress!;
+    const key = await ctx.read(ctx.deployment.adapter, UniswapV4AdapterAbi, 'keyFor', [token, ctx.quote]);
+    for (const asset of [ctx.quote, token]) await ctx.write(ctx.buyer, asset, A.ProjectTokenV31Abi, 'approve', [lp, 2n ** 255n]);
+    const modify = (tickLower: number, tickUpper: number, liquidityDelta: bigint, salt = `0x${'0'.repeat(63)}1`) =>
+      ctx.write(ctx.buyer, lp, lpAbi, 'modifyLiquidity', [key, { tickLower, tickUpper, liquidityDelta, salt }, '0x']);
+    let filled = 0, partial = 0;
+    const compare = async () => {
+      await ctx.waitIndexed();
+      const block = BigInt(indexer.status.lastIndexedBlock);
+      for (const buy of [true, false]) {
+        for (const amount of buy ? [1n, 999n, usd(1), usd(250), usd(5000), usd(60_000), usd(900_000), 10n ** 15n, 10n ** 30n] : [1n, 10n ** 12n, 10n ** 18n, 10n ** 21n, 10n ** 23n, 10n ** 24n, 10n ** 26n, 10n ** 29n, 10n ** 38n]) {
+          const res = await fetch(`${apiUrl}/v2/markets/${raise.address}/quote?side=${buy ? 'buy' : 'sell'}&amountIn=${amount}`);
+          expect(res.headers.get('cache-control')).toBe('public, s-maxage=1, stale-while-revalidate=1');
+          const api = await res.json() as any;
+          let chain: bigint | string;
+          try {
+            chain = (await ctx.client.simulateContract({ address: router, abi: PortexSwapRouterV31Abi, functionName: 'quoteExactIn', args: [token, buy, amount], account: ctx.buyer.account, blockNumber: block })).result as bigint;
+          } catch (e: any) { chain = /PartialFill/.test(String(e?.message)) ? 'PartialFill' : `revert ${String(e?.shortMessage)}`; }
+          expect(`${buy ? 'buy' : 'sell'} ${amount}: ${api.available ? api.amountOut : api.reason}`).toBe(`${buy ? 'buy' : 'sell'} ${amount}: ${chain}`);
+          if (api.available) filled++; else partial++;
+        }
+      }
+    };
+    await compare();
+    const slot = (await ctx.api(`/v2/markets/${raise.address}/quote?side=buy&amountIn=1`)).sqrtPriceAfter;
+    const tick = Math.floor(getTickAtSqrtPrice(BigInt(slot)) / 200) * 200;
+    // Concentrated liquidity around the price, one range above it (crossed by buys or sells depending on the currency
+    // order) and one far below; then part of the first is withdrawn.
+    await modify(tick - 2000, tick + 2400, 5n * 10n ** 16n);
+    await modify(tick + 60_000, tick + 120_000, 3n * 10n ** 15n, `0x${'0'.repeat(63)}2`);
+    await modify(tick - 140_000, tick - 70_000, 2n * 10n ** 15n, `0x${'0'.repeat(63)}3`);
+    await compare();
+    await modify(tick - 2000, tick + 2400, -(2n * 10n ** 16n));
+    await compare();
+    expect((db.query('SELECT COUNT(*) AS n FROM v31_pool_liquidity').get() as any).n).toBe(5);
+    // Most sizes fill; the largest run the pool out of in-range liquidity on both sides (the router's PartialFill).
+    expect(filled).toBeGreaterThan(40);
+    expect(partial).toBeGreaterThan(0);
+  }, 240000);
   test('reorged swaps are removed and replacements indexed', async () => {
     await sync();
     const base = await snapshot(ctx.client);

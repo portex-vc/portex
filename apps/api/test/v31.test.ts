@@ -11,11 +11,15 @@ import { Analyst } from '../src/analyst/index.ts';
 import { createCombinedApp } from '../src/server-v2.ts';
 import { IndexerV31, curvePrice } from '../src/v31/indexer.ts';
 import { AnalystV31 } from '../src/v31/analyst.ts';
-import { effectivePhase } from '../src/v31/live.ts';
+import { effectivePhase, LiveV31, typed } from '../src/v31/live.ts';
+import { StateV31 } from '../src/v31/snapshot.ts';
+import { withRpcTally } from '../src/lib/rpc-metrics.ts';
+import { Database } from 'bun:sqlite';
+import type { Scorer, ScorerInput } from '../src/analyst/types.ts';
 import { loadIsolatedV1Deployment } from '../src/v31/deployment.ts';
-import { listRaisesV31 } from '../src/v31/db.ts';
+import { listRaisesV31, positionIds } from '../src/v31/db.ts';
 import { seedV31 } from '@portex/tools/seed-v31';
-import { A, V31Context, RaiseV31, usd } from '@portex/tools/lib/v31';
+import { A, V31Context, RaiseV31, usd, DAY, backer } from '@portex/tools/lib/v31';
 import { BUILDER, snapshot, revert } from '@portex/tools/lib/chain';
 import { signRequest } from '../src/lib/signed-request.ts';
 
@@ -42,6 +46,8 @@ describe('v2 fixture chain', () => {
   const workspace = resolve(root, 'apps/api/data/v31-fixture');
   const originalDir = process.env.PORTEX_DEPLOYMENTS_DIR;
   const originalResults = process.env.PORTEX_RESULTS_DIR;
+  const originalMetrics = process.env.RPC_METRICS;
+  let clients: ReturnType<typeof makeClients>; let config: ReturnType<typeof loadConfig>;
   const seed = (symbol: string) => seeds.find((r) => r.symbol === symbol)!;
   const path = (symbol: string) => `/v2/raises/${seed(symbol).address}`;
   async function isolated(fn: () => Promise<void>) {
@@ -63,8 +69,10 @@ describe('v2 fixture chain', () => {
     process.env.PORTEX_DEPLOYMENTS_DIR = resolve(workspace, 'deployments');
     process.env.PORTEX_RESULTS_DIR = resolve(workspace, 'results');
     loadIsolatedV1Deployment(31337);
-    const config = loadConfig({ RPC_URL: rpc, DATABASE_PATH: ':memory:', POLL_MS: '50', PORTEX_CHAIN_ID: '31337' });
-    db = openDb(':memory:'); const clients = makeClients(config);
+    config = loadConfig({ RPC_URL: rpc, DATABASE_PATH: ':memory:', POLL_MS: '50', PORTEX_CHAIN_ID: '31337' });
+    // Per-request RPC accounting (X-Rpc-Calls) proves the read endpoints never touch the chain.
+    process.env.RPC_METRICS = '1';
+    db = openDb(':memory:'); clients = makeClients(config);
     indexer = new IndexerV31(db, clients.public, config);
     const app = createCombinedApp({ config, db, clients, indexer: new Indexer(db, clients.public, config), analyst: new Analyst(db, clients, config) },
       { config, db, clients, indexer, analyst: new AnalystV31(db, clients, config) });
@@ -76,6 +84,7 @@ describe('v2 fixture chain', () => {
     indexer?.stop(); if (indexer) await indexer.poll(); server?.stop(true); anvil?.kill(); if (anvil) await anvil.exited; db?.close();
     if (originalDir === undefined) delete process.env.PORTEX_DEPLOYMENTS_DIR; else process.env.PORTEX_DEPLOYMENTS_DIR = originalDir;
     if (originalResults === undefined) delete process.env.PORTEX_RESULTS_DIR; else process.env.PORTEX_RESULTS_DIR = originalResults;
+    if (originalMetrics === undefined) delete process.env.RPC_METRICS; else process.env.RPC_METRICS = originalMetrics;
   });
   test('health and config expose the attested deployment', async () => {
     const health = await ctx.api('/v2/health');
@@ -87,6 +96,11 @@ describe('v2 fixture chain', () => {
     expect(cfg.stageBounds).toEqual({ stage1Min: '1296000', stage1Max: '5184000', stage2Min: '3024000', stage2Max: '6048000' });
     expect(cfg.templates.map((t: any) => t.name)).toEqual(['ESCROW_LAUNCH', 'BUDGET_LAUNCH']);
     expect(cfg.addresses.attester.toLowerCase()).toBe('0x70997970c51812dc3a010c7d01b50e0d17dc79c8');
+    // Materialized registry reads (web request W4).
+    const registry = cfg.addresses.registry;
+    expect(cfg.curator).toBe(await ctx.read(registry, A.PortexRegistryV31Abi, 'curator'));
+    expect(cfg.protocolParameters).toEqual(typed(await ctx.read(registry, A.PortexRegistryV31Abi, 'protocolParameters')));
+    expect(cfg.quotes[cfg.quote.address]).toEqual({ frozen: true, codeHash: await ctx.read(registry, A.PortexRegistryV31Abi, 'quoteCodeHash', [cfg.quote.address]) });
   });
   test('six summaries have signed content while v1 tables remain empty', async () => {
     const rows = await ctx.api('/v2/raises'); expect(rows.length).toBe(6);
@@ -110,7 +124,7 @@ describe('v2 fixture chain', () => {
     expect(buyer.positions[0].redeemQuote.result).toBeUndefined(); expect(buyer.buyerLedger.marketExitQuote.validity.available).toBe(true);
   });
   test('eventless deadline updates phase, quotes, filter and inbox', async () => isolated(async () => {
-    await ctx.warpTo((await ctx.api(path('SIGNAL'))).deadlines.stage2End);
+    await ctx.warpTo((await ctx.api(path('SIGNAL'))).deadlines.stage2End); await indexer.poll();
     const p = await ctx.api(path('SIGNAL')); expect(p.phase).toBe('ListingPending'); expect(p.listingPreview.validity.available).toBe(true); expect(p.listingStatus.length).toBeGreaterThan(0);
     const owner = await ctx.api(`${path('SIGNAL')}/positions/${ctx.backers[0].address}`);
     expect(owner.positions[0].redeemQuote.validity.available).toBe(true); expect(owner.positions[0].protectedExitQuote).toBeNull();
@@ -174,4 +188,199 @@ describe('v2 fixture chain', () => {
     const data = await ctx.api(`/v2/raises/${replacement.address}`); expect(data.symbol).toBe('REPLACED'); expect(data.E).toBe(String(usd(750)));
     expect((await ctx.api(`${path('HARBOR')}/reports`)).length).toBe(1); expect((db.query('SELECT COUNT(*) AS n FROM raises').get() as any).n).toBe(0);
   }), 30000);
+
+  // ------------------------------------------------------------------------------------------------ DB data path
+
+  const norm = (v: unknown) => JSON.parse(JSON.stringify(v, (_k, x) => (typeof x === 'bigint' ? x.toString() : x)));
+  const actors = () => [...ctx.backers, ctx.buyer, BUILDER, backer(20), backer(21), backer(22)].map((a) => a.address);
+  /** The former per-request RPC implementation, evaluated at the indexed block, as the oracle. */
+  async function oracle() {
+    const block = await ctx.client.getBlock({ blockNumber: BigInt(indexer.status.lastIndexedBlock) });
+    return { live: new LiveV31(clients.public, db, block.number, Number(block.timestamp)), state: new StateV31(db, Number(block.number), Number(block.timestamp)), block };
+  }
+  /** Additive fields the web requested (W5, W6, W7, W8) are checked separately against their own views. */
+  const lean = {
+    summary: ({ modules, ...s }: any) => s,
+    detail: (d: any) => {
+      const { lastProposalAt, activeProposalId, eligibleCapital, tokenSnapshotBlock, ...state } = d.governance.state;
+      const { disposedQuote, ...treasury } = d.treasury;
+      return { ...d, governance: { ...d.governance, state }, treasury };
+    },
+    positions: (p: any) => ({ ...p, positions: p.positions.map(({ futureClaimBounds, ...x }: any) => x) }),
+  };
+  async function expectMaterializedEqualsChain() {
+    const { live, state, block } = await oracle();
+    const rows = listRaisesV31(db);
+    for (const row of rows) {
+      expect(lean.summary(norm(state.summary(row)))).toEqual(norm(await live.summary(row)));
+      const detail = norm(state.detail(row));
+      expect(lean.detail(detail)).toEqual(norm(await live.detail(row)));
+      const at = { blockNumber: block.number };
+      const gov = (fn: string) => ctx.client.readContract({ address: row.governor as never, abi: A.GovernanceV31Abi, functionName: fn as never, ...at }).then(String);
+      const tok = (fn: string) => ctx.client.readContract({ address: row.token as never, abi: A.ProjectTokenV31Abi, functionName: fn as never, ...at });
+      expect(detail.governance.state.lastProposalAt).toBe(await gov('lastProposalAt'));
+      expect(detail.governance.state.activeProposalId).toBe(await gov('activeProposalId'));
+      expect(detail.governance.state.eligibleCapital).toBe(String(await ctx.client.readContract({ address: row.address as never, abi: A.RaiseCoreAbi, functionName: 'eligibleCapital', ...at })));
+      expect(detail.governance.state.tokenSnapshotBlock).toBe(Number(await tok('snapshotBlock')));
+      expect(detail.treasury.disposedQuote).toBe(String(await tok('disposedQuote')));
+      expect(detail.modules.attester).toBe(state.summary(row).modules.attester);
+      expect(norm(state.proposals(row)).map(({ snapshotBlock, tokenValue, ...p }: any) => p)).toEqual(norm(await live.proposals(row)));
+      for (const u of actors()) {
+        const mine = norm(state.positions(row, u));
+        expect(lean.positions(mine)).toEqual(norm(await live.positions(row, u)));
+        for (const p of mine.positions.filter((p: any) => p.futureClaimBounds)) {
+          expect(p.futureClaimBounds).toEqual(typed(await ctx.client.readContract({ address: row.address as never, abi: A.RaiseCoreAbi, functionName: 'futureClaimBounds', args: [BigInt(p.id), 1], ...at })));
+        }
+      }
+    }
+    for (const u of actors()) expect(norm(state.rolloverSources(rows, u))).toEqual(norm(await live.rolloverSources(rows, u)));
+  }
+  test('read endpoints make no RPC calls per request', async () => {
+    await ctx.waitIndexed();
+    const signal = seed('SIGNAL').address, atlas = seed('ATLAS').address, u = ctx.backers[0].address;
+    for (const url of ['/v2/raises', '/v2/config', '/v2/markets', path('SIGNAL'), path('ATLAS'), path('PILOT'), `${path('SIGNAL')}/positions/${u}`, `${path('BENCH')}/proposals`,
+      `${path('BENCH')}/votes/${u}`, `/v2/users/${u}/inbox`, `/v2/users/${u}/rollover-sources`, `/v2/raises/${signal}/quote?side=buy&amount=1000000`,
+      `/v2/raises/${atlas}/activity`, `/v2/raises/${signal}/candles`, `/v2/health`]) {
+      const res = await fetch(`${apiUrl}${url}`);
+      expect(`${url}: ${res.status} ${res.headers.get('x-rpc-calls')}`).toBe(`${url}: 200 0`);
+      expect(res.headers.get('x-block-number')).toBe(String(indexer.status.lastIndexedBlock));
+    }
+    const wallet = await fetch(`${apiUrl}/v2/users/${u}/wallet`);
+    // The native balance is the one cached chain read: at most once per (address, block).
+    expect(Number(wallet.headers.get('x-rpc-calls'))).toBeLessThanOrEqual(1);
+    expect((await fetch(`${apiUrl}/v2/users/${u}/wallet`)).headers.get('x-rpc-calls')).toBe('0');
+    expect(wallet.headers.get('cache-control')).toBe('private, no-store');
+    expect((await fetch(`${apiUrl}/v2/raises`)).headers.get('cache-control')).toBe('public, s-maxage=2, stale-while-revalidate=30');
+    expect(indexer.refresher.stats.mode).toBe('deployless');
+  });
+  test('materialized state equals the chain views at the indexed block', async () => {
+    await ctx.waitIndexed();
+    await expectMaterializedEqualsChain();
+  }, 60000);
+  test('time-dependent projections match the chain after eventless time passes', async () => isolated(async () => {
+    // Mid Stage 2 (depth decay, protected-exit lambda), then past the deadline (ListingPending, listing preview).
+    await ctx.warp(5 * DAY); await indexer.poll();
+    await expectMaterializedEqualsChain();
+    await ctx.warpTo((await ctx.api(path('SIGNAL'))).deadlines.stage2End); await indexer.poll();
+    expect((await ctx.api(path('SIGNAL'))).listingPreview.validity.available).toBe(true);
+    await expectMaterializedEqualsChain();
+  }), 90000);
+  test('Stage 1 and Stage 2 quotes mirror the raise quote views exactly', async () => isolated(async () => {
+    const typedQuote = (v: any) => typed(v.validity.available ? v : { validity: v.validity });
+    const strip = ({ raise, stateNonce, blockNumber, chainTime, kind, amountOut, position, owner, ...rest }: any) => rest;
+    async function compare() {
+      const { state, block } = await oracle();
+      const at = { blockNumber: block.number };
+      for (const symbol of ['SIGNAL', 'BENCH']) {
+        const row = listRaisesV31(db).find((r) => r.symbol === symbol)!;
+        const read = (fn: string, args: unknown[]) => ctx.client.readContract({ address: row.address as never, abi: A.RaiseCoreAbi, functionName: fn as never, args: args as never, ...at });
+        for (const amount of [0n, 1n, 1_000_000n, 777_777_777n, usd(50_000), usd(10_000_000)]) {
+          expect(strip(state.raiseQuote(row, { side: 'buy', amount }))).toEqual(typedQuote(await read('marketBuyQuote', [amount])));
+          expect(strip(state.raiseQuote(row, { side: 'buy', amount, owner: BUILDER.address }))).toEqual(typedQuote(await read('marketBuyQuoteFor', [BUILDER.address, amount])));
+        }
+        const held = BigInt((await ctx.api(`/v2/raises/${row.address}/positions/${ctx.buyer.address}`)).buyerLedger.tokens);
+        for (const q of [1n, held / 3n, held, held + 1n]) {
+          expect(strip(state.raiseQuote(row, { side: 'sell', amount: q, owner: ctx.buyer.address }))).toEqual(typedQuote(await read('marketExitQuote', [ctx.buyer.address, q])));
+        }
+        const nonce = await read('stateNonce', []);
+        for (const { id } of positionIds(db, row.address)) {
+          const tokens = BigInt(state.load(row).positions.get(id)?.positionState?.tokens ?? 0);
+          for (const q of [1n, tokens / 2n, tokens, tokens + 1n]) {
+            expect(strip(state.raiseQuote(row, { side: 'sell', amount: q, position: id }))).toEqual(typedQuote(await read('redeemQuote', [BigInt(id), q, nonce])));
+            expect(strip(state.raiseQuote(row, { side: 'sell', amount: q, position: id, exit: 'protected' }))).toEqual(typedQuote(await read('protectedExitQuote', [BigInt(id), q])));
+          }
+        }
+      }
+    }
+    await compare();
+    await ctx.warp(9 * DAY); await indexer.poll();
+    await compare();
+    // Stage 1 deposit: the curve purchase equals what `deposit` would buy.
+    const harbor = listRaisesV31(db).find((r) => r.symbol === 'HARBOR')!;
+    await ctx.write(ctx.backers[5], ctx.quote, A.MockUSDGV31Abi, 'approve', [harbor.address, usd(1_000_000)]); await indexer.poll();
+    for (const amount of [usd(1), usd(1234), usd(90_000)]) {
+      const q = await ctx.api(`/v2/raises/${harbor.address}/quote?side=deposit&amount=${amount}`);
+      const nonce = await ctx.read<bigint>(harbor.address, A.RaiseCoreAbi, 'stateNonce');
+      const sim = await ctx.client.simulateContract({ address: harbor.address as never, abi: A.RaiseCoreAbi, functionName: 'deposit', args: [amount, 0n, nonce, 2n ** 40n], account: ctx.backers[5].account });
+      expect(q.amountOut).toBe(String((sim.result as readonly bigint[])[1]));
+      expect(BigInt(q.debit) + BigInt(q.change)).toBe(amount);
+    }
+  }), 120000);
+  test('wallet balances and allowances equal the ERC-20 views, including lazy listing delivery', async () => isolated(async () => {
+    const harbor = listRaisesV31(db).find((r) => r.symbol === 'HARBOR')!;
+    // A finite approval partly spent by transferFrom (no Approval event): the refresh re-reads it exactly.
+    await ctx.write(ctx.backers[6], ctx.quote, A.MockUSDGV31Abi, 'approve', [harbor.address, usd(1000)]);
+    await ctx.write(ctx.backers[6], harbor.address, A.RaiseCoreAbi, 'deposit', [usd(400), 0n, await ctx.read(harbor.address, A.RaiseCoreAbi, 'stateNonce'), 2n ** 40n]);
+    await indexer.poll();
+    const rows = listRaisesV31(db);
+    for (const u of actors()) {
+      const w = await ctx.api(`/v2/users/${u}/wallet`);
+      expect(w.quote.balance).toBe(String(await ctx.read(ctx.quote, A.MockUSDGV31Abi, 'balanceOf', [u])));
+      for (const [spender, amount] of Object.entries(w.quote.allowances)) expect(amount).toBe(String(await ctx.read(ctx.quote, A.MockUSDGV31Abi, 'allowance', [u, spender])));
+      for (const row of rows) {
+        const chain = await ctx.read<bigint>(row.token, A.ProjectTokenV31Abi, 'balanceOf', [u]);
+        const entry = w.tokens.find((t: any) => t.raise === row.address);
+        expect(`${row.symbol} ${u}: ${entry?.balance ?? '0'}`).toBe(`${row.symbol} ${u}: ${chain}`);
+        for (const [spender, amount] of Object.entries(entry?.allowances ?? {})) expect(amount).toBe(String(await ctx.read(row.token, A.ProjectTokenV31Abi, 'allowance', [u, spender])));
+      }
+      expect(w.native.balance).toBe(String(await ctx.client.getBalance({ address: u as never, blockNumber: BigInt(w.blockNumber) })));
+    }
+    expect((await ctx.api(`/v2/users/${ctx.backers[6].address}/wallet`)).quote.allowances[harbor.address]).toBe(String(usd(600)));
+    // Listed backers hold undelivered credit until their first transfer; it counts in balanceOf.
+    const atlas = rows.find((r) => r.symbol === 'ATLAS')!;
+    expect((await ctx.api(`/v2/users/${ctx.backers[3].address}/wallet`)).tokens.some((t: any) => t.raise === atlas.address && BigInt(t.balance) > 0n)).toBe(true);
+  }), 120000);
+  test('governance votes come from indexed events', async () => {
+    const row = listRaisesV31(db).find((r) => r.symbol === 'BENCH')!;
+    for (const u of [ctx.backers[0].address, ctx.backers[4].address]) {
+      const { votes } = await ctx.api(`${path('BENCH')}/votes/${u}`);
+      for (const [id, vote] of Object.entries(votes[0].positions) as [string, any][]) {
+        const chain = await ctx.read(row.governor, A.GovernanceV31Abi, 'voteOf', [1n, BigInt(id)]);
+        expect(vote).toEqual(typed(chain));
+      }
+      expect(Object.keys(votes[0].positions).length).toBeGreaterThan(0);
+    }
+  });
+  test('an existing database migrates in place and backfills without re-indexing', async () => isolated(async () => {
+    const copy = Database.deserialize(db.serialize());
+    // What a database indexed by the previous release looks like: no quote-token rows, ledger, state or pool ticks.
+    copy.exec(`DELETE FROM v31_events WHERE contract='quote'; DELETE FROM v31_state; DELETE FROM v31_balances; DELETE FROM v31_allowances;
+      DELETE FROM v31_allowance_dirty; DELETE FROM v31_materialized; DELETE FROM v31_dirty; DELETE FROM v31_pool_liquidity;
+      DELETE FROM v31_meta WHERE key IN ('erc20Ledger','quoteIndexedFrom','configDirty') OR key LIKE 'backfill:%';`);
+    const eventsBefore = (copy.query("SELECT COUNT(*) AS n FROM v31_events WHERE contract!='quote'").get() as any).n;
+    const migrated = new IndexerV31(copy as never, clients.public, { ...config, logPage: 100 });
+    for (let i = 0; i < 20 && !(migrated.sync.done && migrated.status.lastIndexedBlock === indexer.status.lastIndexedBlock); i++) await migrated.poll();
+    expect(migrated.status.lastError).toBeNull();
+    expect(migrated.sync.done).toBe(true);
+    expect(migrated.sync.backfillTo).toBe(indexer.status.lastIndexedBlock);
+    // Nothing was re-indexed: the raise events are the same rows, the quote events came from the backfill.
+    expect((copy.query("SELECT COUNT(*) AS n FROM v31_events WHERE contract!='quote'").get() as any).n).toBe(eventsBefore);
+    const table = (d: any, sql: string) => d.query(sql).all();
+    expect(table(copy, 'SELECT * FROM v31_balances ORDER BY token, holder')).toEqual(table(db, 'SELECT * FROM v31_balances ORDER BY token, holder'));
+    expect(table(copy, "SELECT COUNT(*) AS n FROM v31_events WHERE contract='quote'")).toEqual(table(db, "SELECT COUNT(*) AS n FROM v31_events WHERE contract='quote'"));
+    const { block } = await oracle();
+    const a = new StateV31(db, Number(block.number), Number(block.timestamp)), b = new StateV31(copy as never, Number(block.number), Number(block.timestamp));
+    for (const row of listRaisesV31(db)) {
+      expect(norm(b.detail(row))).toEqual(norm(a.detail(row)));
+      for (const u of actors()) expect(norm(b.positions(row, u))).toEqual(norm(a.positions(row, u)));
+    }
+    for (const u of actors()) expect(norm(b.wallet(listRaisesV31(db), u, ctx.quote))).toEqual(norm(a.wallet(listRaisesV31(db), u, ctx.quote)));
+    copy.close();
+  }), 120000);
+  test('analysis reads only the database (mocked model scorer, no chain calls)', async () => {
+    let seen: ScorerInput | null = null;
+    const model: Scorer = { name: 'model-mock', score: async (input) => { seen = input; return { riskScoreBps: 1500, veto: false, rationale: 'mocked model', findings: [] }; } };
+    const analyst = new AnalystV31(db, { ...clients, wallet: null }, config, [model]);
+    for (const [symbol, backers] of [['HARBOR', 0], ['WATCH', 3]] as const) {
+      const { result, tally } = await withRpcTally(() => analyst.analyze(seed(symbol).address));
+      expect(tally.total).toBe(0);
+      expect(result.panel.map((p) => p.scorer)).toContain('model-mock');
+      expect(result.postedTx).toBeNull();
+      expect((seen as any).metrics).toBeDefined();
+      expect((seen as any).backers.length).toBe(backers);
+      expect((await ctx.api(`/v2/raises/${seed(symbol).address}/report`)).reportHash).toBe(result.reportHash);
+    }
+    // The cluster raise is still flagged from indexed quote-token funding (one builder-funded cluster).
+    expect((seen as any).funding.every((f: any) => f.funder?.toLowerCase() === BUILDER.address.toLowerCase())).toBe(true);
+  });
 });

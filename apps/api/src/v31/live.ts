@@ -26,7 +26,10 @@ export function effectivePhase(phase: number, deadlines: Struct, now: number): s
   return PHASES[phase];
 }
 
-/** Every response's contract reads use one block, so nonce-bound quotes never mix blocks. */
+/**
+ * The former per-request RPC read model. No API route uses it any more (see snapshot.ts); the tests keep it as the
+ * differential oracle that the DB-backed responses must equal. Every read uses one block, so quotes never mix blocks.
+ */
 export class LiveV31 {
   constructor(readonly client: PublicClient, readonly db: DB, readonly blockNumber: bigint, readonly now: number) {}
   static async atHead(client: PublicClient, db: DB): Promise<LiveV31> {

@@ -18,5 +18,12 @@ export function migrateMarketV31(db: DB): void {
     );
     CREATE INDEX IF NOT EXISTS v31_pool_swaps_raise ON v31_pool_swaps(raiseAddr, blockNumber, logIndex);
     CREATE INDEX IF NOT EXISTS v31_pool_swaps_block ON v31_pool_swaps(blockNumber);
+    -- PoolManager ModifyLiquidity of Portex pools: the initialized ticks a Stage 3 quote walks (rolled back with swaps).
+    CREATE TABLE IF NOT EXISTS v31_pool_liquidity (
+      raiseAddr TEXT NOT NULL COLLATE NOCASE, poolId TEXT NOT NULL COLLATE NOCASE, sender TEXT NOT NULL,
+      tickLower INTEGER NOT NULL, tickUpper INTEGER NOT NULL, liquidityDelta TEXT NOT NULL, salt TEXT NOT NULL,
+      txHash TEXT NOT NULL, blockNumber INTEGER NOT NULL, logIndex INTEGER NOT NULL, PRIMARY KEY(txHash, logIndex)
+    );
+    CREATE INDEX IF NOT EXISTS v31_pool_liquidity_pool ON v31_pool_liquidity(poolId, blockNumber);
   `);
 }

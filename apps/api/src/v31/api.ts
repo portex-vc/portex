@@ -1,5 +1,5 @@
 import { Hono, type Context } from 'hono';
-import { getAddress, isAddress, keccak256, stringToHex } from 'viem';
+import { getAddress, isAddress, type Address } from 'viem';
 import type { DB } from '../db.ts';
 import type { Config } from '../config.ts';
 import { ANVIL_ACCOUNTS } from '../config.ts';
@@ -9,15 +9,18 @@ import { validateProfile, profileFromRow } from '../lib/profile.ts';
 import { RateLimiter } from '../lib/rate-limit.ts';
 import { feedbackMessage, verifySignature } from '../signatures.ts';
 import { reportFromRow } from '../analyst/index.ts';
-import { PortexRegistryV31Abi, GovernanceV31Abi } from '../generated/v31-abis.ts';
 import { getDeploymentV31 } from './deployment.ts';
 import { getRaiseV31, listRaisesV31, migrateV31, type EventV31Row } from './db.ts';
-import { LiveV31, typed } from './live.ts';
+import { typed } from './live.ts';
+import { StateUnavailable, StateV31 } from './snapshot.ts';
+import { Revert } from './mirror.ts';
+import { stateRow } from './state-db.ts';
 import { IndexerV31 } from './indexer.ts';
-import { AnalystV31 } from './analyst.ts';
+import { AnalysisPending, AnalystV31 } from './analyst.ts';
 import { activityV31 } from './activity.ts';
 import { createUploadsApp, storedProfileImage, validateImageRef } from './uploads.ts';
 import { createMarketV31App, routerOf, managerOf } from './market.ts';
+import { background, rpcMetricsEnabled, withRpcTally } from '../lib/rpc-metrics.ts';
 
 export interface V31Deps { config: Config; db: DB; clients: Clients; indexer: IndexerV31; analyst: AnalystV31 }
 class ApiError extends Error {
@@ -26,11 +29,63 @@ class ApiError extends Error {
 export function createV31App({ config, db, clients, indexer, analyst }: V31Deps): Hono {
   migrateV31(db);
   const app = new Hono();
-  app.onError((error, c) => c.json({ error: { code: error instanceof ApiError ? error.code : 'CHAIN_UNAVAILABLE', message: error instanceof ApiError ? error.message : 'Chain request failed' } }, (error instanceof ApiError ? error.status : 503) as never));
-  const live = () => LiveV31.atHead(clients.public, db);
+  if (rpcMetricsEnabled()) {
+    // Per-request RPC accounting (RPC_METRICS=1): the calls this request caused, and the background totals.
+    app.use('*', async (c, next) => {
+      const { tally } = await withRpcTally(async () => { await next(); });
+      c.res.headers.set('X-Rpc-Calls', String(tally.total));
+      c.res.headers.set('X-Rpc-Methods', JSON.stringify(tally.methods));
+    });
+    app.get('/debug/rpc', (c) => c.json(background));
+  }
+  // Freshness and caching: every response names the indexed block and chain time it reflects. Public reads may sit
+  // in a shared cache for 2 s (served stale up to 30 s while revalidating); per-user reads and writes never do.
+  app.use('*', async (c, next) => {
+    await next();
+    const { blockNumber, now } = clock();
+    c.res.headers.set('X-Block-Number', String(blockNumber));
+    c.res.headers.set('X-Chain-Time', String(now));
+    if (c.res.headers.has('Cache-Control')) return;
+    const path = c.req.path;
+    const policy = c.req.method !== 'GET' || c.res.status >= 400 || /\/(health|debug)(\/|$)/.test(path) ? 'no-store'
+      : /\/users\/|\/positions\/|\/votes\//.test(path) ? 'private, no-store'
+        : /\/quote$/.test(path) ? 'public, s-maxage=1, stale-while-revalidate=1'
+          : 'public, s-maxage=2, stale-while-revalidate=30';
+    c.res.headers.set('Cache-Control', policy);
+  });
+  // Unexpected errors keep a generic public message; the cause is logged server-side (each distinct cause at most
+  // once a minute per path) so production failures are diagnosable.
+  const logged = new Map<string, number>();
+  app.onError((error, c) => {
+    if (error instanceof ApiError) return c.json({ error: { code: error.code, message: error.message } }, error.status as never);
+    if (error instanceof StateUnavailable) return c.json({ error: { code: 'STATE_PENDING', message: 'raise state is still being indexed' } }, 503);
+    if (error instanceof AnalysisPending) return c.json({ error: { code: 'INDEXING', message: error.message } }, 503);
+    const cause = String((error as { shortMessage?: string })?.shortMessage ?? error?.message ?? error).slice(0, 300);
+    const key = `${c.req.method} ${c.req.path}: ${cause}`;
+    if (logged.size > 1000) logged.clear();
+    if (Date.now() - (logged.get(key) ?? 0) > 60_000) { logged.set(key, Date.now()); console.error(`[v2 api] ${c.req.method} ${c.req.path} failed: ${cause}`); }
+    if (error instanceof Revert) return c.json({ error: { code: 'CHAIN_UNAVAILABLE', message: `view would revert: ${error.reason}` } }, 503);
+    return c.json({ error: { code: 'CHAIN_UNAVAILABLE', message: 'Chain request failed' } }, 503);
+  });
+  /** Head chain time for time-dependent projections; the indexed block for everything else. */
+  const headTime = () => indexer.status?.headTimestamp
+    ?? (db.query('SELECT MAX(timestamp) AS t FROM v31_blocks').get() as { t: number | null } | null)?.t ?? Math.floor(Date.now() / 1000);
+  const clock = () => ({ blockNumber: indexer.status?.lastIndexedBlock ?? 0, now: headTime() });
+  const snap = () => { const { blockNumber, now } = clock(); return new StateV31(db, blockNumber, now); };
+  // Per-block memo of the hot public reads: recomputed when the indexer commits, the head advances, or the API writes.
+  let writes = 0;
+  let memoKey = '';
+  let memoMap = new Map<string, unknown>();
+  function memo<T>(key: string, fn: () => T): T {
+    const { blockNumber, now } = clock();
+    const k = `${indexer.version}:${writes}:${blockNumber}:${now}:${Math.floor(Date.now() / 5000)}`;
+    if (k !== memoKey) { memoKey = k; memoMap = new Map(); }
+    if (!memoMap.has(key)) memoMap.set(key, fn());
+    return memoMap.get(key) as T;
+  }
   app.route('/uploads', createUploadsApp({ config }));
-  // Stage 3 secondary market: /markets, /raises/:address/candles, /raises/:address/pool-trades.
-  app.route('/', createMarketV31App({ config, db, clients }));
+  // Stage 3 secondary market: /markets, /markets/:address/quote, /raises/:address/candles, /raises/:address/pool-trades.
+  app.route('/', createMarketV31App({ config, db, clients, clock }));
   const storedProfile = (address: string) => (db.query('SELECT profile FROM v31_profiles WHERE raiseAddr=?').get(address) as { profile: string } | null)?.profile;
   /** Adds the stored profile `image` and its resolved `imageUrl` (the summary's `metadata` is the same object). */
   const withImage = <T extends Record<string, any>>(r: T): T => {
@@ -65,54 +120,80 @@ export function createV31App({ config, db, clients, indexer, analyst }: V31Deps)
   };
   app.get('/health', (c) => {
     const s = indexer.status;
+    const pending = (db.query('SELECT COUNT(*) AS n FROM v31_dirty').get() as { n: number }).n;
     return c.json({ ok: s.deploymentPresent && s.head !== null && !s.lastError, chainId: config.chainId,
       head: s.head, headTimestamp: s.headTimestamp, indexedBlock: s.lastIndexedBlock, deploymentV31: s.deploymentPresent, deployment: getDeploymentV31(config.chainId),
+      state: { pendingRaises: pending, walletSynced: indexer.sync.done, backfill: indexer.sync, refresh: indexer.refresher.stats },
       error: s.deploymentPresent ? s.lastError : 'v3.1 broadcast deployment not found' });
   });
-  app.get('/config', async (c) => {
+  app.get('/config', (c) => {
     const dep = getDeploymentV31(config.chainId);
     if (!dep) throw new ApiError(503, 'NO_DEPLOYMENT', 'v3.1 not deployed');
-    const snapshot = await live();
-    const quote = dep.quote ?? dep.mockUSDG;
-    const templates = [];
-    for (const name of ['ESCROW_LAUNCH', 'BUDGET_LAUNCH']) {
-      const id = keccak256(stringToHex(name));
-      const count = Number(await snapshot.read(String(dep.registry), PortexRegistryV31Abi, 'versionCount', [id]));
-      for (let i = 0; i < count; i++) {
-        const version = await snapshot.read(String(dep.registry), PortexRegistryV31Abi, 'versionAt', [id, BigInt(i)]);
-        const value = await snapshot.read(String(dep.registry), PortexRegistryV31Abi, 'getVersion', [id, version]);
-        // The spend cap is pinned in the governor bytecode; timings are the version's governed parameters.
-        const spendCapBps = await snapshot.read(value.implementations.governor, GovernanceV31Abi, 'spendCapBps');
+    const stored = stateRow(db, 'config', '');
+    if (!stored) throw new ApiError(503, 'STATE_PENDING', 'protocol configuration is still being indexed');
+    return c.json(memo('config', () => {
+      const data = JSON.parse(stored.data);
+      const quote = dep.quote ?? dep.mockUSDG;
+      const templates = (data.templates as any[]).map(({ id, name, version, value, spendCapBps }) => {
         const p = value.parameters;
-        templates.push({ id, name, version: String(version), ...typed(value),
+        // The spend cap is pinned in the governor bytecode; timings are the version's governed parameters.
+        return { id, name, version: String(version), ...typed(value),
           stageBounds: typed({ stage1Min: p.stage1Min, stage1Max: p.stage1Max, stage2Min: p.stage2Min, stage2Max: p.stage2Max }),
-          treasury: { spendCapBps: Number(spendCapBps), vestingDuration: String(p.treasuryVesting) } });
-      }
-    }
-    // Bounds of the newest Escrow Launch version: what a new launch is validated against.
-    const stageBounds = templates.filter((t) => t.name === 'ESCROW_LAUNCH').at(-1)?.stageBounds ?? null;
-    // `admins`: lowercase ADMIN_ADDRESSES, who may trigger analyses without the rate limit (admin UI role check).
-    return c.json({ chainId: config.chainId, isLocal: config.isLocal, protocol: '3.1', stageBounds, admins: config.adminAddresses, addresses: {
-      factory: dep.factory, registry: dep.registry, quote, adapter: dep.adapter ?? dep.mockV4Adapter, attester: dep.attester, council: dep.council,
-      rolloverRouter: dep.rolloverRouter ?? null, router: routerOf(dep), poolManager: managerOf(dep) },
-      quote: { address: quote, symbol: dep.testQuote ? 'TEST USDG' : 'USDG', decimals: 6, testToken: dep.testQuote === true,
-        quoteFrozen: await snapshot.read(String(dep.registry), PortexRegistryV31Abi, 'quoteFrozen', [quote]) }, templates });
+          treasury: { spendCapBps: Number(spendCapBps), vestingDuration: String(p.treasuryVesting) } };
+      });
+      // Bounds of the newest Escrow Launch version: what a new launch is validated against.
+      const stageBounds = templates.filter((t) => t.name === 'ESCROW_LAUNCH').at(-1)?.stageBounds ?? null;
+      // `admins`: lowercase ADMIN_ADDRESSES, who may trigger analyses without the rate limit (admin UI role check).
+      return { chainId: config.chainId, isLocal: config.isLocal, protocol: '3.1', stageBounds, admins: config.adminAddresses, addresses: {
+        factory: dep.factory, registry: dep.registry, quote, adapter: dep.adapter ?? dep.mockV4Adapter, attester: dep.attester, council: dep.council,
+        rolloverRouter: dep.rolloverRouter ?? null, router: routerOf(dep), poolManager: managerOf(dep) },
+        quote: { address: quote, symbol: dep.testQuote ? 'TEST USDG' : 'USDG', decimals: 6, testToken: dep.testQuote === true, quoteFrozen: data.quoteFrozen },
+        templates, curator: data.curator ?? null, protocolParameters: data.protocolParameters ? typed(data.protocolParameters) : null, quotes: data.quotes ?? {},
+        blockNumber: stored.blockNumber };
+    }));
   });
-  app.get('/raises', async (c) => {
-    const s = await live();
-    const rows = await Promise.all(listRaisesV31(db).map(async (r) => withImage(await s.summary(r))));
+  app.get('/raises', (c) => {
+    const rows = memo('raises', () => {
+      const s = snap();
+      // A raise whose first state refresh is still pending is listed once it has state (normally the same poll).
+      return listRaisesV31(db).flatMap((r) => { try { return [withImage(s.summary(r))]; } catch (e) { if (e instanceof StateUnavailable) return []; throw e; } });
+    });
     const phase = c.req.query('phase');
     return c.json(phase ? rows.filter((r) => r.phase === phase) : rows);
   });
-  app.get('/raises/:address', async (c) => {
+  app.get('/raises/:address', (c) => {
     const row = mustRaise(c.req.param('address'));
-    return c.json({ ...withImage(await (await live()).detail(row)), latestReport: latestReport(row.address) });
+    return c.json({ ...memo(`detail:${row.address}`, () => withImage(snap().detail(row))), latestReport: latestReport(row.address) });
   });
-  app.get('/raises/:address/positions/:user', async (c) => {
+  app.get('/raises/:address/positions/:user', (c) => {
     const row = mustRaise(c.req.param('address'));
-    return c.json(await (await live()).positions(row, user(c.req.param('user'))));
+    return c.json(snap().positions(row, user(c.req.param('user'))));
   });
-  app.get('/raises/:address/proposals', async (c) => c.json(await (await live()).proposals(mustRaise(c.req.param('address')))));
+  app.get('/raises/:address/proposals', (c) => {
+    const row = mustRaise(c.req.param('address'));
+    return c.json(memo(`proposals:${row.address}`, () => snap().proposals(row)));
+  });
+  /** Per-user governance state: Stage 2 position votes, or the Stage 3 token vote and snapshot voting power. */
+  app.get('/raises/:address/votes/:user', (c) => {
+    const row = mustRaise(c.req.param('address'));
+    const { blockNumber, now } = clock();
+    return c.json({ raise: row.address, user: user(c.req.param('user')), blockNumber, chainTime: now, votes: snap().votesOf(row, user(c.req.param('user'))) });
+  });
+  /** Stage 1/2 quotes (deposit, buy, buyer-ledger sell, position exits), exact mirrors of the raise's quote views. */
+  app.get('/raises/:address/quote', (c) => {
+    const row = mustRaise(c.req.param('address'));
+    const side = c.req.query('side') ?? '';
+    const raw = c.req.query('amount') ?? '';
+    const position = c.req.query('position');
+    const owner = c.req.query('owner');
+    const exit = c.req.query('exit');
+    if (!['buy', 'sell', 'deposit'].includes(side) || !/^[0-9]{1,78}$/.test(raw)) throw new ApiError(400, 'BAD_REQUEST', 'side=buy|sell|deposit and amount=<raw integer> required');
+    if (position !== undefined && (side !== 'sell' || !/^[0-9]{1,78}$/.test(position))) throw new ApiError(400, 'BAD_REQUEST', 'position=<id> applies to side=sell');
+    if (exit !== undefined && exit !== 'cost' && exit !== 'protected') throw new ApiError(400, 'BAD_REQUEST', 'exit must be cost or protected');
+    if (owner !== undefined && !isAddress(owner)) throw new ApiError(400, 'INVALID_ADDRESS', 'invalid owner address');
+    if (side === 'sell' && position === undefined && owner === undefined) throw new ApiError(400, 'BAD_REQUEST', 'side=sell needs owner=<address> (buyer ledger) or position=<id>');
+    return c.json(snap().raiseQuote(row, { side, amount: BigInt(raw), position, owner: owner ? getAddress(owner) : undefined, exit }));
+  });
   app.get('/raises/:address/trades', (c) => {
     const row = mustRaise(c.req.param('address'));
     const rows = db.query('SELECT * FROM v31_trades WHERE raiseAddr=? ORDER BY blockNumber DESC,logIndex DESC LIMIT ?').all(row.address, limit(c)) as Record<string, any>[];
@@ -150,11 +231,12 @@ export function createV31App({ config, db, clients, indexer, analyst }: V31Deps)
     const body = await c.req.json().catch(() => null);
     if (!body || !isAddress(body.author ?? '') || !Number.isInteger(body.rating) || body.rating < 1 || body.rating > 5 || typeof body.text !== 'string' || !body.text || body.text.length > 2000 || typeof body.signature !== 'string') throw new ApiError(400, 'BAD_REQUEST', 'author, rating (1..5), text (1..2000), signature required');
     if (!await verifySignature(body.author, feedbackMessage(row.address, body.rating, body.text), body.signature)) throw new ApiError(401, 'BAD_SIGNATURE', 'feedback signature does not match');
-    const positions = await (await live()).positions(row, body.author);
+    const positions = snap().positions(row, body.author);
     const isBacker = positions.positions.some((p: any) => p.positionState.class === 'Backer' && BigInt(p.guaranteedClaim.amount) > 0n) || BigInt(positions.quota) > 0n;
     const createdAt = Math.floor(Date.now() / 1000);
     const author = getAddress(body.author);
     const result = db.query('INSERT INTO v31_feedback (raiseAddr,author,createdAt,rating,text,isBacker,signature) VALUES (?,?,?,?,?,?,?)').run(row.address, author, createdAt, body.rating, body.text, +isBacker, body.signature);
+    writes++;
     return c.json({ id: Number(result.lastInsertRowid), raise: row.address, author, createdAt, rating: body.rating, text: body.text, isBacker }, 201);
   });
   const raiseLimiter = new RateLimiter(1, 600_000);
@@ -165,7 +247,9 @@ export function createV31App({ config, db, clients, indexer, analyst }: V31Deps)
     if (address.toLowerCase() !== row.builder.toLowerCase() && !config.adminAddresses.includes(address.toLowerCase())) {
       if (!ipLimiter.allow(c.req.header('x-forwarded-for')?.split(',')[0].trim() || 'local') || !raiseLimiter.allow(row.address.toLowerCase())) throw new ApiError(429, 'RATE_LIMITED', 'analysis rate limit reached');
     }
-    return c.json(await analyst.analyze(row.address));
+    const report = await analyst.analyze(row.address);
+    writes++;
+    return c.json(report);
   });
   app.put('/raises/:address/profile', async (c) => {
     const row = mustRaise(c.req.param('address'));
@@ -178,6 +262,7 @@ export function createV31App({ config, db, clients, indexer, analyst }: V31Deps)
     if (!image.ok) throw new ApiError(400, 'BAD_REQUEST', image.message);
     const profile = image.image ? { ...value.profile, image: image.image } : value.profile;
     db.query('INSERT OR REPLACE INTO v31_profiles VALUES (?,?)').run(row.address, JSON.stringify(profile));
+    writes++;
     return c.json({ ok: true, profile: { ...value.profile, ...storedProfileImage(JSON.stringify(profile), config) } });
   });
   app.post('/raises/:address/metadata', async (c) => {
@@ -188,6 +273,7 @@ export function createV31App({ config, db, clients, indexer, analyst }: V31Deps)
     const { image } = storedProfileImage(old?.profile, config);
     const profile = { ...profileFromRow(old?.profile, '', ''), ...(image ? { image } : {}), description: json.description, website: json.website ?? '' };
     db.query('INSERT OR REPLACE INTO v31_profiles VALUES (?,?)').run(row.address, JSON.stringify(profile));
+    writes++;
     return c.json({ ok: true, description: profile.description, website: profile.website });
   });
   app.get('/raises/:address/updates', (c) => {
@@ -214,47 +300,37 @@ export function createV31App({ config, db, clients, indexer, analyst }: V31Deps)
     db.query('UPDATE v31_reports SET builderResponse=?,builderResponseAt=? WHERE raiseAddr=? AND reportHash=? COLLATE NOCASE').run(json.text, createdAt, row.address, hash);
     return c.json(reportFromRow({ ...report, builderResponse: json.text, builderResponseAt: createdAt } as never));
   });
-  app.get('/users/:address/rollover-sources', async (c) => {
+  app.get('/users/:address/rollover-sources', (c) => {
     const u = user(c.req.param('address'));
-    const snapshot = await live();
-    return c.json({ user: u, now: snapshot.now, blockNumber: Number(snapshot.blockNumber), router: getDeploymentV31(config.chainId)?.rolloverRouter ?? null,
-      sources: await snapshot.rolloverSources(listRaisesV31(db), u) });
+    const s = snap();
+    return c.json({ user: u, now: s.now, blockNumber: s.blockNumber, router: getDeploymentV31(config.chainId)?.rolloverRouter ?? null,
+      sources: s.rolloverSources(listRaisesV31(db), u) });
   });
-  app.get('/users/:address/inbox', async (c) => {
+  app.get('/users/:address/inbox', (c) => c.json(snap().inbox(listRaisesV31(db), user(c.req.param('address')))));
+  /**
+   * Wallet: quote-token and project-token balances and allowances from the indexed ERC-20 ledger. The native balance
+   * is the one chain read left on a request path: at most one `eth_getBalance` per (address, indexed block).
+   */
+  app.get('/users/:address/wallet', async (c) => {
     const u = user(c.req.param('address'));
-    const snapshot = await live();
-    const items: Record<string, any>[] = [];
-    for (const row of listRaisesV31(db)) {
-      const p = await snapshot.positions(row, u);
-      const s = await snapshot.summary(row);
-      const add = (type: string, title: string, dueAt: number | null, data: unknown = {}, severity = 'action') => items.push({ type, severity, raise: row.address, raiseName: row.name, symbol: row.symbol, title, dueAt, data });
-      const basis = p.positions.reduce((sum: bigint, x: any) => sum + BigInt(x.guaranteedClaim.amount), 0n);
-      const held = basis > 0n || BigInt(p.buyerLedger.tokens) > 0n || BigInt(p.walletTokenBalance) > 0n || BigInt(p.vesting.grant) > 0n;
-      if (!held) continue;
-      if (p.phase === 'Dissolved' && basis > 0n) add('dissolution_claim', 'The project dissolved; claim your capital or roll it into another project', null, { amount: String(basis) });
-      if (p.phase === 'ListingPending') add('listing_ready', 'Listing is ready; cost exits and buyer sells remain open until it succeeds', s.deadlines.stage2End);
-      if (p.phase === 'Stage2') add('listing_scheduled', 'Mandatory listing ends basis protection', s.deadlines.stage2End, {}, 'upcoming');
-      if (p.phase === 'Stage1' && snapshot.now >= s.deadlines.stage1End && !s.vetoActive) add('stage1_ready', 'Stage 1 is ready to resolve its gates', s.deadlines.stage1End);
-      if (BigInt(p.pendingRewards.tokens) + BigInt(p.pendingRewards.quote) > 0n) add('rewards_available', 'Diamond Hand rewards are ready to claim', null, p.pendingRewards);
-      if (BigInt(p.vesting.claimable) > 0n) add('vesting_available', 'Builder purchase tokens are vested', null, p.vesting);
-      for (const proposal of await snapshot.proposals(row)) {
-        if (proposal.state === 'Voting' && proposal.mode === 'Token') {
-          const [power, vote] = await Promise.all([
-            snapshot.read(row.governor, GovernanceV31Abi, 'votingPower', [BigInt(proposal.id), u]),
-            snapshot.read(row.governor, GovernanceV31Abi, 'tokenVoteOf', [BigInt(proposal.id), u]),
-          ]);
-          if (power > 0n && !vote.cast) add('vote_open', `Treasury proposal #${proposal.id} is open for your tokens`, Number(proposal.votingEnds), { proposalId: proposal.id });
-        } else if (proposal.state === 'Voting') {
-          for (const position of p.positions.filter((x: any) => x.positionState.class === 'Backer' && BigInt(x.positionState.basis) > 0n)) {
-            const vote = await snapshot.read(row.governor, GovernanceV31Abi, 'voteOf', [BigInt(proposal.id), BigInt(position.id)]);
-            if (!vote.cast) add('vote_open', `Proposal #${proposal.id} is open for position #${position.id}`, Number(proposal.votingEnds), { proposalId: proposal.id, positionId: position.id });
-          }
-        }
-        if (proposal.state === 'Dispute' && proposal.mode === 'Capital' && basis > 0n) add('dispute_exit', `Proposal #${proposal.id} passed; cost exits remain available`, Number(proposal.disputeEnds), { proposalId: proposal.id });
-      }
+    if (!indexer.sync.done) throw new ApiError(503, 'WALLET_SYNCING', 'quote-token history is still being indexed');
+    const dep = getDeploymentV31(config.chainId);
+    if (!dep) throw new ApiError(503, 'NO_DEPLOYMENT', 'v3.1 not deployed');
+    const s = snap();
+    return c.json({ ...s.wallet(listRaisesV31(db), u, String(dep.quote ?? dep.mockUSDG)), native: { balance: String(await nativeBalance(u, s.blockNumber)) } });
+  });
+  const natives = new Map<string, Promise<bigint>>();
+  let nativeBlock = -1;
+  function nativeBalance(address: string, block: number): Promise<bigint> {
+    if (block !== nativeBlock) { natives.clear(); nativeBlock = block; }
+    const key = address.toLowerCase();
+    let hit = natives.get(key);
+    if (!hit) {
+      hit = clients.public.getBalance({ address: address as Address, blockNumber: BigInt(block) });
+      hit.catch(() => natives.delete(key));
+      if (natives.size < 10_000) natives.set(key, hit);
     }
-    items.sort((a, b) => (a.severity === 'action' ? 0 : 1) - (b.severity === 'action' ? 0 : 1) || (a.dueAt ?? Infinity) - (b.dueAt ?? Infinity));
-    return c.json({ user: u, now: snapshot.now, items });
-  });
+    return hit;
+  }
   return app;
 }

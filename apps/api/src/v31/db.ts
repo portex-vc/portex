@@ -1,4 +1,5 @@
 import type { DB } from '../db.ts';
+import { migrateStateV31 } from './state-db.ts';
 
 export interface RaiseV31Row {
   address: string; builder: string; templateId: string; version: number;
@@ -66,6 +67,7 @@ export function migrateV31(db: DB): void {
       createdAt INTEGER NOT NULL, title TEXT NOT NULL, body TEXT NOT NULL, kind TEXT NOT NULL, signature TEXT NOT NULL
     );
   `);
+  migrateStateV31(db);
 }
 export function getRaiseV31(db: DB, address: string): RaiseV31Row | null {
   return db.query('SELECT * FROM v31_raises WHERE address = ?').get(address) as RaiseV31Row | null;

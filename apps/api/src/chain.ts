@@ -5,6 +5,7 @@ import {
 import { privateKeyToAccount } from 'viem/accounts';
 import type { Config } from './config.ts';
 import { deployments } from './generated/deployments.ts';
+import { countRpcBody } from './lib/rpc-metrics.ts';
 
 export function makeChain(config: Config) {
   return defineChain({
@@ -23,7 +24,8 @@ export type Clients = {
 
 export function makeClients(config: Config): Clients {
   const chain = makeChain(config);
-  const transport = http(config.rpcUrl, { timeout: 15_000 });
+  // Every JSON-RPC call is counted (see lib/rpc-metrics.ts); the hook leaves the request unchanged.
+  const transport = http(config.rpcUrl, { timeout: 15_000, onFetchRequest: (_request, init) => { countRpcBody(init.body); } });
   const publicClient = createPublicClient({ chain, transport });
   if (!config.attesterPrivateKey) return { public: publicClient, wallet: null, attesterAddress: null };
   const account = privateKeyToAccount(config.attesterPrivateKey);

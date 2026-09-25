@@ -1,11 +1,13 @@
-import { decodeEventLog, getAddress, type Abi, type PublicClient, type Log, type Block } from 'viem';
+import { decodeEventLog, getAddress, toEventSelector, toHex, type Abi, type Address, type PublicClient, type Log, type Block } from 'viem';
 import * as ABIS from '../generated/v31-abis.ts';
 import type { Config } from '../config.ts';
 import type { DB } from '../db.ts';
 import { jsonify, type IndexerStatus } from '../indexer.ts';
 import { getDeploymentV31 } from './deployment.ts';
 import { migrateV31, getRaiseV31, listRaisesV31, type EventV31Row } from './db.ts';
-import { MarketIndexerV31 } from './market.ts';
+import { MarketIndexerV31, insertLiquidity, managerOf, MODIFY_LIQUIDITY_EVENT, type LiquidityRow } from './market.ts';
+import { StateRefresherV31 } from './refresh.ts';
+import { applyErc20, markAllDirty, markDirty, MAX_UINT256 } from './state-db.ts';
 
 // Event payloads are ABI-decoded, then serialized; nested tuples retain their ABI names.
 type Args = Record<string, any>;
@@ -13,8 +15,10 @@ const abis: Record<string, Abi> = {
   factory: ABIS.RaiseFactoryV31Abi, raise: ABIS.RaiseCoreAbi, token: ABIS.ProjectTokenV31Abi,
   governor: ABIS.GovernanceV31Abi, vesting: ABIS.VestingVaultV31Abi, claims: ABIS.ClaimVaultAbi,
   treasury: ABIS.TreasuryV31Abi, router: ABIS.RolloverRouterV31Abi,
-  registry: ABIS.PortexRegistryV31Abi, adapter: ABIS.MockV4AdapterAbi,
+  registry: ABIS.PortexRegistryV31Abi, adapter: ABIS.MockV4AdapterAbi, quote: ABIS.MockUSDGV31Abi,
 };
+const ERC20_TOPICS = ['event Transfer(address indexed from, address indexed to, uint256 value)', 'event Approval(address indexed owner, address indexed spender, uint256 value)'].map((e) => toEventSelector(e));
+const BACKFILL_PAGES_PER_POLL = 25;
 type Watched = Map<string, { kind: string; raise: string | null }>;
 export const PHASES = ['Stage1', 'Stage2', 'ListingPending', 'Stage3', 'Dissolved'] as const;
 export const SCALE = 10n ** 18n;
@@ -38,7 +42,38 @@ export class IndexerV31 {
   readonly status: IndexerStatus = { lastIndexedBlock: 0, head: null, headTimestamp: null, lastError: null, lastPollAt: null, deploymentPresent: false };
   /** Stage 3 pool swaps: fetched with each page, written in its transaction, rolled back with it. */
   private readonly market: MarketIndexerV31;
-  constructor(private db: DB, private client: PublicClient, private config: Config) { migrateV31(db); this.market = new MarketIndexerV31(db, client, config); }
+  /** Batched view reads of dirty raises after each poll (the API's materialized state). */
+  readonly refresher: StateRefresherV31;
+  /** Bumped whenever indexed data or materialized state changes; the API's per-block memo keys on it. */
+  version = 0;
+  /** Background sync progress: the one-time quote-token / pool-liquidity backfill of an existing database. */
+  readonly sync = { backfillFrom: null as number | null, backfillTo: null as number | null, backfillNext: null as number | null, done: true };
+  constructor(private db: DB, private client: PublicClient, private config: Config) {
+    migrateV31(db);
+    this.market = new MarketIndexerV31(db, client, config);
+    this.refresher = new StateRefresherV31(db, client, config);
+    this.replayErc20();
+    this.loadSync();
+  }
+  /**
+   * One-time migration of an existing database: rebuild ERC-20 balances and allowances from the Transfer/Approval
+   * events already stored for every project token, and mark every raise for a state refresh.
+   */
+  private replayErc20(): void {
+    if (this.meta('erc20Ledger') === '1') return;
+    this.db.transaction(() => {
+      for (const t of ['v31_balances', 'v31_allowances', 'v31_allowance_dirty', 'v31_materialized']) this.db.exec(`DELETE FROM ${t}`);
+      const events = this.db.query("SELECT * FROM v31_events WHERE contract IN ('token','quote') AND name IN ('Transfer','Approval') ORDER BY blockNumber, logIndex").all() as EventV31Row[];
+      for (const e of events) applyErc20(this.db, e.address, e.contract === 'token' ? e.raiseAddr : null, e.name, JSON.parse(e.args), e.blockNumber, e.logIndex);
+      markAllDirty(this.db);
+      this.setMeta('erc20Ledger', '1');
+    })();
+  }
+  private loadSync(): void {
+    const n = (k: string) => { const v = this.meta(k); return v === null ? null : Number(v); };
+    Object.assign(this.sync, { backfillFrom: n('backfill:from'), backfillTo: n('backfill:to'), backfillNext: n('backfill:next') });
+    this.sync.done = this.sync.backfillTo === null || (this.sync.backfillNext ?? 0) > this.sync.backfillTo;
+  }
   start(): void { void this.poll(); this.timer = setInterval(() => void this.poll(), this.config.pollMs); }
   stop(): void { if (this.timer) clearInterval(this.timer); this.timer = null; }
   poll(): Promise<void> {
@@ -80,6 +115,13 @@ export class IndexerV31 {
     const startBlock = Math.max(1, Number(dep.deploymentBlock ?? 1));
     const floor = startBlock - 1;
     let last = Math.max(floor, Number(this.meta('last') ?? floor));
+    // Quote-token transfers and pool liquidity are indexed from now on; a database that already indexed blocks
+    // scans them once for [deployment, cursor] in the background (see backfill).
+    if (this.meta('quoteIndexedFrom') === null) {
+      if (last >= startBlock) { this.setMeta('backfill:from', String(startBlock)); this.setMeta('backfill:next', String(startBlock)); this.setMeta('backfill:to', String(last)); }
+      this.setMeta('quoteIndexedFrom', String(startBlock));
+      this.loadSync();
+    }
     // All block hashes are retained. Walk to the actual common ancestor, including deep reorgs.
     let ancestor = Math.max(floor, Math.min(last, Number(head.number)));
     while (ancestor > floor) {
@@ -90,16 +132,84 @@ export class IndexerV31 {
     }
     if (ancestor < last) { this.rollback(ancestor + 1); last = ancestor; }
     const target = Number(head.number) - this.config.confirmations;
+    let changed = false;
     for (let from = Math.max(startBlock, last + 1); from <= target; from += this.config.logPage) {
       await this.indexRange(from, Math.min(from + this.config.logPage - 1, target));
+      changed = true;
     }
-    this.status.lastIndexedBlock = Number(this.meta('last') ?? 0);
+    const indexed = Number(this.meta('last') ?? 0);
+    if (indexed >= startBlock) {
+      const time = (this.db.query('SELECT timestamp FROM v31_blocks WHERE number=?').get(indexed) as { timestamp: number } | null)?.timestamp ?? Number(head.timestamp);
+      // Backfill first: the ledger rows and ticks it adds mark the raises and allowances that the refresh re-reads.
+      if (await this.backfill(dep)) changed = true;
+      this.refresher.markRewardDays(time);
+      if (await this.refresher.refresh(indexed, time)) changed = true;
+      await this.refresher.refreshConfig(indexed, time);
+      await this.refresher.refreshAllowances(indexed);
+    }
+    if (changed) this.version++;
+    this.status.lastIndexedBlock = indexed;
+  }
+  /**
+   * One-time scan of quote-token Transfer/Approval and Portex-pool ModifyLiquidity logs for blocks indexed before those
+   * were watched. A few pages per poll, one `eth_getLogs` per page; block times come from the stored block table.
+   */
+  private async backfill(dep: Record<string, unknown>): Promise<boolean> {
+    if (this.sync.done || this.sync.backfillTo === null) return false;
+    const quote = String(dep.quote ?? dep.mockUSDG);
+    const manager = managerOf(dep as never);
+    const pools = new Map((this.db.query('SELECT poolId, raiseAddr FROM v31_pools').all() as { poolId: string; raiseAddr: string }[]).map((p) => [p.poolId.toLowerCase(), p.raiseAddr]));
+    const modify = toEventSelector(MODIFY_LIQUIDITY_EVENT);
+    let next = this.sync.backfillNext ?? this.sync.backfillTo + 1;
+    for (let page = 0; page < BACKFILL_PAGES_PER_POLL && next <= this.sync.backfillTo; page++) {
+      const to = Math.min(next + this.config.logPage - 1, this.sync.backfillTo);
+      const logs = await this.client.request({ method: 'eth_getLogs', params: [{ address: [quote, ...(manager ? [manager] : [])],
+        topics: [[...ERC20_TOPICS, modify]], fromBlock: toHex(next), toBlock: toHex(to) }] } as never) as Log[];
+      const events: EventV31Row[] = [];
+      const liquidity: LiquidityRow[] = [];
+      for (const log of logs) {
+        const blockNumber = Number(log.blockNumber), logIndex = Number(log.logIndex);
+        const timestamp = (this.db.query('SELECT timestamp FROM v31_blocks WHERE number=?').get(blockNumber) as { timestamp: number } | null)?.timestamp ?? 0;
+        if (log.address.toLowerCase() === quote.toLowerCase()) {
+          try {
+            const d = decodeEventLog({ abi: ABIS.MockUSDGV31Abi, topics: log.topics as never, data: log.data });
+            events.push({ raiseAddr: null, contract: 'quote', name: d.eventName, args: JSON.stringify(jsonify(d.args)), address: getAddress(log.address),
+              txHash: log.transactionHash!, blockNumber, logIndex, timestamp });
+          } catch { /* Not an ERC-20 event. */ }
+        } else {
+          try {
+            const d = decodeEventLog({ abi: [MODIFY_LIQUIDITY_EVENT], topics: log.topics as never, data: log.data }) as { args: any };
+            const raise = pools.get(String(d.args.id).toLowerCase());
+            if (raise) liquidity.push({ raiseAddr: raise, poolId: String(d.args.id).toLowerCase(), sender: getAddress(d.args.sender), tickLower: Number(d.args.tickLower),
+              tickUpper: Number(d.args.tickUpper), liquidityDelta: String(d.args.liquidityDelta), salt: d.args.salt, txHash: log.transactionHash!, blockNumber, logIndex });
+          } catch { /* Not a pool event. */ }
+        }
+      }
+      this.db.transaction(() => {
+        for (const e of events) {
+          const inserted = this.db.query('INSERT OR IGNORE INTO v31_events VALUES (?,?,?,?,?,?,?,?,?)')
+            .run(e.raiseAddr, e.contract, e.name, e.args, e.address, e.txHash, e.blockNumber, e.logIndex, e.timestamp);
+          if (inserted.changes) this.apply(e);
+        }
+        insertLiquidity(this.db, liquidity);
+        for (const r of new Set(liquidity.map((l) => l.raiseAddr))) markDirty(this.db, r);
+        this.setMeta('backfill:next', String(to + 1));
+      })();
+      next = to + 1;
+    }
+    this.loadSync();
+    return true;
   }
   private watched(): Watched {
     const dep = getDeploymentV31(this.config.chainId)!;
     const map: Watched = new Map();
     for (const [key, kind] of [['factory', 'factory'], ['registry', 'registry'], [dep.adapter ? 'adapter' : 'mockV4Adapter', 'adapter'], ['rolloverRouter', 'router']]) {
       if (dep[key]) map.set(String(dep[key]).toLowerCase(), { kind, raise: null });
+    }
+    // The quote token: its Transfer/Approval events are the wallet ledger (raise-less rows in v31_events).
+    for (const q of new Set([dep.quote ?? dep.mockUSDG, ...listRaisesV31(this.db).map((r) => JSON.parse(r.config || '{}').quote)].filter(Boolean))) {
+      const key = String(q).toLowerCase();
+      if (!map.has(key)) map.set(key, { kind: 'quote', raise: null });
     }
     for (const r of listRaisesV31(this.db)) this.addRaise(map, r.address, r);
     return map;
@@ -162,9 +272,14 @@ export class IndexerV31 {
       for (const e of events) {
         const inserted = this.db.query('INSERT OR IGNORE INTO v31_events VALUES (?,?,?,?,?,?,?,?,?)')
           .run(e.raiseAddr, e.contract, e.name, e.args, e.address, e.txHash, e.blockNumber, e.logIndex, e.timestamp);
-        if (inserted.changes) this.apply(e);
+        if (!inserted.changes) continue;
+        this.apply(e);
+        // Any log of a raise or its modules invalidates its materialized views; registry logs invalidate /config.
+        if (e.raiseAddr) markDirty(this.db, e.raiseAddr);
+        if (e.contract === 'registry') this.setMeta('configDirty', '1');
       }
-      this.market.insert(market.rows, timestamps);
+      this.market.insert(market.rows, timestamps, market.liquidity);
+      for (const r of new Set([...market.rows, ...market.liquidity].map((x) => x.raiseAddr))) markDirty(this.db, r);
       this.setMeta('last', String(to));
     })();
   }
@@ -173,11 +288,19 @@ export class IndexerV31 {
       this.db.query('DELETE FROM v31_events WHERE blockNumber >= ?').run(from);
       this.db.query('DELETE FROM v31_blocks WHERE number >= ?').run(from);
       this.market.rollback(from);
-      for (const table of ['raises', 'positions', 'prices', 'trades', 'proposals']) this.db.exec(`DELETE FROM v31_${table}`);
+      for (const table of ['raises', 'positions', 'prices', 'trades', 'proposals', 'balances', 'allowances', 'allowance_dirty', 'materialized', 'dirty']) this.db.exec(`DELETE FROM v31_${table}`);
       const events = this.db.query('SELECT * FROM v31_events ORDER BY blockNumber,logIndex').all() as EventV31Row[];
       for (const e of events) this.apply(e);
+      // Replayed allowances are event values; finite ones get an exact re-read, and every raise a state refresh.
+      this.db.query("INSERT OR IGNORE INTO v31_allowance_dirty SELECT DISTINCT token, owner FROM v31_allowances WHERE amount!='0' AND amount!=?").run(MAX_UINT256.toString());
+      this.db.exec("DELETE FROM v31_state WHERE kind!='config'");
+      markAllDirty(this.db);
+      // Blocks at or above `from` are re-indexed with the quote token watched; the backfill never needs to reach them.
+      const to = this.meta('backfill:to');
+      if (to !== null && Number(to) >= from) this.setMeta('backfill:to', String(from - 1));
       this.setMeta('last', String(Math.max(0, from - 1)));
     })();
+    this.loadSync();
   }
   private apply(e: EventV31Row): void {
     const a = JSON.parse(e.args) as Args;
@@ -187,6 +310,11 @@ export class IndexerV31 {
         VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)`).run(e.raiseAddr, getAddress(a.builder), a.templateId, Number(a.version),
         a.modules.token, a.modules.governor, a.modules.vesting, a.modules.claims, a.modules.adapter,
         JSON.stringify(emptyBook()), e.timestamp, e.blockNumber, e.txHash);
+      return;
+    }
+    // ERC-20 ledger: quote-token and project-token balances, allowances and lazy listing deliveries.
+    if ((e.contract === 'quote' || e.contract === 'token') && (e.name === 'Transfer' || e.name === 'Approval')) {
+      applyErc20(this.db, e.address, e.contract === 'token' ? e.raiseAddr : null, e.name, a, e.blockNumber, e.logIndex);
       return;
     }
     if (!e.raiseAddr) return;

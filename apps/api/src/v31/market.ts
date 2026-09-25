@@ -7,7 +7,7 @@
  */
 import { Hono, type Context } from 'hono';
 import {
-  concat, decodeEventLog, getAddress, isAddress, keccak256, pad, parseAbiItem, toHex, zeroAddress,
+  decodeEventLog, getAddress, isAddress, parseAbiItem, toEventSelector, toHex, zeroAddress,
   type Address, type Hex, type Log, type PublicClient,
 } from 'viem';
 import type { DB } from '../db.ts';
@@ -19,6 +19,7 @@ import { getDeploymentV31, type DeploymentV31 } from './deployment.ts';
 import { getRaiseV31, listRaisesV31, type RaiseV31Row } from './db.ts';
 import { migrateMarketV31 } from './market-db.ts';
 import { storedProfileImage } from './uploads.ts';
+import { quoteExactIn, ticksFrom, V4Revert, type PoolTicks } from './v4.ts';
 
 export { migrateMarketV31 };
 
@@ -26,6 +27,9 @@ export { migrateMarketV31 };
 
 export const SWAP_EVENT = parseAbiItem('event Swap(bytes32 indexed id, address indexed sender, int128 amount0, int128 amount1, uint160 sqrtPriceX96, uint128 liquidity, int24 tick, uint24 fee)');
 export const SWAPPED_EVENT = parseAbiItem('event Swapped(address indexed trader, address indexed token, bytes32 indexed poolId, bool buy, uint256 amountIn, uint256 amountOut, address recipient)');
+export const MODIFY_LIQUIDITY_EVENT = parseAbiItem('event ModifyLiquidity(bytes32 indexed id, address indexed sender, int24 tickLower, int24 tickUpper, int256 liquidityDelta, bytes32 salt)');
+const POOL_EVENTS = [SWAP_EVENT, MODIFY_LIQUIDITY_EVENT] as const;
+export const POOL_EVENT_TOPICS = POOL_EVENTS.map((e) => toEventSelector(e));
 export const INTERVALS = { '1m': 60, '5m': 300, '15m': 900, '1h': 3600, '4h': 14400, '1d': 86400 } as const;
 export type Interval = keyof typeof INTERVALS;
 export type Venue = 'stage2' | 'pool';
@@ -37,7 +41,6 @@ export const SQRT_LOWER = 4310618292n;
 export const SQRT_UPPER = 1456195216270955103206513029158776779468408838535n;
 /** USDG (6 dp) per token (18 dp), scaled to 1e18 per whole token: raw ratio * 1e30. */
 const PRICE_SHIFT = 10n ** 30n;
-const POOLS_SLOT = pad(toHex(6), { size: 32 });
 const DAY = 86400;
 
 /** Decimal string of a fixed-point integer, trailing zeros trimmed. */
@@ -120,6 +123,30 @@ export interface SwapRow {
   viaRouter: number; txHash: string; blockNumber: number; logIndex: number;
 }
 interface Discovery { address: string; token: string; adapter: string; quote?: string }
+export interface LiquidityRow {
+  raiseAddr: string; poolId: string; sender: string; tickLower: number; tickUpper: number; liquidityDelta: string; salt: string;
+  txHash: string; blockNumber: number; logIndex: number;
+}
+
+/** Swap and ModifyLiquidity logs of the given pools (topic0 either event, topic1 the pool id), decoded. */
+export async function poolLogs(client: PublicClient, manager: Address, ids: Hex[], from: number, to: number): Promise<Log[]> {
+  const out: Log[] = [];
+  for (let i = 0; i < ids.length; i += 50) {
+    const raw = await client.request({ method: 'eth_getLogs', params: [{ address: manager, topics: [POOL_EVENT_TOPICS, ids.slice(i, i + 50)], fromBlock: toHex(from), toBlock: toHex(to) }] } as never) as Log[];
+    for (const log of raw) {
+      try {
+        const decoded = decodeEventLog({ abi: POOL_EVENTS, topics: log.topics as never, data: log.data });
+        out.push({ ...log, blockNumber: BigInt(log.blockNumber as never), logIndex: Number(log.logIndex), eventName: decoded.eventName, args: decoded.args } as never);
+      } catch { /* Not a pool event we track. */ }
+    }
+  }
+  return out;
+}
+
+export function insertLiquidity(db: DB, rows: LiquidityRow[]): void {
+  const q = db.query('INSERT OR IGNORE INTO v31_pool_liquidity VALUES (?,?,?,?,?,?,?,?,?,?)');
+  for (const r of rows) q.run(r.raiseAddr, r.poolId, r.sender, r.tickLower, r.tickUpper, r.liquidityDelta, r.salt, r.txHash, r.blockNumber, r.logIndex);
+}
 
 const live = (value: unknown): string | null => typeof value === 'string' && isAddress(value) && value.toLowerCase() !== zeroAddress ? getAddress(value) : null;
 export const routerOf = (dep: DeploymentV31 | null) => live(dep?.router);
@@ -167,21 +194,28 @@ export class MarketIndexerV31 {
     return map;
   }
 
-  async fetch(from: number, to: number, factoryLogs: Log[]): Promise<{ rows: SwapRow[]; logs: Log[] }> {
+  /**
+   * One `eth_getLogs` per 50 pools returns both the swaps and the liquidity changes (topic0 is either event, topic1
+   * one of the Portex pool ids); router attribution is one more call only when the page has router swaps.
+   */
+  async fetch(from: number, to: number, factoryLogs: Log[]): Promise<{ rows: SwapRow[]; liquidity: LiquidityRow[]; logs: Log[] }> {
     const dep = getDeploymentV31(this.config.chainId);
     const manager = managerOf(dep);
-    if (!manager) return { rows: [], logs: [] };
+    if (!manager) return { rows: [], liquidity: [], logs: [] };
     const pools = await this.pools(factoryLogs);
-    if (!pools.size) return { rows: [], logs: [] };
-    const ids = [...pools.keys()] as Hex[];
-    const swaps: Log[] = [];
-    for (let i = 0; i < ids.length; i += 50) {
-      swaps.push(...await this.client.getLogs({ address: manager, event: SWAP_EVENT, args: { id: ids.slice(i, i + 50) }, fromBlock: BigInt(from), toBlock: BigInt(to) }));
-    }
-    if (!swaps.length) return { rows: [], logs: [] };
+    if (!pools.size) return { rows: [], liquidity: [], logs: [] };
+    const found = await poolLogs(this.client, manager as Address, [...pools.keys()] as Hex[], from, to);
+    const swaps = found.filter((l: any) => l.eventName === 'Swap');
+    const liquidity: LiquidityRow[] = found.filter((l: any) => l.eventName === 'ModifyLiquidity').flatMap((l: any) => {
+      const pool = pools.get(String(l.args.id).toLowerCase());
+      return pool ? [{ raiseAddr: pool.raiseAddr, poolId: pool.poolId, sender: getAddress(l.args.sender), tickLower: Number(l.args.tickLower),
+        tickUpper: Number(l.args.tickUpper), liquidityDelta: String(l.args.liquidityDelta), salt: l.args.salt, txHash: l.transactionHash,
+        blockNumber: Number(l.blockNumber), logIndex: Number(l.logIndex) }] : [];
+    });
+    if (!swaps.length) return { rows: [], liquidity, logs: found };
     const router = routerOf(dep);
     const routed = router && swaps.some((l: any) => getAddress(l.args.sender) === router)
-      ? await this.client.getLogs({ address: router, event: SWAPPED_EVENT, fromBlock: BigInt(from), toBlock: BigInt(to) }) : [];
+      ? await this.client.getLogs({ address: router as Address, event: SWAPPED_EVENT, fromBlock: BigInt(from), toBlock: BigInt(to) }) : [];
     const order = (a: Log, b: Log) => Number(a.blockNumber! - b.blockNumber!) || a.logIndex! - b.logIndex!;
     // Router events follow their PoolManager swap in the same transaction; pair them in order per (tx, pool).
     const queue = new Map<string, any[]>();
@@ -211,10 +245,11 @@ export class MarketIndexerV31 {
         viaRouter: attributed ? 1 : 0, txHash: l.transactionHash, blockNumber: Number(l.blockNumber), logIndex: Number(l.logIndex),
       });
     }
-    return { rows, logs: [...swaps, ...routed] };
+    return { rows, liquidity, logs: [...found, ...routed] };
   }
 
-  insert(rows: SwapRow[], timestamps: Map<number, number>): void {
+  insert(rows: SwapRow[], timestamps: Map<number, number>, liquidity: LiquidityRow[] = []): void {
+    insertLiquidity(this.db, liquidity);
     const q = this.db.query('INSERT OR IGNORE INTO v31_pool_swaps VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)');
     for (const r of rows) {
       q.run(r.raiseAddr, r.poolId, r.side, r.amountQuote, r.amountToken, r.price, r.spot, r.sqrtPriceX96, r.liquidity, r.tick, r.fee,
@@ -224,6 +259,7 @@ export class MarketIndexerV31 {
 
   rollback(from: number): void {
     this.db.query('DELETE FROM v31_pool_swaps WHERE blockNumber >= ?').run(from);
+    this.db.query('DELETE FROM v31_pool_liquidity WHERE blockNumber >= ?').run(from);
   }
 }
 
@@ -263,30 +299,41 @@ export function chartPoints(db: DB, raise: string): { points: PricePoint[]; list
   return { points, listing };
 }
 
-export interface MarketDeps { config: Config; db: DB; clients: Clients }
+export interface MarketDeps {
+  config: Config; db: DB; clients: Clients;
+  /** The indexed block the materialized state reflects, and the head's chain time used for projections. */
+  clock: () => { blockNumber: number; now: number };
+}
+export interface StoredPool { sqrtPriceX96: bigint; tick: number; liquidity: bigint; lpFee: number; protocolFee: number }
 
-/** Live pool state at one block: slot0 price and active liquidity, read from PoolManager storage. */
-async function poolState(client: PublicClient, manager: Address, poolId: Hex, blockNumber: bigint) {
-  const base = keccak256(concat([poolId, POOLS_SLOT]));
-  const [slot0, liquidity] = await Promise.all([
-    client.getStorageAt({ address: manager, slot: base, blockNumber }),
-    client.getStorageAt({ address: manager, slot: pad(toHex(BigInt(base) + 3n), { size: 32 }), blockNumber }),
-  ]);
-  return { sqrtPriceX96: BigInt(slot0 ?? 0) & ((1n << 160n) - 1n), liquidity: BigInt(liquidity ?? 0) & ((1n << 128n) - 1n) };
+/** Pool slot0 + active liquidity and the token supply, as the indexer's last refresh of this raise read them. */
+export function storedMarketState(db: DB, raise: string): { pool: StoredPool | null; totalSupply: bigint; blockNumber: number } | null {
+  const row = db.query("SELECT data, blockNumber FROM v31_state WHERE kind='raise' AND raiseAddr=?").get(raise) as { data: string; blockNumber: number } | null;
+  if (!row) return null;
+  const data = JSON.parse(row.data);
+  const p = data.pool;
+  return {
+    pool: p ? { sqrtPriceX96: BigInt(p.sqrtPriceX96), tick: Number(p.tick), liquidity: BigInt(p.liquidity), lpFee: Number(p.lpFee), protocolFee: Number(p.protocolFee) } : null,
+    totalSupply: BigInt(data.token?.totalSupply ?? 0), blockNumber: row.blockNumber,
+  };
 }
 
-export async function marketRow(deps: MarketDeps, row: RaiseV31Row, blockNumber: bigint, now: number) {
-  const { db, clients, config } = deps;
-  const dep = getDeploymentV31(config.chainId);
-  const manager = managerOf(dep);
+/** Initialized ticks of a pool from indexed ModifyLiquidity events. */
+export function poolTicks(db: DB, poolId: string, tickSpacing: number): PoolTicks {
+  const rows = db.query('SELECT tickLower, tickUpper, liquidityDelta FROM v31_pool_liquidity WHERE poolId=? ORDER BY blockNumber, logIndex').all(poolId) as
+    { tickLower: number; tickUpper: number; liquidityDelta: string }[];
+  return ticksFrom(rows.map((r) => ({ tickLower: r.tickLower, tickUpper: r.tickUpper, liquidityDelta: BigInt(r.liquidityDelta) })), tickSpacing);
+}
+
+export function marketRow(deps: MarketDeps, row: RaiseV31Row, now: number) {
+  const { db, config } = deps;
   const pool = poolOf(db, row.address);
   const listing = listingOf(db, row.address);
   const swaps = swapsOf(db, row.address);
   const token0 = pool?.tokenIsCurrency0 === 1;
-  const [state, totalSupply] = await Promise.all([
-    manager && pool ? poolState(clients.public, manager, pool.poolId as Hex, blockNumber) : Promise.resolve({ sqrtPriceX96: 0n, liquidity: 0n }),
-    clients.public.readContract({ address: row.token as Address, abi: ABIS.ProjectTokenV31Abi, functionName: 'totalSupply', blockNumber }) as Promise<bigint>,
-  ]);
+  const stored = storedMarketState(db, row.address);
+  const state = stored?.pool ?? { sqrtPriceX96: 0n, liquidity: 0n };
+  const totalSupply = stored?.totalSupply ?? 0n;
   const listingPrice = listing?.price ?? BigInt(JSON.parse(row.state).listingPrice ?? 0);
   const price = state.sqrtPriceX96 ? spotPriceE18(state.sqrtPriceX96, token0) : listingPrice;
   const history = [{ time: listing?.time ?? 0, price: listingPrice }, ...swaps.map((s) => ({ time: s.timestamp, price: BigInt(s.spot) }))];
@@ -298,10 +345,10 @@ export async function marketRow(deps: MarketDeps, row: RaiseV31Row, blockNumber:
   // Sparkline: 48 samples of the last price over the last 30 days (or since listing).
   const start = Math.max(listing?.time ?? now, now - 30 * DAY);
   const spark = Array.from({ length: 48 }, (_, i) => decimal(priceAt(history, start + Math.round((now - start) * i / 47), listingPrice), 18));
-  const stored = (db.query('SELECT profile FROM v31_profiles WHERE raiseAddr=?').get(row.address) as { profile: string } | null)?.profile;
+  const profile = (db.query('SELECT profile FROM v31_profiles WHERE raiseAddr=?').get(row.address) as { profile: string } | null)?.profile;
   return {
     address: row.address, name: row.name, symbol: row.symbol, token: row.token,
-    profile: { ...profileFromRow(stored, '', ''), ...storedProfileImage(stored, config) },
+    profile: { ...profileFromRow(profile, '', ''), ...storedProfileImage(profile, config) },
     poolId: pool?.poolId ?? null, tokenIsCurrency0: token0, fee: 10000, tickSpacing: 200,
     price: decimal(price, 18), listingPrice: decimal(listingPrice, 18),
     change24hBps: reference > 0n ? Number((price - reference) * 10000n / reference) : 0,
@@ -309,6 +356,36 @@ export async function marketRow(deps: MarketDeps, row: RaiseV31Row, blockNumber:
     reserves: { quote: decimal(quoteReserve, 6), token: decimal(tokenReserve, 18) },
     totalSupply: totalSupply.toString(), fdv: decimal(price * totalSupply / PRICE_SHIFT, 6),
     tradeCount: swaps.length, listedAt: listing?.time ?? null, lastTradeAt: swaps.at(-1)?.timestamp ?? null, spark,
+  };
+}
+
+/**
+ * Stage 3 pool quote: an exact mirror of `PortexSwapRouterV31.quoteExactIn` (Uniswap v4 exact-input swap) over the
+ * materialized slot0/liquidity and the indexed ticks. Throws `V4Revert` where the router reverts.
+ */
+export function marketQuote(db: DB, row: RaiseV31Row, buy: boolean, amountIn: bigint, tickSpacing = 200) {
+  const pool = poolOf(db, row.address);
+  const stored = storedMarketState(db, row.address);
+  if (!pool || !stored?.pool || stored.pool.sqrtPriceX96 === 0n) throw new V4Revert('PoolNotInitialized');
+  const token0 = pool.tokenIsCurrency0 === 1;
+  const ticks = poolTicks(db, pool.poolId, tickSpacing);
+  // The indexed ticks must reproduce the pool's active liquidity; otherwise their history is incomplete (backfill).
+  let active = 0n;
+  for (const [tick, net] of ticks.net) if (tick <= stored.pool.tick) active += net;
+  if (active !== stored.pool.liquidity) throw new V4Revert('PoolTicksSyncing');
+  // Buying spends quote: zeroForOne exactly when quote is currency0.
+  const zeroForOne = buy ? !token0 : token0;
+  const q = quoteExactIn(stored.pool, ticks, tickSpacing, zeroForOne, amountIn);
+  if (q.consumed !== amountIn) throw new V4Revert(`PartialFill(${q.consumed}, ${amountIn})`);
+  const [amountQuote, amountToken] = buy ? [amountIn, q.amountOut] : [q.amountOut, amountIn];
+  const before = spotPriceE18(q.sqrtPriceBefore, token0);
+  const after = spotPriceE18(q.sqrtPriceAfter, token0);
+  return {
+    side: buy ? 'buy' : 'sell', amountIn: amountIn.toString(), amountOut: q.amountOut.toString(), feeAmount: q.feeAmount.toString(),
+    feeAsset: buy ? 'quote' : 'token', averagePrice: decimal(executionPriceE18(amountQuote, amountToken), 18),
+    priceBefore: decimal(before, 18), priceAfter: decimal(after, 18),
+    impactBps: before > 0n ? Number(((after > before ? after - before : before - after) * 10000n) / before) : 0,
+    feePips: q.swapFeePips, sqrtPriceAfter: q.sqrtPriceAfter.toString(), blockNumber: stored.blockNumber,
   };
 }
 
@@ -326,7 +403,7 @@ export function poolTrade(s: StoredSwap) {
 const error = (c: Context, status: number, code: string, message: string) => c.json({ error: { code, message } }, status as never);
 
 export function createMarketV31App(deps: MarketDeps): Hono {
-  const { db, clients, config } = deps;
+  const { db, config } = deps;
   migrateMarketV31(db);
   const app = new Hono();
   const raiseOf = (c: Context) => {
@@ -335,31 +412,41 @@ export function createMarketV31App(deps: MarketDeps): Hono {
     const row = getRaiseV31(db, address);
     return row ? { row } : { fail: error(c, 404, 'RAISE_NOT_FOUND', 'v3.1 raise not indexed') };
   };
-  const head = async () => {
-    const b = await clients.public.getBlock({ blockTag: 'latest' });
-    return { blockNumber: b.number, now: Number(b.timestamp) };
-  };
   const venue = () => {
     const dep = getDeploymentV31(config.chainId);
     return { router: routerOf(dep), poolManager: managerOf(dep), quote: dep ? live(dep.quote ?? dep.mockUSDG) : null };
   };
-  const guard = async (c: Context, fn: () => Promise<Response>) => {
-    try { return await fn(); } catch { return error(c, 503, 'CHAIN_UNAVAILABLE', 'Chain request failed'); }
-  };
   const listed = () => listRaisesV31(db).filter((r) => Number(JSON.parse(r.state).phase) === 3);
 
-  app.get('/markets', (c) => guard(c, async () => {
-    const { blockNumber, now } = await head();
-    const markets = await Promise.all(listed().map((r) => marketRow(deps, r, blockNumber, now)));
-    return c.json({ ...venue(), chainTime: now, blockNumber: Number(blockNumber), markets });
-  }));
-  app.get('/markets/:address', (c) => guard(c, async () => {
+  app.get('/markets', (c) => {
+    const { blockNumber, now } = deps.clock();
+    return c.json({ ...venue(), chainTime: now, blockNumber, markets: listed().map((r) => marketRow(deps, r, now)) });
+  });
+  app.get('/markets/:address', (c) => {
     const r = raiseOf(c);
     if ('fail' in r) return r.fail!;
     if (Number(JSON.parse(r.row.state).phase) !== 3) return error(c, 404, 'NOT_LISTED', 'project has not reached Stage 3 · Open market');
-    const { blockNumber, now } = await head();
-    return c.json({ ...venue(), chainTime: now, blockNumber: Number(blockNumber), market: await marketRow(deps, r.row, blockNumber, now) });
-  }));
+    const { blockNumber, now } = deps.clock();
+    return c.json({ ...venue(), chainTime: now, blockNumber, market: marketRow(deps, r.row, now) });
+  });
+  app.get('/markets/:address/quote', (c) => {
+    const r = raiseOf(c);
+    if ('fail' in r) return r.fail!;
+    if (Number(JSON.parse(r.row.state).phase) !== 3) return error(c, 404, 'NOT_LISTED', 'project has not reached Stage 3 · Open market');
+    const side = c.req.query('side');
+    const raw = c.req.query('amountIn') ?? '';
+    if ((side !== 'buy' && side !== 'sell') || !/^[0-9]{1,78}$/.test(raw)) return error(c, 400, 'BAD_REQUEST', 'side=buy|sell and amountIn=<raw integer> required');
+    const { now } = deps.clock();
+    c.header('Cache-Control', 'public, s-maxage=1, stale-while-revalidate=1');
+    try {
+      return c.json({ ...marketQuote(db, r.row, side === 'buy', BigInt(raw)), available: true, reason: null, chainTime: now });
+    } catch (e) {
+      if (!(e instanceof V4Revert)) throw e;
+      if (e.reason === 'PoolTicksSyncing') return error(c, 503, 'POOL_SYNCING', 'pool liquidity history is still being indexed');
+      return c.json({ side, amountIn: raw, amountOut: '0', feeAmount: '0', available: false, reason: e.reason.replace(/\(.*$/, ''), detail: e.reason,
+        blockNumber: deps.clock().blockNumber, chainTime: now });
+    }
+  });
   app.get('/raises/:address/candles', (c) => {
     const r = raiseOf(c);
     if ('fail' in r) return r.fail!;
