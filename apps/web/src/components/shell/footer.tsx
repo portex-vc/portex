@@ -1,6 +1,6 @@
 "use client";
 
-import { Mark } from "@/components/brand/logo";
+import { Logo } from "@/components/brand/logo";
 import { env, isLocalChain } from "@/lib/env";
 import { useHealth } from "@/lib/hooks";
 import { useNumbers } from "@/lib/use-numbers";
@@ -21,8 +21,7 @@ export function Footer() {
       <div className="container grid gap-8 py-10 text-[0.8125rem] md:grid-cols-[1fr_auto] md:items-end">
         <div className="space-y-4">
           <div className="flex items-center gap-2.5 text-fg">
-            <Mark size={20} />
-            <span className="text-sm font-medium tracking-tight">Portex</span>
+            <Logo size={24} />
           </div>
           <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-fg-3">
             <span>{t("built")}</span>
@@ -56,6 +55,9 @@ export function Footer() {
           </Link>
           <Link href="/protocol" className="transition-colors hover:text-fg">
             {t("contracts")}
+          </Link>
+          <Link href="/wiki" className="transition-colors hover:text-fg" data-testid="footer-wiki">
+            {t("wiki")}
           </Link>
         </nav>
       </div>

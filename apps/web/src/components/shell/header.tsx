@@ -23,7 +23,7 @@ import { motion, useReducedMotion } from "motion/react";
 import { useTranslations } from "next-intl";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { ApiStatus } from "./api-status";
 import { CommandPalette, palette, useIsMac } from "./command-palette";
 import { InboxButton } from "./inbox-button";
@@ -38,6 +38,9 @@ const LINKS = [
 ] as const;
 const DEV_LINK = { href: "/dev", key: "dev", icon: FlaskConical } as const;
 const ADMIN_LINK = { href: "/admin", key: "admin", icon: UserCog } as const;
+
+/** Layout effect in the browser (measure before paint), plain effect on the server. */
+const useIsomorphicLayoutEffect = typeof window === "undefined" ? useEffect : useLayoutEffect;
 
 function useActive() {
   const pathname = usePathname();
@@ -56,34 +59,70 @@ function useScrolled() {
   return scrolled;
 }
 
-/** Primary links with a pill that slides to the active item (DESIGN_V2 §5). */
+/**
+ * Primary links with a pill that slides to the active item (DESIGN_V2 §5).
+ *
+ * The pill is one element positioned inside the nav and animated on `x` and `width` only. It used to be a
+ * shared-layout (`layoutId`) span inside the active link, which motion measures in page coordinates: in this
+ * sticky header, a route change from a scrolled page reset the scroll, so the old pill looked hundreds of
+ * pixels lower and shot up into the bar. Nav-relative offsets cannot move vertically.
+ */
 function PrimaryNav() {
   const t = useTranslations("nav");
   const isActive = useActive();
   const reduce = useReducedMotion();
   const links = [...LINKS, ...(isLocalChain ? [DEV_LINK] : [])];
+  const activeHref = links.find((l) => isActive(l.href, "exact" in l ? l.exact : false))?.href ?? null;
+  const navRef = useRef<HTMLElement>(null);
+  const [pill, setPill] = useState<{ x: number; width: number; animate: boolean } | null>(null);
+
+  useIsomorphicLayoutEffect(() => {
+    const nav = navRef.current;
+    if (!nav) return;
+    const measure = () => {
+      const link = activeHref ? nav.querySelector<HTMLElement>(`a[data-nav="${activeHref}"]`) : null;
+      setPill((previous) => {
+        // Hidden nav (below lg) or no active item: no pill; the next appearance is instant, never a slide.
+        if (!link || link.offsetWidth === 0) return null;
+        const next = { x: link.offsetLeft, width: link.offsetWidth };
+        if (previous && previous.x === next.x && previous.width === next.width) return previous;
+        return { ...next, animate: previous !== null };
+      });
+    };
+    measure();
+    // Font loading, locale changes and resizes change the link widths.
+    const observer = new ResizeObserver(measure);
+    observer.observe(nav);
+    return () => observer.disconnect();
+  }, [activeHref]);
+
   return (
-    <nav aria-label={t("primary")} className="hidden items-center lg:flex">
+    <nav ref={navRef} aria-label={t("primary")} className="relative isolate hidden items-center lg:flex">
+      {pill ? (
+        <motion.span
+          aria-hidden
+          data-testid="nav-pill"
+          className="pointer-events-none absolute inset-y-0 left-0 -z-10 rounded-[9px] bg-fg/[0.07]"
+          initial={false}
+          animate={{ x: pill.x, width: pill.width }}
+          transition={
+            reduce || !pill.animate ? { duration: 0 } : { type: "spring", stiffness: 520, damping: 42, mass: 0.9 }
+          }
+        />
+      ) : null}
       {links.map((l) => {
-        const active = isActive(l.href, "exact" in l ? l.exact : false);
+        const active = l.href === activeHref;
         return (
           <Link
             key={l.href}
             href={l.href}
+            data-nav={l.href}
             aria-current={active ? "page" : undefined}
             className={cn(
               "relative rounded-[9px] px-3 py-1.5 text-[0.8125rem] transition-colors duration-150",
               active ? "text-fg" : "text-fg-2 hover:bg-fg/[0.04] hover:text-fg",
             )}
           >
-            {active ? (
-              <motion.span
-                layoutId="nav-pill"
-                aria-hidden
-                className="absolute inset-0 -z-10 rounded-[9px] bg-fg/[0.07]"
-                transition={reduce ? { duration: 0 } : { type: "spring", stiffness: 520, damping: 42 }}
-              />
-            ) : null}
             {t(l.key)}
           </Link>
         );
@@ -145,7 +184,7 @@ function MobileMenu() {
         >
           <Dialog.Title className="sr-only">{t("menu")}</Dialog.Title>
           <div className="flex h-10 items-center justify-between">
-            <SheenLogo size={20} />
+            <SheenLogo size={24} />
             <Dialog.Close asChild>
               <Button variant="ghost" size="icon-sm" aria-label={t("close")}>
                 <X />
@@ -212,7 +251,7 @@ export function Header() {
       <div className="container flex h-16 items-center justify-between gap-3">
         <div className="flex min-w-0 items-center gap-5 lg:gap-7">
           <Link href="/" className="flex items-center rounded-md text-fg" aria-label="Portex">
-            <SheenLogo size={21} />
+            <SheenLogo size={26} />
           </Link>
           <PrimaryNav />
         </div>

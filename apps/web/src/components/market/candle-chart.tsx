@@ -27,8 +27,9 @@ function token(name: string, alpha = 1) {
 }
 
 /**
- * Candlesticks of the project's whole market life: the Stage 2 book (muted) up to the listing marker, then the
- * Uniswap v4 pool. Monochrome: up candles solid foreground, down candles hollow. Volume sits under the price.
+ * Candlesticks of the project's whole market life: the Stage 2 book (faded) up to the listing marker, then the
+ * Uniswap v4 pool. Up candles use the positive token (green), down candles the negative token (red); teal stays
+ * reserved for protected principal. Volume sits under the price in the matching colour at low opacity.
  */
 export function CandleChart({
   address,
@@ -62,6 +63,8 @@ export function CandleChart({
     if (!host.current) return;
     const fg = token("fg");
     const muted = token("fg-3");
+    const up = (alpha = 1) => token("positive", alpha);
+    const down = (alpha = 1) => token("negative", alpha);
     const chart: IChartApi = createChart(host.current, {
       autoSize: true,
       localization: {
@@ -108,20 +111,21 @@ export function CandleChart({
         horzLine: { color: token("fg", 0.14), labelBackgroundColor: token("surface-3") },
       },
     });
-    const candle = (up: string, down: string) => ({
-      upColor: up,
-      downColor: "rgba(0, 0, 0, 0)",
-      borderUpColor: up,
-      borderDownColor: down,
-      wickUpColor: up,
-      wickDownColor: down,
+    const candle = (rise: string, fall: string) => ({
+      upColor: rise,
+      downColor: fall,
+      borderUpColor: rise,
+      borderDownColor: fall,
+      wickUpColor: rise,
+      wickDownColor: fall,
       borderVisible: true,
       priceLineVisible: false,
       lastValueVisible: false,
     });
-    const stage2: ISeriesApi<"Candlestick"> = chart.addSeries(CandlestickSeries, candle(muted, muted));
+    // The Stage 2 book is the same market in its protected phase: the same colours, faded.
+    const stage2: ISeriesApi<"Candlestick"> = chart.addSeries(CandlestickSeries, candle(up(0.42), down(0.42)));
     const pool: ISeriesApi<"Candlestick"> = chart.addSeries(CandlestickSeries, {
-      ...candle(fg, token("fg", 0.62)),
+      ...candle(up(), down()),
       lastValueVisible: true,
       priceLineVisible: true,
       priceLineColor: token("fg", 0.35),
@@ -134,7 +138,16 @@ export function CandleChart({
       priceLineVisible: false,
     });
     chart.priceScale("volume").applyOptions({ scaleMargins: { top: 0.82, bottom: 0 }, visible: false });
-    const ohlc = (b: Bar) => ({ time: b.time as UTCTimestamp, open: b.open, high: b.high, low: b.low, close: b.close });
+    // Carried-forward buckets had no trades: draw them as a quiet neutral tick, not as a rise.
+    const idle = token("fg", 0.28);
+    const ohlc = (b: Bar) => ({
+      time: b.time as UTCTimestamp,
+      open: b.open,
+      high: b.high,
+      low: b.low,
+      close: b.close,
+      ...(b.filled ? { color: idle, borderColor: idle, wickColor: idle } : {}),
+    });
     stage2.setData(bars.filter((b) => b.venue === "stage2").map(ohlc));
     pool.setData(bars.filter((b) => b.venue === "pool").map(ohlc));
     // One volume column per time: the listing bucket may hold a Stage 2 and a pool candle.
@@ -147,7 +160,7 @@ export function CandleChart({
       [...byTime.values()].map((b) => ({
         time: b.time as UTCTimestamp,
         value: b.total,
-        color: b.close >= b.open ? token("fg", b.venue === "pool" ? 0.26 : 0.14) : token("fg", 0.1),
+        color: b.close >= b.open ? up(b.venue === "pool" ? 0.34 : 0.16) : down(b.venue === "pool" ? 0.34 : 0.16),
       })),
     );
     if (listingTime !== null)
@@ -219,7 +232,7 @@ export function CandleChart({
               </dd>
             </div>
             {change !== null && !shown.filled ? (
-              <dd className={cn(change >= 0 ? "text-fg" : "text-fg-2")}>
+              <dd className={cn(change > 0 ? "text-positive" : change < 0 ? "text-negative" : "text-fg-2")}>
                 {format.number(change / 10000, { style: "percent", maximumFractionDigits: 2, signDisplay: "always" })}
               </dd>
             ) : null}
@@ -243,17 +256,14 @@ export function CandleChart({
       </div>
       <div className="flex flex-wrap items-center gap-x-5 gap-y-2 border-t border-fg/[0.07] pt-3.5 text-xs text-fg-2">
         <span className="inline-flex items-center gap-2">
-          <span aria-hidden className="inline-block h-3 w-1.5 rounded-[1px] bg-fg-3" />
+          <Swatch faded />
           {t("stage2")}
         </span>
         <span className="inline-flex items-center gap-2">
-          <span aria-hidden className="inline-block h-3 w-1.5 rounded-[1px] bg-fg" />
+          <Swatch />
           {t("pool")}
         </span>
-        <span className="inline-flex items-center gap-2">
-          <span aria-hidden className="inline-block h-3 w-1.5 rounded-[1px] border border-fg/60" />
-          {t("down")}
-        </span>
+        <span className="text-fg-3">{t("down")}</span>
         {data?.listing ? (
           <span className="inline-flex items-center gap-2">
             <span aria-hidden className="text-[0.625rem] leading-none text-fg">
@@ -265,5 +275,15 @@ export function CandleChart({
         <span className="ml-auto text-fg-3">{t("utc")}</span>
       </div>
     </div>
+  );
+}
+
+/** A rising and a falling candle, as drawn in the chart. */
+function Swatch({ faded = false }: { faded?: boolean }) {
+  return (
+    <span aria-hidden className={cn("inline-flex items-end gap-[2px]", faded && "opacity-[0.45]")}>
+      <span className="inline-block h-3 w-1.5 rounded-[1px] bg-positive" />
+      <span className="inline-block h-2 w-1.5 rounded-[1px] bg-negative" />
+    </span>
   );
 }

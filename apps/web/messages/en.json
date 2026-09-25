@@ -160,7 +160,8 @@
     "contracts": "Contracts",
     "tests": "{count} tests · invariants green",
     "docs": "Design doc",
-    "links": "Footer"
+    "links": "Footer",
+    "wiki": "Wiki"
   },
   "glossary": {
     "veto": "The analyst can delay Stage 1 within pinned limits. It cannot approve a launch or touch funds.",
@@ -1172,7 +1173,7 @@
       "listed": "Listed",
       "stage2": "Stage 2 book",
       "pool": "Uniswap v4 pool",
-      "down": "Hollow: price fell",
+      "down": "Green: price rose · red: price fell",
       "listingAt": "Listed at {price} {unit}",
       "utc": "Times in UTC",
       "empty": "No price history yet."
@@ -1433,6 +1434,487 @@
       "running": "Analysing…",
       "last": "Last report {date}",
       "never": "Not analysed yet"
+    }
+  },
+  "wiki": {
+    "eyebrow": "Documentation",
+    "title": "Wiki",
+    "description": "How Portex works: the three stages, what protects your principal and where it ends, the two launch types, exits, the governed treasury, fees and trading after listing.",
+    "contents": "Contents",
+    "anchor": "Link to this section",
+    "groups": {
+      "start": "Start here",
+      "stages": "The stages",
+      "money": "Money",
+      "governance": "Governance",
+      "trading": "Trading and testnet",
+      "reference": "Reference"
+    },
+    "stepper": {
+      "Stage1": {
+        "when": "15–60 days",
+        "what": "Back the project at the curve price. Exit at cost at any time, with zero fees."
+      },
+      "Stage2": {
+        "when": "35–70 days",
+        "what": "Outside buyers set the price. Exit at cost, or with protected profit funded by their demand."
+      },
+      "Stage3": {
+        "when": "From listing",
+        "what": "The project trades on Uniswap v4. Protection has ended; ordinary market risk applies."
+      },
+      "dissolution": "A project that does not graduate from Stage 1 is dissolved, and every position claims its full cost.",
+      "note": "Lengths shown are production defaults; testnet values are much shorter. See Governed timings.",
+      "dissolutionLabel": "Dissolution"
+    },
+    "s": {
+      "overview": {
+        "title": "Portex in one page",
+        "lede": "An on-chain incubation protocol for AI startups on X Layer, in the founder's own words:",
+        "p1": "Portex holds every deposit in escrow under rules fixed before the first deposit. A project reaches the open market only after two stages that test for **genuine external demand**, and until then every backer can leave at exactly what they paid.",
+        "p2": "A launchpad sells tokens and steps aside. Portex stays in the middle: it custodies the raise, prices it on a published curve, keeps each backer's cost claim alive until listing, and lists the project on Uniswap v4 with liquidity that can never be withdrawn.",
+        "pillars": [
+          "**Protected until demand is proven.** In Stage 1 and Stage 2, any backer can exit at their exact cost, with zero fees, or move it into another project in one transaction.",
+          "**Founders on the same terms.** No free tokens. Team purchases follow the same curve, are capped at 10% of supply and vest for three years after listing.",
+          "**Spending only by vote.** All fees and 10% of the token supply go to the project's own treasury, which pays out only through proposals that pass a vote.",
+          "**Rewards for those who stay.** 30% of supply, plus a share of Stage 2 fees, streams daily for three years to original backers who keep their tokens."
+        ]
+      },
+      "lifecycle": {
+        "title": "The lifecycle",
+        "lede": "Every launch, of either type, runs through the same three stages. Each stage has a deadline, and anyone can move the launch forward when it is due.",
+        "p1": "Protection is a property of the stage, not a promise about the project. Until the listing transaction executes, every backer position can be exited at its exact cost; on a Budget Launch, that is its cost after any voted budgets. Listing ends this claim for everyone at once and delivers the tokens as ordinary ERC-20 balances.",
+        "p2": "The builder chooses both stage lengths within bounds set by the protocol, and they are fixed before the first deposit. See [Governed timings](#timings)."
+      },
+      "stage1": {
+        "lede": "The project raises its first capital at a price set by a published curve, while every deposit waits in escrow.",
+        "can": "What you can do",
+        "canList": [
+          "**Deposit** USDG. You receive tokens at the curve price, which rises linearly with every token sold, so the last backer pays at most 1.5× what the first paid. Up to 20% of the supply is sold in this stage.",
+          "**Exit at cost** at any time, in part or in full: you get back exactly what you paid for the tokens you return.",
+          "**Move** your position into another project's Stage 1 in one transaction. See [Rollover](#dissolution-rollover).",
+          "**Review** the project: the builder's updates, the AI analyst's report and signed feedback from other backers."
+        ],
+        "protects": "What protects you",
+        "protectsNote": "Your deposit stays in escrow, apart from every other balance. Nothing can be spent in Stage 1: no fees, no budgets and no token transfers. Your tokens are a ledger entry held by the protocol, so no one can open a pool before listing.",
+        "ends": "How it ends",
+        "endsList": [
+          "**Graduation** to Stage 2 at the deadline, if the whole Stage 1 allocation sold, which takes the price to the project's own target valuation (at least $100,000), and at least 10 backers other than the builder hold positions.",
+          "**Dissolution** otherwise, or earlier if the builder dissolves the project after the Stage 1 minimum. Every position then claims its full cost. See [Dissolution](#dissolution).",
+          "The AI analyst may **delay** graduation within a fixed budget, but cannot prevent it. See [The AI analyst](#analyst)."
+        ]
+      },
+      "stage2": {
+        "lede": "Outside buyers can now trade against the protocol's book. The price starts at the final Stage 1 price and converges gradually on the price the project will list at.",
+        "can": "What you can do",
+        "canList": [
+          "**Exit at cost** at any time until listing, exactly as in Stage 1.",
+          "**Take a protected exit**: your cost plus the elapsed share of your gain, paid only from real outside demand. See [Exits](#exits).",
+          "**Vote** on budget and treasury proposals with your contributed capital. See [Treasury and voting](#treasury).",
+          "Outside buyers **buy and sell** in the book with a 1% fee. Their tokens stay in a ledger until listing and have no cost protection."
+        ],
+        "price": "How the price moves",
+        "priceText": "The book pairs real USDG from outside buyers with virtual depth that shrinks linearly over the stage. At the first moment the price is exactly the final Stage 1 price; at the last, exactly the price the pool will open at. In between it converges gradually, so a burst of speculation cannot run far ahead of real demand.",
+        "protects": "What protects you",
+        "protectsNote": "Your cost stays in escrow and can be taken back at any time. Profit is never paid from other backers' principal: it comes only from the reserve that outside buyers funded. Without outside demand, there is no profit and no loss.",
+        "ends": "How it ends",
+        "endsText": "Listing is mandatory at the Stage 2 deadline, whatever the demand. Anyone can execute it. If the call to the venue fails, the whole transaction reverts: cost exits stay open, and anyone can try again."
+      },
+      "stage3": {
+        "lede": "The project lists on Uniswap v4. Protection ends, and ordinary market risk begins.",
+        "listing": "At listing",
+        "listingList": [
+          "The remaining escrow and the book's reserve become liquidity in a 1% Uniswap v4 pool, opened at the book's final price. The protocol locks this liquidity permanently; only its fees are collected, to the project treasury.",
+          "Every backer and buyer receives their tokens as ordinary ERC-20 balances, automatically. There is nothing to claim.",
+          "Team purchases move into vesting: a 30-day cliff, then linear release over three years.",
+          "The 10% treasury allocation arrives in the project's treasury and starts to unlock."
+        ],
+        "can": "What you can do",
+        "canList": [
+          "**Trade** on the [Markets](/markets) page, or through any Uniswap v4 interface.",
+          "**Hold** and receive the Diamond Hand stream: 30% of the supply, plus the rewards share of Stage 2 fees, released daily over three years to original backers in proportion to their reward quota.",
+          "**Vote** on treasury proposals with your tokens."
+        ],
+        "quotaNote": "Reward quota belongs to original backers' tokens. Any transfer or sale destroys the same amount of quota, and it never returns. Stage 2 buyers and team purchases carry no quota. Diamond Hand is an allocation, not a yield: amounts depend on activity and are never promised."
+      },
+      "launchTypes": {
+        "title": "Launch types",
+        "lede": "Both types share the same stages, protections, treasury rules and fees. They differ in one thing: whether a voted budget may draw on the raise before listing.",
+        "table": {
+          "head": [
+            "",
+            "Escrow Launch",
+            "Budget Launch"
+          ],
+          "rows": [
+            [
+              "Draws on the raise",
+              "None. The team never touches the raise.",
+              "Only by backers' vote, within a cap disclosed before the first deposit: at most 30% of the escrow at the start of Stage 2."
+            ],
+            [
+              "Size of each draw",
+              "—",
+              "At most 10% of the capital voting YES. Every position's cost is reduced in proportion."
+            ],
+            [
+              "What an exit at cost returns",
+              "Your original cost",
+              "Your cost after any voted draws"
+            ],
+            [
+              "Builder income",
+              "Treasury budgets that pass a vote (fees and the 10% token allocation), and the project's own revenue",
+              "Voted draws on the raise before listing; afterwards, treasury budgets that pass a vote; and the project's own revenue"
+            ],
+            [
+              "Suited to",
+              "Software and tools with their own business model",
+              "Compute-heavy teams that need structured capital before listing"
+            ]
+          ]
+        },
+        "escrow": "Escrow Launch",
+        "escrowText": "The contract gives the builder no path to backers' funds. The team is paid the way a project on its own feet is paid: from the treasury, whose income is trading fees and a 10% token allocation that unlocks over five years, spent only by proposals that pass a vote; and from the product's own revenue.",
+        "budget": "Budget Launch",
+        "budgetText": "For teams that need capital before listing. The builder chooses a budget ceiling when creating the launch, and it is shown before anyone deposits. In Stage 2 each draw is a proposal that backers vote on with their capital; a draw that passes reduces every position's cost in proportion. Backers can still exit at cost during the vote and the dispute window, so no one is carried into a budget they reject."
+      },
+      "exits": {
+        "title": "Exits",
+        "lede": "Until listing, a backer can always leave. There are two ways out.",
+        "cost": "Exit at cost",
+        "costText": "Available in Stage 1, in Stage 2 and while listing is pending, for any part of a position. You receive exactly the cost of the tokens you return (your cost × tokens returned ÷ tokens held), with zero fees, and those tokens are burned. Votes, AI delays and failed listing attempts never block it.",
+        "protected": "Protected exit (Stage 2)",
+        "protectedText": "Backers can also leave with profit. The payout is your cost plus the elapsed share of your gain: if the book values your tokens above your cost, you receive that gain multiplied by the share of Stage 2 that has passed. Early in the stage you receive about your cost; near the end, about the full market value.",
+        "protectedSource": "The profit is paid only from the real reserve that outside buyers funded, never from other backers' escrow. The book keeps only as many of your tokens as it needs to fund the profit; the rest are burned. Without outside demand, the profit is zero and you receive your cost.",
+        "example": "Example: you paid 1,000 USDG. Halfway through Stage 2, the book would pay 1,400 USDG for your tokens. A protected exit pays up to 1,000 + 50% × 400 = 1,200 USDG, as far as the real reserve can fund it.",
+        "buyers": "Stage 2 buyers are not backers: they sell back to the book at its price, with the 1% fee, and have no cost protection. Team purchases can exit at cost but take no profit."
+      },
+      "dissolution": {
+        "title": "Dissolution and rollover",
+        "lede": "A project that does not graduate is dissolved, and every position takes back its full cost.",
+        "dissolution": "Dissolution",
+        "dissolutionList": [
+          "At the Stage 1 deadline, a project that has not met its gates is dissolved automatically.",
+          "After the Stage 1 minimum, the builder may dissolve the project early.",
+          "Every position then claims its exact remaining cost from the project's claim vault, at any time, with no deadline. An unclaimed position never blocks anyone else's claim."
+        ],
+        "dissolutionText": "Dissolution is a normal outcome of incubation. It ends the raise; it does not reduce anyone's claim.",
+        "rollover": "Rollover",
+        "rolloverText": "Capital can move between projects in one transaction. The rollover router exits your positions in projects that have not listed (at cost, or with protected profit in Stage 2) and takes your dissolution claims, adds an optional top-up from your wallet, deposits the total into another project's Stage 1 in your name, and returns anything unused."
+      },
+      "fees": {
+        "title": "Fees",
+        "lede": "Portex charges no protocol fee. Every fee a launch collects stays with that launch.",
+        "table": {
+          "head": [
+            "When",
+            "Fee",
+            "Where it goes"
+          ],
+          "rows": [
+            [
+              "Stage 1 deposits and exits",
+              "None",
+              "—"
+            ],
+            [
+              "Stage 2 buys and sells by outside buyers",
+              "1% of each trade",
+              "40% stays in the book's reserve, 30% to the Diamond Hand rewards, 30% to the project treasury"
+            ],
+            [
+              "Exits at cost and protected exits",
+              "None",
+              "—"
+            ],
+            [
+              "Swaps in the Portex pool after listing",
+              "1% Uniswap v4 pool fee",
+              "The fees on the protocol's locked liquidity go to the project treasury"
+            ],
+            [
+              "Rollover and dissolution claims",
+              "None",
+              "—"
+            ]
+          ]
+        },
+        "p1": "The reserve share deepens the book that funds protected exits. The reward and treasury shares are held in separate buckets and never mix with principal."
+      },
+      "treasury": {
+        "title": "Treasury and voting",
+        "lede": "Every launch has its own treasury, created with it. Nothing leaves it without a proposal that passes a vote.",
+        "sources": "Where its money comes from",
+        "sourcesList": [
+          "The treasury share of Stage 2 trading fees.",
+          "Fees earned by the protocol's locked liquidity after listing.",
+          "Reward funds that can no longer be distributed.",
+          "10% of the token supply, which arrives at listing and unlocks on a straight line over five years (the production default). Locked tokens can never be spent."
+        ],
+        "capital": "Before listing: voting by capital",
+        "capitalText": "In Stage 2, proposals are voted by contributed capital, one weight per backer position, never by tokens. A proposal needs a quorum of 40% of eligible capital and 60% approval, and may spend at most 10% of the capital voting YES. Voting lasts three days; a passed proposal then waits through a seven-day dispute window, during which any backer can still exit at cost, and can be executed within the next two days. Exiting cancels that position's vote.",
+        "tokens": "After listing: voting by tokens",
+        "tokensText": "In Stage 3, token holders vote with their balance at the end of the block in which the proposal was made, so borrowed tokens cannot sway it. A proposal passes with 60% of the votes cast, and its total value may not exceed 5% of the market value of the tokens voting YES, valued at the lower of the listing price and the current pool price. The builder's addresses cannot vote.",
+        "team": "How the team is paid",
+        "teamText": "An Escrow Launch team is paid by treasury budgets that pass a vote and by the product's own revenue. A Budget Launch team can also draw on the raise, by vote and within its cap, before listing. Neither receives free tokens."
+      },
+      "analyst": {
+        "title": "The AI analyst",
+        "lede": "Every raise in Stage 1 is reviewed by an AI analyst that publishes a risk report on the project page. It has one power: it can delay.",
+        "list": [
+          "It may place a veto that delays graduation from Stage 1: at most two days per veto and seven days in total, with a one-day cooldown between vetoes, and never beyond the Stage 1 maximum.",
+          "It cannot approve a launch, reject one that met its gates, or touch any funds.",
+          "Cost exits stay open during a delay.",
+          "The council can lift a veto early. The delay budget already used is not restored.",
+          "The builder can respond publicly to every report."
+        ]
+      },
+      "roles": {
+        "title": "Roles and their limits",
+        "lede": "A few addresses have narrow roles, pinned into every launch. None can change a live launch or move backers' funds.",
+        "table": {
+          "head": [
+            "Role",
+            "Can",
+            "Cannot"
+          ],
+          "rows": [
+            [
+              "Curator",
+              "Publish new template versions, whitelist the quote asset, and set governed parameters for future versions",
+              "Change a published version or an existing launch; touch funds"
+            ],
+            [
+              "Attester",
+              "Post the AI analyst's veto, within the delay budget",
+              "Approve or reject a launch; touch funds"
+            ],
+            [
+              "Council",
+              "Lift an active veto early",
+              "Extend a veto or restore its budget; touch funds"
+            ],
+            [
+              "Builder",
+              "Create a launch, post updates, propose budgets and treasury spends, and dissolve the project after the Stage 1 minimum",
+              "Receive free tokens, buy more than 10% of the supply, vote on proposals, or spend without a vote"
+            ],
+            [
+              "Anyone",
+              "Advance a stage when it is due, execute the listing, and finalize or execute proposals",
+              "—"
+            ]
+          ]
+        },
+        "p1": "Each launch pins its code, parameters, quote asset and roles when it is created. No one, including the curator, can upgrade a live launch."
+      },
+      "timings": {
+        "title": "Governed timings",
+        "lede": "Stage lengths and governance windows are protocol parameters. The curator sets them for future versions only; each version pins its values, and every launch keeps the values of its version.",
+        "table": {
+          "head": [
+            "Parameter",
+            "Production",
+            "Testnet"
+          ],
+          "rows": [
+            [
+              "Stage 1 length",
+              "15–60 days",
+              "10 minutes – 60 days"
+            ],
+            [
+              "Stage 2 length",
+              "35–70 days",
+              "30 minutes – 70 days"
+            ],
+            [
+              "Voting period",
+              "3 days",
+              "10 minutes"
+            ],
+            [
+              "Dispute window",
+              "7 days",
+              "10 minutes"
+            ],
+            [
+              "Execution window",
+              "2 days",
+              "10 minutes"
+            ],
+            [
+              "Longest single veto",
+              "2 days",
+              "10 minutes"
+            ],
+            [
+              "Total veto budget",
+              "7 days",
+              "30 minutes"
+            ],
+            [
+              "Cooldown between vetoes",
+              "1 day",
+              "10 minutes"
+            ],
+            [
+              "Treasury allocation unlock",
+              "5 years (1,825 days)",
+              "7 days"
+            ]
+          ]
+        },
+        "p1": "The builder picks each launch's stage lengths within these bounds, and they are fixed before the first deposit. The short testnet values let a whole lifecycle play out in an afternoon; production launches use the production defaults."
+      },
+      "markets": {
+        "title": "Markets and trading",
+        "lede": "After listing, each project trades in its own Uniswap v4 pool.",
+        "list": [
+          "The [Markets](/markets) page lists every project in Stage 3 · Open market with its price, 24-hour change and volume, pool liquidity and FDV (price × total supply).",
+          "Each project's trading page shows its whole price history in candles from one minute to one day: the Stage 2 book, the listing moment and the pool.",
+          "Swaps are exact-input and go through the Portex swap router in one transaction. The panel shows a live quote from the pool, the price impact, the pool fee and the minimum you will receive under your slippage tolerance (1% by default). If the price moves beyond it before your transaction confirms, nothing is exchanged.",
+          "Your first trade of each asset asks you to approve the router.",
+          "Selling tokens that carry reward quota destroys the same amount of quota.",
+          "The pool is an ordinary Uniswap v4 pool, so other interfaces can trade it too. Its listing liquidity is locked permanently."
+        ]
+      },
+      "testnet": {
+        "title": "Testnet and Test USDG",
+        "lede": "Portex runs on X Layer testnet (chain 1952) with a test quote asset.",
+        "list": [
+          "**Test USDG** is a freely mintable faucet token with 6 decimals, like USDG. It has no monetary value and is never real USDG.",
+          "When your balance is empty, the deposit and trade panels, and an empty Portfolio, offer to mint 10,000 Test USDG in one transaction.",
+          "Testnet launches can use the short timings in [Governed timings](#timings), so a project can go from Stage 1 to the open market in less than an hour.",
+          "Pools use a Uniswap v4 PoolManager deployed from the unmodified v4.0.0 release.",
+          "Transactions need a little testnet OKB for gas."
+        ]
+      },
+      "faq": {
+        "title": "Frequently asked questions",
+        "lede": "Short answers; each links to the section with the details.",
+        "items": [
+          {
+            "q": "Can I lose my deposit?",
+            "a": "Not before listing on an Escrow Launch: you can exit at your exact cost at any time until the listing transaction. On a Budget Launch, a draw that backers approved by vote reduces every position's cost in proportion. After listing, your tokens carry ordinary market risk. See [Exits](#exits)."
+          },
+          {
+            "q": "What happens if nobody buys in Stage 2?",
+            "a": "The project still lists at the end of Stage 2. Without outside demand there is no profit: a protected exit pays your cost, and at listing your tokens become tradable at the book's final price."
+          },
+          {
+            "q": "Why can't I transfer my tokens before listing?",
+            "a": "No one can, so no one can open a pool early and graduate a project around the protocol. Until listing, backers can exit at cost and Stage 2 buyers can sell back to the book."
+          },
+          {
+            "q": "Who decides when a project lists?",
+            "a": "The calendar. Listing is due at the Stage 2 deadline chosen before the first deposit, and anyone can execute it."
+          },
+          {
+            "q": "Can the team take the money and leave?",
+            "a": "On an Escrow Launch, the contract gives the team no path to the raise. On a Budget Launch, only draws that backers approved by vote, within the disclosed cap. Treasury funds move only through proposals that pass a vote."
+          },
+          {
+            "q": "Does the AI decide which projects succeed?",
+            "a": "No. The analyst can only delay Stage 1 within a fixed budget. It cannot approve, reject or touch funds. See [The AI analyst](#analyst)."
+          },
+          {
+            "q": "Are Diamond Hand rewards a yield?",
+            "a": "No. They are an allocation of tokens and fee revenue that streams to original backers who keep their tokens. Amounts depend on activity and are never promised."
+          },
+          {
+            "q": "Where do the fees go?",
+            "a": "To the launch itself: its reserve, its rewards and its treasury. Portex charges no protocol fee. See [Fees](#fees)."
+          },
+          {
+            "q": "What is FDV?",
+            "a": "Fully diluted value: the current price multiplied by the total token supply."
+          },
+          {
+            "q": "Can a launch be changed after I deposit?",
+            "a": "No. Its code, parameters and roles are pinned when it is created. New versions apply only to new launches."
+          }
+        ]
+      },
+      "glossary": {
+        "title": "Glossary",
+        "lede": "The terms used across Portex, in plain words.",
+        "items": [
+          {
+            "term": "Backer",
+            "def": "Anyone who deposited in Stage 1. A backer position has a cost that can be exited until listing."
+          },
+          {
+            "term": "Book",
+            "def": "The protocol's market in Stage 2: real USDG from outside buyers plus virtual depth that shrinks over the stage."
+          },
+          {
+            "term": "Builder",
+            "def": "The team that created the launch."
+          },
+          {
+            "term": "Cost",
+            "def": "What a position paid for its remaining tokens; on a Budget Launch, after any voted draws."
+          },
+          {
+            "term": "Diamond Hand",
+            "def": "The reward stream for original backers who keep their tokens: 30% of supply plus the rewards share of Stage 2 fees, released daily over three years."
+          },
+          {
+            "term": "Dissolution",
+            "def": "The end of a project that does not graduate from Stage 1. Every position claims its full cost."
+          },
+          {
+            "term": "Escrow",
+            "def": "Where deposits wait until listing, apart from every other balance."
+          },
+          {
+            "term": "Exit at cost",
+            "def": "Leaving a position and receiving exactly its cost, with zero fees."
+          },
+          {
+            "term": "FDV",
+            "def": "Fully diluted value: price × total supply."
+          },
+          {
+            "term": "Listing",
+            "def": "The transaction that ends Stage 2: it opens the Uniswap v4 pool, locks its liquidity and delivers every token."
+          },
+          {
+            "term": "Protected exit",
+            "def": "A Stage 2 exit that pays your cost plus the elapsed share of your gain, funded only by outside demand."
+          },
+          {
+            "term": "Quorum",
+            "def": "The share of eligible capital that must vote for a Stage 2 proposal to count: 40%."
+          },
+          {
+            "term": "Reward quota",
+            "def": "The part of an original backer's tokens that earns Diamond Hand rewards. Transfers and sales destroy it."
+          },
+          {
+            "term": "Rollover",
+            "def": "Moving positions and dissolution claims into another project's Stage 1 in one transaction."
+          },
+          {
+            "term": "Slippage tolerance",
+            "def": "How far below the quoted amount a swap may settle before it is cancelled."
+          },
+          {
+            "term": "Test USDG",
+            "def": "A freely mintable test token on X Layer testnet, with no monetary value."
+          },
+          {
+            "term": "Treasury",
+            "def": "A launch's own vault for its fees and its 10% token allocation. It pays only through proposals that pass a vote."
+          },
+          {
+            "term": "Veto",
+            "def": "A delay the AI analyst may place on graduation from Stage 1, within a fixed budget."
+          }
+        ]
+      }
     }
   }
 }

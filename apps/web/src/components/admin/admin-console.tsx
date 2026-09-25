@@ -40,7 +40,7 @@ export function AdminConsole() {
       <header className="flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
         <div className="max-w-2xl space-y-2">
           <h1 className="t-title">{t("title")}</h1>
-          <p className="text-pretty text-[0.9375rem] leading-relaxed text-fg-2">{t("description")}</p>
+          <p className="text-balance text-[0.9375rem] leading-relaxed text-fg-2">{t("description")}</p>
         </div>
         {!checking && roles.length ? (
           <div className="space-y-2 lg:text-right" data-testid="admin-roles">
@@ -67,7 +67,7 @@ export function AdminConsole() {
           {sections.length > 1 ? (
             <nav
               aria-label={t("title")}
-              className="scroll-thin -mx-1 flex gap-1 overflow-x-auto border-b border-fg/[0.07] px-1 pb-3"
+              className="scroll-thin -mx-1 flex gap-1 overflow-x-auto border-b border-fg/[0.07] px-1 pb-3 pr-8 [mask-image:linear-gradient(to_right,#000_calc(100%-2.5rem),transparent)] sm:pr-1 sm:[mask-image:none]"
             >
               {sections.map((s) => (
                 <a

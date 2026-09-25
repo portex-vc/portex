@@ -67,7 +67,7 @@ export function Sparkline({
         strokeLinejoin="round"
         strokeLinecap="round"
       />
-      <circle cx={W} cy={y(last)} r={2.5} fill={up ? "rgb(var(--fg))" : "rgb(var(--negative))"} />
+      <circle cx={W} cy={y(last)} r={2.5} fill={up ? "rgb(var(--positive))" : "rgb(var(--negative))"} />
     </svg>
   );
 }

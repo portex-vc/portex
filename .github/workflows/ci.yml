@@ -22,6 +22,8 @@ jobs:
           persist-credentials: false
           submodules: recursive
       - uses: foundry-rs/foundry-toolchain@v1
+        with:
+          version: v1.8.3
       - run: forge fmt --check src test script
       - run: forge build --sizes
       - run: forge test
@@ -37,6 +39,8 @@ jobs:
           persist-credentials: false
           submodules: recursive
       - uses: foundry-rs/foundry-toolchain@v1
+        with:
+          version: v1.8.3
       - uses: oven-sh/setup-bun@v2
       - run: bun install --frozen-lockfile
       - name: Export contract ABIs
