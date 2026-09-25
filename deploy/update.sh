@@ -8,8 +8,13 @@ mkdir -p "$RELEASE"
 tar -x -C "$RELEASE"
 ln -sfn "$RELEASE" "$ROOT/current"
 cd "$ROOT/current"
-# The activity runner starts only where it has been explicitly enabled (it owns the persona wallets).
-if [ -f "$ROOT/mock.enabled" ]; then export COMPOSE_PROFILES=mock; fi
+# Optional services start only where explicitly enabled: the activity runner owns the persona wallets,
+# and the tunnel needs its token.
+profiles=()
+if [ -f "$ROOT/mock.enabled" ]; then profiles+=(mock); fi
+if [ -f "$ROOT/tunnel.enabled" ]; then profiles+=(tunnel); fi
+COMPOSE_PROFILES="$(IFS=,; echo "${profiles[*]}")"
+export COMPOSE_PROFILES
 docker compose -f deploy/docker-compose.yml up -d --build --remove-orphans
 ls -1dt "$ROOT"/releases/* | tail -n +6 | xargs -r rm -rf
 docker image prune -f >/dev/null

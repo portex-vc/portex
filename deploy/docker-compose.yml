@@ -48,6 +48,17 @@ services:
     volumes:
       - /opt/portex/data/mock-state:/app/tools/mock/state
 
+  tunnel:
+    # Cloudflare Tunnel: the server dials out to Cloudflare, so no Cloudflare edge needs a route to this
+    # host. Opt-in: update.sh enables it when /opt/portex/tunnel.enabled exists (TUNNEL_TOKEN in .env).
+    profiles: [tunnel]
+    image: cloudflare/cloudflared:2026.9.3
+    restart: unless-stopped
+    depends_on:
+      - api
+    env_file: /opt/portex/.env
+    command: ["tunnel", "--no-autoupdate", "run"]
+
   caddy:
     image: caddy:2.10-alpine
     restart: unless-stopped
