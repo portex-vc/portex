@@ -7,7 +7,7 @@ import type { ApiConfig } from "@/lib/api";
 import { erc20Abi, registryAbi } from "@/lib/contracts";
 import { queryKeys, useTx } from "@/lib/hooks";
 import { cn, shortAddress } from "@/lib/utils";
-import { walletPublicClient } from "@/lib/wallet-client";
+import { txPublicClient } from "@/lib/wallet-client";
 import { useQuery } from "@tanstack/react-query";
 import { Check, Minus } from "lucide-react";
 import { useTranslations } from "next-intl";
@@ -97,7 +97,7 @@ function WhitelistForm({ registry }: { registry: Address }) {
   const decimals = useQuery({
     queryKey: ["wallet-check", "decimals", asset.trim().toLowerCase()],
     queryFn: async () =>
-      (await walletPublicClient(wagmiConfig)).readContract({
+      (await txPublicClient(wagmiConfig)).readContract({
         address: asset.trim() as Address,
         abi: erc20Abi,
         functionName: "decimals",

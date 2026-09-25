@@ -10,7 +10,7 @@ import { api, type Phase } from "./api";
 import { humanizeError } from "./errors";
 import { env } from "./env";
 import { txStore, useTransaction } from "./tx-store";
-import { walletPublicClient } from "./wallet-client";
+import { isRefusal, txPublicClient, withTimeout } from "./wallet-client";
 import { walletAllowance } from "./wallet-data";
 import type { Row } from "@/components/figures";
 
@@ -239,35 +239,37 @@ export function useTx() {
       if (!(await txStore.review(id, opts.preview ?? []))) return null;
       txStore.update(id, { phase: "wallet" });
       if (chainId !== env.chainId) throw { errorName: "WrongChain" };
-      // Simulate, estimate and wait through the wallet's own provider, never an RPC URL of ours.
-      const wallet = await walletPublicClient(wagmiConfig);
-      await wallet.simulateContract({
-        account: owner,
-        address: tx.address,
-        abi: tx.abi,
-        functionName: tx.functionName,
-        args: tx.args,
-      } as never);
-      // Gas can grow between estimate and mining (Stage 2 decay after its first second, a swap crossing
-      // ticks), so send a 1.5x limit; unused gas is refunded.
-      const estimate = await wallet.estimateContractGas({
+      // Simulate and estimate over the chain's keyless public RPC (never a keyed endpoint); the wallet only signs.
+      const chain = await txPublicClient(wagmiConfig);
+      const call = {
         account: owner,
         address: tx.address,
         abi: tx.abi,
         functionName: tx.functionName,
         args: tx.args ?? [],
-      } as never);
+      } as never;
+      let gas: bigint | undefined;
+      try {
+        await withTimeout(chain.simulateContract(call), 15_000);
+        // Gas can grow between estimate and mining (Stage 2 decay after its first second, a swap crossing
+        // ticks), so send a 1.5x limit; unused gas is refunded.
+        gas = ((await withTimeout(chain.estimateContractGas(call), 15_000)) * 3n) / 2n;
+      } catch (err) {
+        // A revert or too little OKB is the answer to show. A slow or failing RPC is not: the wallet then
+        // estimates the gas itself, and the signing prompt still appears.
+        if (isRefusal(err)) throw err;
+      }
       const hash = await writeContractAsync({
         account: owner,
         address: tx.address,
         abi: tx.abi,
         functionName: tx.functionName,
         args: (tx.args ?? []) as never[],
-        gas: (estimate * 3n) / 2n,
+        ...(gas ? { gas } : {}),
       });
       submitted = hash;
       txStore.update(id, { hash, phase: "confirming" });
-      const receipt = await wallet.waitForTransactionReceipt({ hash });
+      const receipt = await chain.waitForTransactionReceipt({ hash, retryCount: 10, timeout: 180_000 });
       if (receipt.status === "reverted") {
         revertedReceipt = true;
         throw new Error("Transaction reverted");
@@ -291,7 +293,7 @@ export function useTx() {
       if (tx.functionName === "list" && submitted && revertedReceipt) {
         let revertData = String(err);
         try {
-          const client = await walletPublicClient(wagmiConfig);
+          const client = await txPublicClient(wagmiConfig);
           const sent = await client.getTransaction({ hash: submitted });
           await client.call({
             account: sent.from,
