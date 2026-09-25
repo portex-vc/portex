@@ -6,11 +6,11 @@ import {
   CandlestickSeries,
   ColorType,
   createChart,
-  createSeriesMarkers,
   HistogramSeries,
   LineStyle,
   TickMarkType,
   type IChartApi,
+  type IPriceLine,
   type ISeriesApi,
   type MouseEventParams,
   type UTCTimestamp,
@@ -18,6 +18,7 @@ import {
 import { useFormatter, useLocale, useTranslations } from "next-intl";
 import { useTheme } from "next-themes";
 import { useEffect, useMemo, useRef, useState } from "react";
+import { ListingMarker } from "./listing-marker";
 
 /** Theme token as an rgba() string lightweight-charts can parse. */
 function token(name: string, alpha = 1) {
@@ -26,10 +27,35 @@ function token(name: string, alpha = 1) {
   return `rgba(${r}, ${g}, ${b}, ${alpha})`;
 }
 
+interface ChartParts {
+  chart: IChartApi;
+  stage2: ISeriesApi<"Candlestick">;
+  pool: ISeriesApi<"Candlestick">;
+  volume: ISeriesApi<"Histogram">;
+  marker: ListingMarker;
+  listingLine: IPriceLine | null;
+  up: (alpha?: number) => string;
+  down: (alpha?: number) => string;
+  idle: string;
+  listing: string;
+}
+
 /**
- * Candlesticks of the project's whole market life: the Stage 2 book (faded) up to the listing marker, then the
+ * Legend values have fixed widths so the legend never changes size while it updates. A price of at most 8
+ * characters is at most 7 tabular digits (0.58em each in the UI face) plus a narrow separator: 4.4em holds it,
+ * and 3.75em holds the 7-character phone form. Volume is at most "999,999" or a compact "1.23M".
+ */
+const PRICE_CHARS = 8;
+const PHONE_PRICE_CHARS = 7;
+
+/**
+ * Candlesticks of the project's whole market life: the Stage 2 book (faded) up to the listing line, then the
  * Uniswap v4 pool. Up candles use the positive token (green), down candles the negative token (red); teal stays
  * reserved for protected principal. Volume sits under the price in the matching colour at low opacity.
+ *
+ * The chart is created once per locale and theme and fed new data in place, so refetches never reset the
+ * user's scroll position. The header has a fixed geometry: the legend is one line of fixed-width fields, so
+ * hovering or dragging the timeline can never change the card's height.
  */
 export function CandleChart({
   address,
@@ -50,21 +76,43 @@ export function CandleChart({
   const { resolvedTheme } = useTheme();
   const { data, isLoading } = useCandles(address, interval);
   const host = useRef<HTMLDivElement>(null);
+  const parts = useRef<ChartParts | null>(null);
+  const lookup = useRef(new Map<number, Bar>());
+  /** Bucket size the visible range was last framed for; a new interval frames the recent bars once. */
+  const framed = useRef<number | null>(null);
   const [hover, setHover] = useState<Bar | null>(null);
-  const seconds = INTERVAL_SECONDS[interval];
+  // The candles' own bucket size: while a newly picked interval loads, the previous candles stay as they were.
+  const seconds = data?.seconds ?? INTERVAL_SECONDS[interval];
   const bars = useMemo(() => fillCandles(data?.candles ?? [], seconds, now), [data, seconds, now]);
   const poolTrades = (data?.candles ?? []).reduce((sum, c) => sum + (c.venue === "pool" ? c.trades : 0), 0);
   const listingTime = data?.listing ? Math.floor(data.listing.time / seconds) * seconds : null;
+  const listingPrice = data?.listing ? Number(data.listing.price) : null;
   const last = bars.at(-1) ?? null;
   const shown = hover ?? last;
   const price = (value: number) => format.number(Math.abs(value) < 1e-12 ? 0 : value, { maximumSignificantDigits: 6 });
+  /** A price that fits its fixed legend field: fewer significant digits, then scientific, before it would overflow. */
+  const legendPrice = (value: number, chars: number) => {
+    for (const digits of [6, 5, 4, 3]) {
+      const text = price(Number(value.toPrecision(digits)));
+      if (text.length <= chars) return text;
+    }
+    return format.number(value, { notation: "scientific", maximumFractionDigits: 2 });
+  };
+  const legendVolume = (value: number) =>
+    format.number(
+      value,
+      value >= 1e6
+        ? { notation: "compact", maximumFractionDigits: 2 }
+        : { maximumFractionDigits: value >= 1000 ? 0 : 2 },
+    );
 
+  // Create the chart once per locale and theme.
   useEffect(() => {
     if (!host.current) return;
-    const fg = token("fg");
     const muted = token("fg-3");
     const up = (alpha = 1) => token("positive", alpha);
     const down = (alpha = 1) => token("negative", alpha);
+    const fontFamily = getComputedStyle(document.body).fontFamily;
     const chart: IChartApi = createChart(host.current, {
       autoSize: true,
       localization: {
@@ -82,15 +130,15 @@ export function CandleChart({
       layout: {
         background: { type: ColorType.Solid, color: "transparent" },
         textColor: muted,
-        fontFamily: getComputedStyle(document.body).fontFamily,
+        fontFamily,
         fontSize: 11,
         attributionLogo: false,
       },
       grid: { vertLines: { visible: false }, horzLines: { color: token("fg", 0.05) } },
-      rightPriceScale: { borderVisible: false, scaleMargins: { top: 0.08, bottom: 0.24 } },
+      // The top margin keeps the candles clear of the "Listed" pill.
+      rightPriceScale: { borderVisible: false, scaleMargins: { top: 0.11, bottom: 0.24 } },
       timeScale: {
         borderVisible: false,
-        timeVisible: seconds < 86400,
         rightOffset: 4,
         minBarSpacing: 2,
         tickMarkFormatter: (time: number, type: TickMarkType) =>
@@ -123,8 +171,8 @@ export function CandleChart({
       lastValueVisible: false,
     });
     // The Stage 2 book is the same market in its protected phase: the same colours, faded.
-    const stage2: ISeriesApi<"Candlestick"> = chart.addSeries(CandlestickSeries, candle(up(0.42), down(0.42)));
-    const pool: ISeriesApi<"Candlestick"> = chart.addSeries(CandlestickSeries, {
+    const stage2 = chart.addSeries(CandlestickSeries, candle(up(0.42), down(0.42)));
+    const pool = chart.addSeries(CandlestickSeries, {
       ...candle(up(), down()),
       lastValueVisible: true,
       priceLineVisible: true,
@@ -138,59 +186,109 @@ export function CandleChart({
       priceLineVisible: false,
     });
     chart.priceScale("volume").applyOptions({ scaleMargins: { top: 0.82, bottom: 0 }, visible: false });
-    // Carried-forward buckets had no trades: draw them as a quiet neutral tick, not as a rise.
-    const idle = token("fg", 0.28);
+    // The listing is a moment, not a direction: neutral ink only, never green, red or teal.
+    const marker = new ListingMarker({
+      line: token("fg-3", 0.55),
+      pill: token("surface-3"),
+      text: token("fg-2"),
+      font: `500 11px ${fontFamily}`,
+    });
+    pool.attachPrimitive(marker);
+    const move = (param: MouseEventParams) => {
+      setHover(typeof param.time === "number" ? (lookup.current.get(param.time) ?? null) : null);
+    };
+    chart.subscribeCrosshairMove(move);
+    parts.current = {
+      chart,
+      stage2,
+      pool,
+      volume,
+      marker,
+      listingLine: null,
+      up,
+      down,
+      // Carried-forward buckets had no trades: draw them as a quiet neutral tick, not as a rise.
+      idle: token("fg", 0.28),
+      listing: token("fg-3", 0.5),
+    };
+    framed.current = null;
+    return () => {
+      chart.unsubscribeCrosshairMove(move);
+      chart.remove();
+      parts.current = null;
+    };
+    // `price` depends only on the locale formatter.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [locale, resolvedTheme]);
+
+  // Feed data in place; the visible range is framed only when the bucket size changes.
+  useEffect(() => {
+    const p = parts.current;
+    if (!p || !host.current) return;
+    const byTime = new Map<number, Bar>();
+    for (const b of bars) if (b.venue === "pool" || !byTime.has(b.time)) byTime.set(b.time, b);
+    lookup.current = byTime;
+    p.chart.applyOptions({ timeScale: { timeVisible: seconds < 86400 } });
     const ohlc = (b: Bar) => ({
       time: b.time as UTCTimestamp,
       open: b.open,
       high: b.high,
       low: b.low,
       close: b.close,
-      ...(b.filled ? { color: idle, borderColor: idle, wickColor: idle } : {}),
+      ...(b.filled ? { color: p.idle, borderColor: p.idle, wickColor: p.idle } : {}),
     });
-    stage2.setData(bars.filter((b) => b.venue === "stage2").map(ohlc));
-    pool.setData(bars.filter((b) => b.venue === "pool").map(ohlc));
+    p.stage2.setData(bars.filter((b) => b.venue === "stage2").map(ohlc));
+    p.pool.setData(bars.filter((b) => b.venue === "pool").map(ohlc));
     // One volume column per time: the listing bucket may hold a Stage 2 and a pool candle.
-    const byTime = new Map<number, Bar & { total: number }>();
-    for (const b of bars) {
-      const prior = byTime.get(b.time);
-      byTime.set(b.time, { ...b, total: (prior?.total ?? 0) + b.volume });
-    }
-    volume.setData(
-      [...byTime.values()].map((b) => ({
-        time: b.time as UTCTimestamp,
-        value: b.total,
-        color: b.close >= b.open ? up(b.venue === "pool" ? 0.34 : 0.16) : down(b.venue === "pool" ? 0.34 : 0.16),
-      })),
+    const volumes = new Map<number, { bar: Bar; total: number }>();
+    for (const b of bars) volumes.set(b.time, { bar: b, total: (volumes.get(b.time)?.total ?? 0) + b.volume });
+    p.volume.setData(
+      [...volumes.values()].map(({ bar, total }) => {
+        const alpha = bar.venue === "pool" ? 0.34 : 0.16;
+        return {
+          time: bar.time as UTCTimestamp,
+          value: total,
+          color: bar.close >= bar.open ? p.up(alpha) : p.down(alpha),
+        };
+      }),
     );
-    if (listingTime !== null)
-      createSeriesMarkers(pool, [
-        { time: listingTime as UTCTimestamp, position: "aboveBar", shape: "arrowDown", color: fg, text: t("listed") },
-      ]);
-    const byBar = new Map(bars.map((b) => [b.time, b]));
-    const move = (param: MouseEventParams) => {
-      const time = typeof param.time === "number" ? param.time : null;
-      const pooled = time === null ? null : bars.find((b) => b.time === time && b.venue === "pool");
-      setHover(time === null ? null : (pooled ?? byBar.get(time) ?? null));
-    };
-    chart.subscribeCrosshairMove(move);
-    // About six pixels per bar: phones show the recent weeks, desktops more history; scroll for the rest.
-    const visible = Math.min(bars.length, Math.max(30, Math.floor((host.current.clientWidth || 600) / 6)));
-    if (bars.length > visible)
-      chart.timeScale().setVisibleLogicalRange({ from: bars.length - visible, to: bars.length + 3 });
-    else chart.timeScale().fitContent();
-    return () => {
-      chart.unsubscribeCrosshairMove(move);
-      chart.remove();
-    };
-    // `price` depends only on the locale formatter.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [bars, listingTime, seconds, locale, resolvedTheme, t]);
+    p.marker.set(listingTime as UTCTimestamp | null, t("listed"));
+    // A quiet reference at the listing price, with its value on the price axis.
+    if (p.listingLine) p.pool.removePriceLine(p.listingLine);
+    p.listingLine =
+      listingPrice !== null && listingPrice > 0
+        ? p.pool.createPriceLine({
+            price: listingPrice,
+            color: p.listing,
+            lineWidth: 1,
+            lineStyle: LineStyle.Dashed,
+            axisLabelVisible: true,
+            axisLabelColor: token("surface-3"),
+            axisLabelTextColor: token("fg-2"),
+            title: "",
+          })
+        : null;
+    if (bars.length && framed.current !== seconds) {
+      framed.current = seconds;
+      // About six pixels per bar: phones show the recent weeks, desktops more history; scroll for the rest.
+      const visible = Math.min(bars.length, Math.max(30, Math.floor((host.current.clientWidth || 600) / 6)));
+      if (bars.length > visible)
+        p.chart.timeScale().setVisibleLogicalRange({ from: bars.length - visible, to: bars.length + 3 });
+      else p.chart.timeScale().fitContent();
+    }
+  }, [bars, seconds, listingTime, listingPrice, locale, resolvedTheme, t]);
 
-  const change = shown ? (shown.open > 0 ? ((shown.close - shown.open) / shown.open) * 10000 : 0) : null;
+  const change = shown && !shown.filled && shown.open > 0 ? (shown.close - shown.open) / shown.open : null;
+  const fields = [
+    ["open", shown?.open, true],
+    ["high", shown?.high, false],
+    ["low", shown?.low, false],
+    ["close", shown?.close, false],
+  ] as const;
   return (
-    <div className="flex flex-col gap-4" data-testid="market-chart">
-      <div className="flex flex-wrap items-center justify-between gap-3">
+    <div className="flex flex-col gap-4 [overflow-anchor:none]" data-testid="market-chart">
+      {/* Wraps only on container width: every child has a fixed width, whatever the values. */}
+      <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-3">
         <div role="group" aria-label={t("interval")} className="flex gap-0.5 rounded-[10px] bg-fg/[0.05] p-[3px]">
           {INTERVALS.map((i) => (
             <button
@@ -210,34 +308,40 @@ export function CandleChart({
             </button>
           ))}
         </div>
-        {shown ? (
-          <dl className="num flex flex-wrap gap-x-3 gap-y-1 text-xs text-fg-3" data-testid="chart-legend">
-            {(
-              [
-                ["open", shown.open],
-                ["high", shown.high],
-                ["low", shown.low],
-                ["close", shown.close],
-              ] as const
-            ).map(([k, value]) => (
-              <div key={k} className="flex gap-1">
-                <dt>{t(k)}</dt>
-                <dd className="text-fg-2">{price(value)}</dd>
-              </div>
-            ))}
-            <div className="flex gap-1">
-              <dt>{t("volume")}</dt>
-              <dd className="text-fg-2">
-                {format.number(shown.volume, { maximumFractionDigits: shown.volume >= 1000 ? 0 : 2 })} {quoteSymbol}
+        {/* One line, fixed height; phones drop open and volume rather than wrap. */}
+        <dl
+          className="num flex h-5 max-w-full shrink-0 items-center gap-x-2 overflow-hidden whitespace-nowrap text-xs leading-5 text-fg-3"
+          data-testid="chart-legend"
+        >
+          {fields.map(([k, value, wide]) => (
+            <div key={k} className={cn("shrink-0 gap-1", wide ? "hidden sm:flex" : "flex")}>
+              <dt>{t(k)}</dt>
+              <dd className="w-[3.75em] overflow-hidden text-ellipsis text-fg-2 sm:w-[4.4em]">
+                <span className="sm:hidden">{value === undefined ? "–" : legendPrice(value, PHONE_PRICE_CHARS)}</span>
+                <span className="hidden sm:inline">{value === undefined ? "–" : legendPrice(value, PRICE_CHARS)}</span>
               </dd>
             </div>
-            {change !== null && !shown.filled ? (
-              <dd className={cn(change > 0 ? "text-positive" : change < 0 ? "text-negative" : "text-fg-2")}>
-                {format.number(change / 10000, { style: "percent", maximumFractionDigits: 2, signDisplay: "always" })}
-              </dd>
-            ) : null}
-          </dl>
-        ) : null}
+          ))}
+          <div className="hidden shrink-0 gap-1 sm:flex">
+            <dt>{t("volume")}</dt>
+            <dd
+              className="overflow-hidden text-ellipsis text-fg-2"
+              style={{ width: `calc(3.75em + ${quoteSymbol.length + 0.5}ch)` }}
+            >
+              {shown ? `${legendVolume(shown.volume)} ${quoteSymbol}` : "–"}
+            </dd>
+          </div>
+          <dd
+            className={cn(
+              "w-[4.4em] shrink-0 overflow-hidden text-ellipsis text-right",
+              change === null ? "text-fg-3" : change > 0 ? "text-positive" : change < 0 ? "text-negative" : "text-fg-2",
+            )}
+          >
+            {change === null
+              ? ""
+              : format.number(change, { style: "percent", maximumFractionDigits: 2, signDisplay: "always" })}
+          </dd>
+        </dl>
       </div>
       <div className="relative">
         <div
@@ -246,6 +350,7 @@ export function CandleChart({
           data-testid="candles"
           data-bars={bars.length}
           data-trades={poolTrades}
+          data-listing={listingTime ?? undefined}
         />
         {isLoading && !data ? <div className="skeleton absolute inset-0 rounded-[10px]" aria-hidden /> : null}
         {data && bars.length === 0 ? (
@@ -265,10 +370,8 @@ export function CandleChart({
         </span>
         <span className="text-fg-3">{t("down")}</span>
         {data?.listing ? (
-          <span className="inline-flex items-center gap-2">
-            <span aria-hidden className="text-[0.625rem] leading-none text-fg">
-              ▼
-            </span>
+          <span className="inline-flex items-center gap-2" data-testid="listing-legend">
+            <span aria-hidden className="inline-block h-3 border-l border-dashed border-fg-3" />
             {t("listingAt", { price: price(Number(data.listing.price)), unit: quoteSymbol })}
           </span>
         ) : null}

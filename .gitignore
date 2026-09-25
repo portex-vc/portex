@@ -79,3 +79,6 @@ GEMINI.md
 
 # Netlify CLI build state
 .netlify/
+
+# Agent screenshots belong in the scratchpad, never in the repo
+shots/

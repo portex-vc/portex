@@ -61,7 +61,7 @@ export default function MarketDetailPage() {
     <div className="flex flex-col gap-10 pt-4 lg:pt-6" data-testid="market-page">
       <MarketHeader market={m} quoteSymbol={QUOTE_SYMBOL} />
       <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_23rem] lg:grid-rows-[auto_auto_1fr] xl:gap-x-12">
-        <section className="surface-1 min-w-0 p-5 sm:p-6 lg:col-start-1 lg:row-start-1">
+        <section className="surface-1 min-w-0 p-5 [overflow-anchor:none] sm:p-6 lg:col-start-1 lg:row-start-1">
           <CandleChart
             address={m.address}
             interval={interval}
