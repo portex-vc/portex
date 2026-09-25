@@ -1,0 +1,76 @@
+/*
+  Brand motion. All paths share the mark's single line; the animations only move dash offsets.
+  --len is the exact polyline length (set inline from MARK_LENGTH).
+*/
+
+/* Draw-on: the line draws itself once. */
+.draw {
+  stroke-dasharray: var(--len) var(--len);
+  stroke-dashoffset: var(--len);
+  animation: draw var(--dur, 1150ms) cubic-bezier(0.65, 0, 0.35, 1) var(--delay, 0ms) forwards;
+}
+@keyframes draw {
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+
+/* Wordmark letters rise in sequence as the line completes. */
+.letter {
+  opacity: 0;
+  transform-box: fill-box;
+  transform-origin: 50% 100%;
+  animation: letter 520ms cubic-bezier(0.22, 1, 0.36, 1) calc(var(--delay, 0ms) + var(--i) * 45ms) forwards;
+}
+@keyframes letter {
+  from {
+    opacity: 0;
+    transform: translateY(35%);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+/* Hover sheen: one short segment travels the full line once. */
+.sheen {
+  stroke-dasharray: calc(var(--len) * 0.16) var(--len);
+  stroke-dashoffset: calc(var(--len) * 0.16);
+  animation: sheen 900ms cubic-bezier(0.45, 0, 0.25, 1) forwards;
+}
+@keyframes sheen {
+  to {
+    stroke-dashoffset: calc(var(--len) * -1);
+  }
+}
+
+/* Loader: a segment circulates along the line. */
+.run {
+  stroke-dasharray: calc(var(--len) * 0.22) calc(var(--len) * 0.78);
+  animation: run 1.6s linear infinite;
+}
+@keyframes run {
+  from {
+    stroke-dashoffset: 0;
+  }
+  to {
+    stroke-dashoffset: calc(var(--len) * -1);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .draw,
+  .letter {
+    animation: none;
+    stroke-dashoffset: 0;
+    opacity: 1;
+    transform: none;
+  }
+  .sheen {
+    display: none;
+  }
+  .run {
+    animation-duration: 3.2s;
+  }
+}

@@ -1,0 +1,62 @@
+# Portex testnet server (DigitalOcean): API + activity runner behind Caddy.
+# Secrets live in /opt/portex/.env on the server, never in this repository.
+name: portex
+
+services:
+  api:
+    build:
+      context: ..
+      dockerfile: deploy/Dockerfile
+    image: portex-server:latest
+    restart: unless-stopped
+    env_file: /opt/portex/.env
+    environment:
+      PORTEX_CHAIN_ID: "1952"
+      PORT: "8790"
+      DATABASE_PATH: /data/portex-1952.db
+      PUBLIC_API_URL: https://testnet-api.portex.vc
+      CORS_ORIGINS: https://testnet.portex.vc
+      # X Layer's public RPC: 100-block log pages; its nodes can lag the head by a block or two.
+      LOG_PAGE: "100"
+      CONFIRMATIONS: "3"
+      ANALYST_INTERVAL_MS: "0"
+    volumes:
+      - /opt/portex/data/api:/data
+    expose:
+      - "8790"
+
+  mock:
+    image: portex-server:latest
+    depends_on:
+      - api
+    restart: unless-stopped
+    env_file: /opt/portex/.env
+    working_dir: /app
+    command:
+      - bun
+      - --no-env-file
+      - tools/mock/run.ts
+      - --rpc
+      - https://testrpc.xlayer.tech/terigon
+      - --api
+      - http://api:8790
+      - --deployments
+      - packages/contracts/deployments/1952-v31.json
+    volumes:
+      - /opt/portex/data/mock-state:/app/tools/mock/state
+
+  caddy:
+    image: caddy:2.10-alpine
+    restart: unless-stopped
+    depends_on:
+      - api
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - /opt/portex/certs:/certs:ro
+      - caddy_data:/data
+
+volumes:
+  caddy_data: {}

@@ -1,0 +1,16 @@
+# Cloudflare terminates public TLS; the origin serves its Cloudflare Origin CA certificate.
+# The DigitalOcean firewall only admits Cloudflare's IP ranges on 80/443.
+{
+	auto_https off
+}
+
+:443 {
+	tls /certs/origin.pem /certs/origin.key
+	reverse_proxy api:8790 {
+		header_up X-Forwarded-For {http.request.header.CF-Connecting-IP}
+	}
+}
+
+:80 {
+	redir https://{host}{uri} permanent
+}

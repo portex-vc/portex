@@ -1,0 +1,7 @@
+node_modules/
+.next*/
+src/generated/
+e2e/.tmp/
+e2e/screenshots/
+test-results/
+bun.lock

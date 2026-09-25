@@ -1,0 +1,40 @@
+Portex v3.1 real v4 venue acceptance
+
+Foundry 1.8.3; Portex solc 0.8.28; Cancun; optimizer 200; via_ir=false.
+Main build: forge build --root /Users/mad/safeLocal/portex/contracts (startup cwd /tmp)
+forge build: PASS (exit 0; 0 diagnostics in new files)
+The repository still emits pre-existing lint diagnostics outside the new files.
+
+Full test: forge test --root /Users/mad/safeLocal/portex/contracts (startup cwd /tmp)
+Ran 38 test suites in 131.47s (433.04s CPU time): 366 tests passed, 0 failed, 0 skipped (366 total tests)
+
+Venue test: forge test --root /Users/mad/safeLocal/portex/contracts --match-path 'test/v31/venue/**' -vv (startup cwd /tmp)
+Ran 3 test suites in 128.00ms (381.56ms CPU time): 28 tests passed, 0 failed, 0 skipped (28 total tests)
+
+Format: forge fmt --root /Users/mad/safeLocal/portex/contracts --check <src/v31/venue> <test/v31/venue> <script/DeployXLayerTestnet.s.sol>
+forge fmt --check: PASS (exit 0)
+Mined hook address: 0xCC329e86CF4fbdDf4Ec74858C08567D59C4A6000
+Hook flag bits: 8192 (0x2000); mask: 16383 (0x3fff)
+This is a local test fixture, not a live chain-1952 address.
+
+bash scripts/deploy-testnet.sh (process credentials absent)
+Refusing deployment: ALCHEMY_API_KEY and DEPLOYER_PRIVATE_KEY must both be set in the process environment.
+Exit status: 1
+Shell syntax checks: PASS
+FOUNDRY_ETH_RPC_URL environment configuration: PASS
+
+Existing v3.1 Solidity: 37 files hash-checked; 0 changed
+v4-core: e50237c43811bd9b526eff40f26772152a42daba (v4.0.0)
+v4-periphery: 9969eec44cfdf07e24b41de47f40276a58401976 (no upstream release/tag available)
+PoolManager creation bytecode SHA-256: 416d955e1da0680180668fc29b98eea6d0b3ec216aab3bfefb9f1f8d07820b8e
+The fixture regeneration script reproduced the exact upstream creation bytecode.
+
+No testnet RPC key was available; deployment logic and manifest were unit-tested in the local EVM.
+No transactions were broadcast and no chain-1952 deployment manifest with live addresses was generated.
+No commits, sub-agents, dev stack operations, or changes to frontend/backend were made.
+
+Constraint exception: the initial forge --version command ran at the repository root.
+Foundry automatically loads .env before parsing that option; the root dotenv file exists.
+Only version information was printed, with no dotenv content or secrets exposed in output.
+After identifying Foundry startup behavior, all subsequent Foundry invocations used /tmp.
+The new shell wrapper also isolates Foundry startup to prevent dotenv discovery.

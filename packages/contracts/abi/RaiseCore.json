@@ -1,0 +1,3729 @@
+[
+  {
+    "type": "constructor",
+    "inputs": [
+      {
+        "name": "router_",
+        "type": "address",
+        "internalType": "address"
+      }
+    ],
+    "stateMutability": "nonpayable"
+  },
+  {
+    "type": "function",
+    "name": "accounting",
+    "inputs": [],
+    "outputs": [
+      {
+        "name": "sold",
+        "type": "uint256",
+        "internalType": "uint256"
+      },
+      {
+        "name": "liquidityReserve",
+        "type": "uint256",
+        "internalType": "uint256"
+      },
+      {
+        "name": "backers",
+        "type": "uint256",
+        "internalType": "uint256"
+      },
+      {
+        "name": "builders",
+        "type": "uint256",
+        "internalType": "uint256"
+      },
+      {
+        "name": "quoteDust",
+        "type": "uint256",
+        "internalType": "uint256"
+      },
+      {
+        "name": "positionCount",
+        "type": "uint256",
+        "internalType": "uint256"
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "advanceDepth",
+    "inputs": [],
+    "outputs": [],
+    "stateMutability": "nonpayable"
+  },
+  {
+    "type": "function",
+    "name": "advanceStage1",
+    "inputs": [],
+    "outputs": [],
+    "stateMutability": "nonpayable"
+  },
+  {
+    "type": "function",
+    "name": "atRiskBasis",
+    "inputs": [
+      {
+        "name": "id",
+        "type": "uint256",
+        "internalType": "uint256"
+      }
+    ],
+    "outputs": [
+      {
+        "name": "",
+        "type": "uint256",
+        "internalType": "uint256"
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "beginModuleAction",
+    "inputs": [],
+    "outputs": [
+      {
+        "name": "",
+        "type": "uint256",
+        "internalType": "uint256"
+      }
+    ],
+    "stateMutability": "nonpayable"
+  },
+  {
+    "type": "function",
+    "name": "builderGrant",
+    "inputs": [
+      {
+        "name": "owner",
+        "type": "address",
+        "internalType": "address"
+      }
+    ],
+    "outputs": [
+      {
+        "name": "",
+        "type": "uint256",
+        "internalType": "uint256"
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "buy",
+    "inputs": [
+      {
+        "name": "gross",
+        "type": "uint256",
+        "internalType": "uint256"
+      },
+      {
+        "name": "minTokens",
+        "type": "uint256",
+        "internalType": "uint256"
+      },
+      {
+        "name": "nonce",
+        "type": "uint256",
+        "internalType": "uint256"
+      },
+      {
+        "name": "deadline",
+        "type": "uint256",
+        "internalType": "uint256"
+      }
+    ],
+    "outputs": [
+      {
+        "name": "",
+        "type": "uint256",
+        "internalType": "uint256"
+      }
+    ],
+    "stateMutability": "nonpayable"
+  },
+  {
+    "type": "function",
+    "name": "buyerTokens",
+    "inputs": [
+      {
+        "name": "owner",
+        "type": "address",
+        "internalType": "address"
+      }
+    ],
+    "outputs": [
+      {
+        "name": "",
+        "type": "uint256",
+        "internalType": "uint256"
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "claimTreasuryFees",
+    "inputs": [],
+    "outputs": [
+      {
+        "name": "amount",
+        "type": "uint256",
+        "internalType": "uint256"
+      }
+    ],
+    "stateMutability": "nonpayable"
+  },
+  {
+    "type": "function",
+    "name": "clearVeto",
+    "inputs": [],
+    "outputs": [],
+    "stateMutability": "nonpayable"
+  },
+  {
+    "type": "function",
+    "name": "collectLPFees",
+    "inputs": [],
+    "outputs": [
+      {
+        "name": "quoteFees",
+        "type": "uint256",
+        "internalType": "uint256"
+      },
+      {
+        "name": "tokenFees",
+        "type": "uint256",
+        "internalType": "uint256"
+      }
+    ],
+    "stateMutability": "nonpayable"
+  },
+  {
+    "type": "function",
+    "name": "custodySurplus",
+    "inputs": [],
+    "outputs": [
+      {
+        "name": "",
+        "type": "uint256",
+        "internalType": "uint256"
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "deliveryOf",
+    "inputs": [
+      {
+        "name": "owner",
+        "type": "address",
+        "internalType": "address"
+      }
+    ],
+    "outputs": [
+      {
+        "name": "tokens",
+        "type": "uint256",
+        "internalType": "uint256"
+      },
+      {
+        "name": "quota",
+        "type": "uint256",
+        "internalType": "uint256"
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "deposit",
+    "inputs": [
+      {
+        "name": "amount",
+        "type": "uint256",
+        "internalType": "uint256"
+      },
+      {
+        "name": "minTokens",
+        "type": "uint256",
+        "internalType": "uint256"
+      },
+      {
+        "name": "nonce",
+        "type": "uint256",
+        "internalType": "uint256"
+      },
+      {
+        "name": "deadline",
+        "type": "uint256",
+        "internalType": "uint256"
+      }
+    ],
+    "outputs": [
+      {
+        "name": "id",
+        "type": "uint256",
+        "internalType": "uint256"
+      },
+      {
+        "name": "quantity",
+        "type": "uint256",
+        "internalType": "uint256"
+      }
+    ],
+    "stateMutability": "nonpayable"
+  },
+  {
+    "type": "function",
+    "name": "depositFor",
+    "inputs": [
+      {
+        "name": "owner",
+        "type": "address",
+        "internalType": "address"
+      },
+      {
+        "name": "amount",
+        "type": "uint256",
+        "internalType": "uint256"
+      },
+      {
+        "name": "minTokens",
+        "type": "uint256",
+        "internalType": "uint256"
+      },
+      {
+        "name": "nonce",
+        "type": "uint256",
+        "internalType": "uint256"
+      },
+      {
+        "name": "deadline",
+        "type": "uint256",
+        "internalType": "uint256"
+      }
+    ],
+    "outputs": [
+      {
+        "name": "id",
+        "type": "uint256",
+        "internalType": "uint256"
+      },
+      {
+        "name": "quantity",
+        "type": "uint256",
+        "internalType": "uint256"
+      }
+    ],
+    "stateMutability": "nonpayable"
+  },
+  {
+    "type": "function",
+    "name": "dissolutionRecord",
+    "inputs": [
+      {
+        "name": "id",
+        "type": "uint256",
+        "internalType": "uint256"
+      }
+    ],
+    "outputs": [
+      {
+        "name": "owner",
+        "type": "address",
+        "internalType": "address"
+      },
+      {
+        "name": "class",
+        "type": "uint8",
+        "internalType": "enum TypesV31.Class"
+      },
+      {
+        "name": "amount",
+        "type": "uint256",
+        "internalType": "uint256"
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "dissolve",
+    "inputs": [],
+    "outputs": [],
+    "stateMutability": "nonpayable"
+  },
+  {
+    "type": "function",
+    "name": "eligibleCapital",
+    "inputs": [],
+    "outputs": [
+      {
+        "name": "",
+        "type": "uint256",
+        "internalType": "uint256"
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "endModuleAction",
+    "inputs": [],
+    "outputs": [],
+    "stateMutability": "nonpayable"
+  },
+  {
+    "type": "function",
+    "name": "exitAtCost",
+    "inputs": [
+      {
+        "name": "id",
+        "type": "uint256",
+        "internalType": "uint256"
+      },
+      {
+        "name": "q",
+        "type": "uint256",
+        "internalType": "uint256"
+      },
+      {
+        "name": "minPayout",
+        "type": "uint256",
+        "internalType": "uint256"
+      },
+      {
+        "name": "nonce",
+        "type": "uint256",
+        "internalType": "uint256"
+      },
+      {
+        "name": "deadline",
+        "type": "uint256",
+        "internalType": "uint256"
+      }
+    ],
+    "outputs": [
+      {
+        "name": "",
+        "type": "uint256",
+        "internalType": "uint256"
+      }
+    ],
+    "stateMutability": "nonpayable"
+  },
+  {
+    "type": "function",
+    "name": "exitFor",
+    "inputs": [
+      {
+        "name": "owner",
+        "type": "address",
+        "internalType": "address"
+      },
+      {
+        "name": "id",
+        "type": "uint256",
+        "internalType": "uint256"
+      },
+      {
+        "name": "q",
+        "type": "uint256",
+        "internalType": "uint256"
+      },
+      {
+        "name": "minPayout",
+        "type": "uint256",
+        "internalType": "uint256"
+      },
+      {
+        "name": "nonce",
+        "type": "uint256",
+        "internalType": "uint256"
+      },
+      {
+        "name": "deadline",
+        "type": "uint256",
+        "internalType": "uint256"
+      },
+      {
+        "name": "withProfit",
+        "type": "bool",
+        "internalType": "bool"
+      }
+    ],
+    "outputs": [
+      {
+        "name": "",
+        "type": "uint256",
+        "internalType": "uint256"
+      }
+    ],
+    "stateMutability": "nonpayable"
+  },
+  {
+    "type": "function",
+    "name": "feeAccruals",
+    "inputs": [],
+    "outputs": [
+      {
+        "name": "reserveRetained",
+        "type": "uint256",
+        "internalType": "uint256"
+      },
+      {
+        "name": "rewards",
+        "type": "uint256",
+        "internalType": "uint256"
+      },
+      {
+        "name": "treasury",
+        "type": "uint256",
+        "internalType": "uint256"
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "futureClaimBounds",
+    "inputs": [
+      {
+        "name": "id",
+        "type": "uint256",
+        "internalType": "uint256"
+      },
+      {
+        "name": "target",
+        "type": "uint8",
+        "internalType": "enum TypesV31.Phase"
+      }
+    ],
+    "outputs": [
+      {
+        "name": "",
+        "type": "tuple",
+        "internalType": "struct TypesV31.Bounds",
+        "components": [
+          {
+            "name": "validity",
+            "type": "tuple",
+            "internalType": "struct TypesV31.Validity",
+            "components": [
+              {
+                "name": "available",
+                "type": "bool",
+                "internalType": "bool"
+              },
+              {
+                "name": "reason",
+                "type": "uint8",
+                "internalType": "enum TypesV31.Reason"
+              },
+              {
+                "name": "phase",
+                "type": "uint8",
+                "internalType": "enum TypesV31.Phase"
+              },
+              {
+                "name": "stateNonce",
+                "type": "uint256",
+                "internalType": "uint256"
+              }
+            ]
+          },
+          {
+            "name": "asset",
+            "type": "address",
+            "internalType": "address"
+          },
+          {
+            "name": "lower",
+            "type": "uint256",
+            "internalType": "uint256"
+          },
+          {
+            "name": "upper",
+            "type": "uint256",
+            "internalType": "uint256"
+          },
+          {
+            "name": "conditions",
+            "type": "bytes32",
+            "internalType": "bytes32"
+          },
+          {
+            "name": "backingBucket",
+            "type": "bytes32",
+            "internalType": "bytes32"
+          },
+          {
+            "name": "stateNonce",
+            "type": "uint256",
+            "internalType": "uint256"
+          }
+        ]
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "getConfig",
+    "inputs": [],
+    "outputs": [
+      {
+        "name": "",
+        "type": "tuple",
+        "internalType": "struct TypesV31.Config",
+        "components": [
+          {
+            "name": "quote",
+            "type": "address",
+            "internalType": "address"
+          },
+          {
+            "name": "treasury",
+            "type": "address",
+            "internalType": "address"
+          },
+          {
+            "name": "supply",
+            "type": "uint256",
+            "internalType": "uint256"
+          },
+          {
+            "name": "targetPrice",
+            "type": "uint256",
+            "internalType": "uint256"
+          },
+          {
+            "name": "budgetCeiling",
+            "type": "uint256",
+            "internalType": "uint256"
+          },
+          {
+            "name": "stage1Length",
+            "type": "uint64",
+            "internalType": "uint64"
+          },
+          {
+            "name": "stage2Length",
+            "type": "uint64",
+            "internalType": "uint64"
+          },
+          {
+            "name": "builders",
+            "type": "address[]",
+            "internalType": "address[]"
+          }
+        ]
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "governanceConfig",
+    "inputs": [],
+    "outputs": [
+      {
+        "name": "builder",
+        "type": "address",
+        "internalType": "address"
+      },
+      {
+        "name": "parameters",
+        "type": "tuple",
+        "internalType": "struct TypesV31.Parameters",
+        "components": [
+          {
+            "name": "kappaMax",
+            "type": "uint256",
+            "internalType": "uint256"
+          },
+          {
+            "name": "budgetCeilingMax",
+            "type": "uint256",
+            "internalType": "uint256"
+          },
+          {
+            "name": "vetoMax",
+            "type": "uint64",
+            "internalType": "uint64"
+          },
+          {
+            "name": "vetoTotal",
+            "type": "uint64",
+            "internalType": "uint64"
+          },
+          {
+            "name": "vetoCooldown",
+            "type": "uint64",
+            "internalType": "uint64"
+          },
+          {
+            "name": "voting",
+            "type": "uint64",
+            "internalType": "uint64"
+          },
+          {
+            "name": "dispute",
+            "type": "uint64",
+            "internalType": "uint64"
+          },
+          {
+            "name": "execution",
+            "type": "uint64",
+            "internalType": "uint64"
+          },
+          {
+            "name": "proposalInterval",
+            "type": "uint64",
+            "internalType": "uint64"
+          },
+          {
+            "name": "minimumBackers",
+            "type": "uint16",
+            "internalType": "uint16"
+          },
+          {
+            "name": "tradeFeeBps",
+            "type": "uint16",
+            "internalType": "uint16"
+          },
+          {
+            "name": "surchargeBps",
+            "type": "uint16",
+            "internalType": "uint16"
+          },
+          {
+            "name": "stage1Min",
+            "type": "uint64",
+            "internalType": "uint64"
+          },
+          {
+            "name": "stage1Max",
+            "type": "uint64",
+            "internalType": "uint64"
+          },
+          {
+            "name": "stage2Min",
+            "type": "uint64",
+            "internalType": "uint64"
+          },
+          {
+            "name": "stage2Max",
+            "type": "uint64",
+            "internalType": "uint64"
+          },
+          {
+            "name": "treasuryVesting",
+            "type": "uint64",
+            "internalType": "uint64"
+          }
+        ]
+      },
+      {
+        "name": "enabled",
+        "type": "bool",
+        "internalType": "bool"
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "governanceState",
+    "inputs": [],
+    "outputs": [
+      {
+        "name": "end",
+        "type": "uint64",
+        "internalType": "uint64"
+      },
+      {
+        "name": "escrow",
+        "type": "uint256",
+        "internalType": "uint256"
+      },
+      {
+        "name": "remainingCeiling",
+        "type": "uint256",
+        "internalType": "uint256"
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "governorDraw",
+    "inputs": [
+      {
+        "name": "proposal",
+        "type": "uint256",
+        "internalType": "uint256"
+      },
+      {
+        "name": "amount",
+        "type": "uint256",
+        "internalType": "uint256"
+      },
+      {
+        "name": "yesWeight",
+        "type": "uint256",
+        "internalType": "uint256"
+      }
+    ],
+    "outputs": [],
+    "stateMutability": "nonpayable"
+  },
+  {
+    "type": "function",
+    "name": "guaranteedClaim",
+    "inputs": [
+      {
+        "name": "id",
+        "type": "uint256",
+        "internalType": "uint256"
+      }
+    ],
+    "outputs": [
+      {
+        "name": "",
+        "type": "tuple",
+        "internalType": "struct TypesV31.Claim",
+        "components": [
+          {
+            "name": "validity",
+            "type": "tuple",
+            "internalType": "struct TypesV31.Validity",
+            "components": [
+              {
+                "name": "available",
+                "type": "bool",
+                "internalType": "bool"
+              },
+              {
+                "name": "reason",
+                "type": "uint8",
+                "internalType": "enum TypesV31.Reason"
+              },
+              {
+                "name": "phase",
+                "type": "uint8",
+                "internalType": "enum TypesV31.Phase"
+              },
+              {
+                "name": "stateNonce",
+                "type": "uint256",
+                "internalType": "uint256"
+              }
+            ]
+          },
+          {
+            "name": "amount",
+            "type": "uint256",
+            "internalType": "uint256"
+          },
+          {
+            "name": "validUntil",
+            "type": "uint64",
+            "internalType": "uint64"
+          },
+          {
+            "name": "phase",
+            "type": "uint8",
+            "internalType": "enum TypesV31.Phase"
+          },
+          {
+            "name": "stateNonce",
+            "type": "uint256",
+            "internalType": "uint256"
+          }
+        ]
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "initialize",
+    "inputs": [
+      {
+        "name": "config_",
+        "type": "tuple",
+        "internalType": "struct TypesV31.Config",
+        "components": [
+          {
+            "name": "quote",
+            "type": "address",
+            "internalType": "address"
+          },
+          {
+            "name": "treasury",
+            "type": "address",
+            "internalType": "address"
+          },
+          {
+            "name": "supply",
+            "type": "uint256",
+            "internalType": "uint256"
+          },
+          {
+            "name": "targetPrice",
+            "type": "uint256",
+            "internalType": "uint256"
+          },
+          {
+            "name": "budgetCeiling",
+            "type": "uint256",
+            "internalType": "uint256"
+          },
+          {
+            "name": "stage1Length",
+            "type": "uint64",
+            "internalType": "uint64"
+          },
+          {
+            "name": "stage2Length",
+            "type": "uint64",
+            "internalType": "uint64"
+          },
+          {
+            "name": "builders",
+            "type": "address[]",
+            "internalType": "address[]"
+          }
+        ]
+      },
+      {
+        "name": "parameters_",
+        "type": "tuple",
+        "internalType": "struct TypesV31.Parameters",
+        "components": [
+          {
+            "name": "kappaMax",
+            "type": "uint256",
+            "internalType": "uint256"
+          },
+          {
+            "name": "budgetCeilingMax",
+            "type": "uint256",
+            "internalType": "uint256"
+          },
+          {
+            "name": "vetoMax",
+            "type": "uint64",
+            "internalType": "uint64"
+          },
+          {
+            "name": "vetoTotal",
+            "type": "uint64",
+            "internalType": "uint64"
+          },
+          {
+            "name": "vetoCooldown",
+            "type": "uint64",
+            "internalType": "uint64"
+          },
+          {
+            "name": "voting",
+            "type": "uint64",
+            "internalType": "uint64"
+          },
+          {
+            "name": "dispute",
+            "type": "uint64",
+            "internalType": "uint64"
+          },
+          {
+            "name": "execution",
+            "type": "uint64",
+            "internalType": "uint64"
+          },
+          {
+            "name": "proposalInterval",
+            "type": "uint64",
+            "internalType": "uint64"
+          },
+          {
+            "name": "minimumBackers",
+            "type": "uint16",
+            "internalType": "uint16"
+          },
+          {
+            "name": "tradeFeeBps",
+            "type": "uint16",
+            "internalType": "uint16"
+          },
+          {
+            "name": "surchargeBps",
+            "type": "uint16",
+            "internalType": "uint16"
+          },
+          {
+            "name": "stage1Min",
+            "type": "uint64",
+            "internalType": "uint64"
+          },
+          {
+            "name": "stage1Max",
+            "type": "uint64",
+            "internalType": "uint64"
+          },
+          {
+            "name": "stage2Min",
+            "type": "uint64",
+            "internalType": "uint64"
+          },
+          {
+            "name": "stage2Max",
+            "type": "uint64",
+            "internalType": "uint64"
+          },
+          {
+            "name": "treasuryVesting",
+            "type": "uint64",
+            "internalType": "uint64"
+          }
+        ]
+      },
+      {
+        "name": "modules_",
+        "type": "tuple",
+        "internalType": "struct TypesV31.Modules",
+        "components": [
+          {
+            "name": "token",
+            "type": "address",
+            "internalType": "address"
+          },
+          {
+            "name": "vesting",
+            "type": "address",
+            "internalType": "address"
+          },
+          {
+            "name": "governor",
+            "type": "address",
+            "internalType": "address"
+          },
+          {
+            "name": "claims",
+            "type": "address",
+            "internalType": "address"
+          },
+          {
+            "name": "adapter",
+            "type": "address",
+            "internalType": "address"
+          },
+          {
+            "name": "attester",
+            "type": "address",
+            "internalType": "address"
+          },
+          {
+            "name": "council",
+            "type": "address",
+            "internalType": "address"
+          }
+        ]
+      },
+      {
+        "name": "builder_",
+        "type": "address",
+        "internalType": "address"
+      },
+      {
+        "name": "templateId_",
+        "type": "bytes32",
+        "internalType": "bytes32"
+      },
+      {
+        "name": "version_",
+        "type": "uint64",
+        "internalType": "uint64"
+      },
+      {
+        "name": "bundleHash_",
+        "type": "bytes32",
+        "internalType": "bytes32"
+      }
+    ],
+    "outputs": [],
+    "stateMutability": "nonpayable"
+  },
+  {
+    "type": "function",
+    "name": "list",
+    "inputs": [],
+    "outputs": [],
+    "stateMutability": "nonpayable"
+  },
+  {
+    "type": "function",
+    "name": "listingCallback",
+    "inputs": [
+      {
+        "name": "poolId",
+        "type": "bytes32",
+        "internalType": "bytes32"
+      },
+      {
+        "name": "quoteAmount",
+        "type": "uint256",
+        "internalType": "uint256"
+      },
+      {
+        "name": "tokenAmount",
+        "type": "uint256",
+        "internalType": "uint256"
+      }
+    ],
+    "outputs": [],
+    "stateMutability": "nonpayable"
+  },
+  {
+    "type": "function",
+    "name": "listingPreview",
+    "inputs": [],
+    "outputs": [
+      {
+        "name": "",
+        "type": "tuple",
+        "internalType": "struct TypesV31.ListingPreview",
+        "components": [
+          {
+            "name": "validity",
+            "type": "tuple",
+            "internalType": "struct TypesV31.Validity",
+            "components": [
+              {
+                "name": "available",
+                "type": "bool",
+                "internalType": "bool"
+              },
+              {
+                "name": "reason",
+                "type": "uint8",
+                "internalType": "enum TypesV31.Reason"
+              },
+              {
+                "name": "phase",
+                "type": "uint8",
+                "internalType": "enum TypesV31.Phase"
+              },
+              {
+                "name": "stateNonce",
+                "type": "uint256",
+                "internalType": "uint256"
+              }
+            ]
+          },
+          {
+            "name": "branch",
+            "type": "uint8",
+            "internalType": "enum TypesV31.Branch"
+          },
+          {
+            "name": "price",
+            "type": "uint256",
+            "internalType": "uint256"
+          },
+          {
+            "name": "sqrtPriceX96",
+            "type": "uint160",
+            "internalType": "uint160"
+          },
+          {
+            "name": "escrowRolled",
+            "type": "uint256",
+            "internalType": "uint256"
+          },
+          {
+            "name": "desiredQuote",
+            "type": "uint256",
+            "internalType": "uint256"
+          },
+          {
+            "name": "desiredToken",
+            "type": "uint256",
+            "internalType": "uint256"
+          },
+          {
+            "name": "usedQuote",
+            "type": "uint256",
+            "internalType": "uint256"
+          },
+          {
+            "name": "usedToken",
+            "type": "uint256",
+            "internalType": "uint256"
+          },
+          {
+            "name": "minQuote",
+            "type": "uint256",
+            "internalType": "uint256"
+          },
+          {
+            "name": "minToken",
+            "type": "uint256",
+            "internalType": "uint256"
+          },
+          {
+            "name": "liquidity",
+            "type": "uint128",
+            "internalType": "uint128"
+          },
+          {
+            "name": "bookBurn",
+            "type": "uint256",
+            "internalType": "uint256"
+          },
+          {
+            "name": "liquidityReserveBurn",
+            "type": "uint256",
+            "internalType": "uint256"
+          },
+          {
+            "name": "depthBurn",
+            "type": "uint256",
+            "internalType": "uint256"
+          },
+          {
+            "name": "quoteDust",
+            "type": "uint256",
+            "internalType": "uint256"
+          },
+          {
+            "name": "backerDelivery",
+            "type": "uint256",
+            "internalType": "uint256"
+          },
+          {
+            "name": "buyerDelivery",
+            "type": "uint256",
+            "internalType": "uint256"
+          },
+          {
+            "name": "builderDelivery",
+            "type": "uint256",
+            "internalType": "uint256"
+          },
+          {
+            "name": "ordinaryDestination",
+            "type": "address",
+            "internalType": "address"
+          },
+          {
+            "name": "builderDestination",
+            "type": "address",
+            "internalType": "address"
+          },
+          {
+            "name": "claimLiabilities",
+            "type": "uint256",
+            "internalType": "uint256"
+          },
+          {
+            "name": "claimsEndOnSuccess",
+            "type": "bool",
+            "internalType": "bool"
+          }
+        ]
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "listingRecord",
+    "inputs": [],
+    "outputs": [
+      {
+        "name": "",
+        "type": "tuple",
+        "internalType": "struct IDexAdapterV31.Receipt",
+        "components": [
+          {
+            "name": "poolId",
+            "type": "bytes32",
+            "internalType": "bytes32"
+          },
+          {
+            "name": "positionId",
+            "type": "bytes32",
+            "internalType": "bytes32"
+          },
+          {
+            "name": "owner",
+            "type": "address",
+            "internalType": "address"
+          },
+          {
+            "name": "sqrtPriceX96",
+            "type": "uint160",
+            "internalType": "uint160"
+          },
+          {
+            "name": "liquidity",
+            "type": "uint128",
+            "internalType": "uint128"
+          },
+          {
+            "name": "usedQuote",
+            "type": "uint256",
+            "internalType": "uint256"
+          },
+          {
+            "name": "usedToken",
+            "type": "uint256",
+            "internalType": "uint256"
+          }
+        ]
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "listingStatus",
+    "inputs": [
+      {
+        "name": "id",
+        "type": "uint256",
+        "internalType": "uint256"
+      }
+    ],
+    "outputs": [
+      {
+        "name": "r",
+        "type": "tuple",
+        "internalType": "struct TypesV31.ListingStatus",
+        "components": [
+          {
+            "name": "validity",
+            "type": "tuple",
+            "internalType": "struct TypesV31.Validity",
+            "components": [
+              {
+                "name": "available",
+                "type": "bool",
+                "internalType": "bool"
+              },
+              {
+                "name": "reason",
+                "type": "uint8",
+                "internalType": "enum TypesV31.Reason"
+              },
+              {
+                "name": "phase",
+                "type": "uint8",
+                "internalType": "enum TypesV31.Phase"
+              },
+              {
+                "name": "stateNonce",
+                "type": "uint256",
+                "internalType": "uint256"
+              }
+            ]
+          },
+          {
+            "name": "liveCostEligible",
+            "type": "bool",
+            "internalType": "bool"
+          },
+          {
+            "name": "basis",
+            "type": "uint256",
+            "internalType": "uint256"
+          },
+          {
+            "name": "liquidTokens",
+            "type": "uint256",
+            "internalType": "uint256"
+          },
+          {
+            "name": "vestedTokens",
+            "type": "uint256",
+            "internalType": "uint256"
+          },
+          {
+            "name": "destination",
+            "type": "address",
+            "internalType": "address"
+          }
+        ]
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "marketBuyQuote",
+    "inputs": [
+      {
+        "name": "gross",
+        "type": "uint256",
+        "internalType": "uint256"
+      }
+    ],
+    "outputs": [
+      {
+        "name": "",
+        "type": "tuple",
+        "internalType": "struct TypesV31.TradeQuote",
+        "components": [
+          {
+            "name": "validity",
+            "type": "tuple",
+            "internalType": "struct TypesV31.Validity",
+            "components": [
+              {
+                "name": "available",
+                "type": "bool",
+                "internalType": "bool"
+              },
+              {
+                "name": "reason",
+                "type": "uint8",
+                "internalType": "enum TypesV31.Reason"
+              },
+              {
+                "name": "phase",
+                "type": "uint8",
+                "internalType": "enum TypesV31.Phase"
+              },
+              {
+                "name": "stateNonce",
+                "type": "uint256",
+                "internalType": "uint256"
+              }
+            ]
+          },
+          {
+            "name": "gross",
+            "type": "uint256",
+            "internalType": "uint256"
+          },
+          {
+            "name": "ammAmount",
+            "type": "uint256",
+            "internalType": "uint256"
+          },
+          {
+            "name": "tokens",
+            "type": "uint256",
+            "internalType": "uint256"
+          },
+          {
+            "name": "net",
+            "type": "uint256",
+            "internalType": "uint256"
+          },
+          {
+            "name": "fees",
+            "type": "tuple",
+            "internalType": "struct TypesV31.Fees",
+            "components": [
+              {
+                "name": "total",
+                "type": "uint256",
+                "internalType": "uint256"
+              },
+              {
+                "name": "reserve",
+                "type": "uint256",
+                "internalType": "uint256"
+              },
+              {
+                "name": "reward",
+                "type": "uint256",
+                "internalType": "uint256"
+              },
+              {
+                "name": "treasury",
+                "type": "uint256",
+                "internalType": "uint256"
+              }
+            ]
+          },
+          {
+            "name": "priceBefore",
+            "type": "uint256",
+            "internalType": "uint256"
+          },
+          {
+            "name": "priceAfter",
+            "type": "uint256",
+            "internalType": "uint256"
+          },
+          {
+            "name": "priceImpactBps",
+            "type": "uint256",
+            "internalType": "uint256"
+          },
+          {
+            "name": "depthBurn",
+            "type": "uint256",
+            "internalType": "uint256"
+          }
+        ]
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "marketBuyQuoteFor",
+    "inputs": [
+      {
+        "name": "buyer",
+        "type": "address",
+        "internalType": "address"
+      },
+      {
+        "name": "gross",
+        "type": "uint256",
+        "internalType": "uint256"
+      }
+    ],
+    "outputs": [
+      {
+        "name": "",
+        "type": "tuple",
+        "internalType": "struct TypesV31.TradeQuote",
+        "components": [
+          {
+            "name": "validity",
+            "type": "tuple",
+            "internalType": "struct TypesV31.Validity",
+            "components": [
+              {
+                "name": "available",
+                "type": "bool",
+                "internalType": "bool"
+              },
+              {
+                "name": "reason",
+                "type": "uint8",
+                "internalType": "enum TypesV31.Reason"
+              },
+              {
+                "name": "phase",
+                "type": "uint8",
+                "internalType": "enum TypesV31.Phase"
+              },
+              {
+                "name": "stateNonce",
+                "type": "uint256",
+                "internalType": "uint256"
+              }
+            ]
+          },
+          {
+            "name": "gross",
+            "type": "uint256",
+            "internalType": "uint256"
+          },
+          {
+            "name": "ammAmount",
+            "type": "uint256",
+            "internalType": "uint256"
+          },
+          {
+            "name": "tokens",
+            "type": "uint256",
+            "internalType": "uint256"
+          },
+          {
+            "name": "net",
+            "type": "uint256",
+            "internalType": "uint256"
+          },
+          {
+            "name": "fees",
+            "type": "tuple",
+            "internalType": "struct TypesV31.Fees",
+            "components": [
+              {
+                "name": "total",
+                "type": "uint256",
+                "internalType": "uint256"
+              },
+              {
+                "name": "reserve",
+                "type": "uint256",
+                "internalType": "uint256"
+              },
+              {
+                "name": "reward",
+                "type": "uint256",
+                "internalType": "uint256"
+              },
+              {
+                "name": "treasury",
+                "type": "uint256",
+                "internalType": "uint256"
+              }
+            ]
+          },
+          {
+            "name": "priceBefore",
+            "type": "uint256",
+            "internalType": "uint256"
+          },
+          {
+            "name": "priceAfter",
+            "type": "uint256",
+            "internalType": "uint256"
+          },
+          {
+            "name": "priceImpactBps",
+            "type": "uint256",
+            "internalType": "uint256"
+          },
+          {
+            "name": "depthBurn",
+            "type": "uint256",
+            "internalType": "uint256"
+          }
+        ]
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "marketExitQuote",
+    "inputs": [
+      {
+        "name": "owner",
+        "type": "address",
+        "internalType": "address"
+      },
+      {
+        "name": "q",
+        "type": "uint256",
+        "internalType": "uint256"
+      }
+    ],
+    "outputs": [
+      {
+        "name": "",
+        "type": "tuple",
+        "internalType": "struct TypesV31.TradeQuote",
+        "components": [
+          {
+            "name": "validity",
+            "type": "tuple",
+            "internalType": "struct TypesV31.Validity",
+            "components": [
+              {
+                "name": "available",
+                "type": "bool",
+                "internalType": "bool"
+              },
+              {
+                "name": "reason",
+                "type": "uint8",
+                "internalType": "enum TypesV31.Reason"
+              },
+              {
+                "name": "phase",
+                "type": "uint8",
+                "internalType": "enum TypesV31.Phase"
+              },
+              {
+                "name": "stateNonce",
+                "type": "uint256",
+                "internalType": "uint256"
+              }
+            ]
+          },
+          {
+            "name": "gross",
+            "type": "uint256",
+            "internalType": "uint256"
+          },
+          {
+            "name": "ammAmount",
+            "type": "uint256",
+            "internalType": "uint256"
+          },
+          {
+            "name": "tokens",
+            "type": "uint256",
+            "internalType": "uint256"
+          },
+          {
+            "name": "net",
+            "type": "uint256",
+            "internalType": "uint256"
+          },
+          {
+            "name": "fees",
+            "type": "tuple",
+            "internalType": "struct TypesV31.Fees",
+            "components": [
+              {
+                "name": "total",
+                "type": "uint256",
+                "internalType": "uint256"
+              },
+              {
+                "name": "reserve",
+                "type": "uint256",
+                "internalType": "uint256"
+              },
+              {
+                "name": "reward",
+                "type": "uint256",
+                "internalType": "uint256"
+              },
+              {
+                "name": "treasury",
+                "type": "uint256",
+                "internalType": "uint256"
+              }
+            ]
+          },
+          {
+            "name": "priceBefore",
+            "type": "uint256",
+            "internalType": "uint256"
+          },
+          {
+            "name": "priceAfter",
+            "type": "uint256",
+            "internalType": "uint256"
+          },
+          {
+            "name": "priceImpactBps",
+            "type": "uint256",
+            "internalType": "uint256"
+          },
+          {
+            "name": "depthBurn",
+            "type": "uint256",
+            "internalType": "uint256"
+          }
+        ]
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "migrating",
+    "inputs": [],
+    "outputs": [
+      {
+        "name": "",
+        "type": "bool",
+        "internalType": "bool"
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "modules",
+    "inputs": [],
+    "outputs": [
+      {
+        "name": "",
+        "type": "tuple",
+        "internalType": "struct TypesV31.Modules",
+        "components": [
+          {
+            "name": "token",
+            "type": "address",
+            "internalType": "address"
+          },
+          {
+            "name": "vesting",
+            "type": "address",
+            "internalType": "address"
+          },
+          {
+            "name": "governor",
+            "type": "address",
+            "internalType": "address"
+          },
+          {
+            "name": "claims",
+            "type": "address",
+            "internalType": "address"
+          },
+          {
+            "name": "adapter",
+            "type": "address",
+            "internalType": "address"
+          },
+          {
+            "name": "attester",
+            "type": "address",
+            "internalType": "address"
+          },
+          {
+            "name": "council",
+            "type": "address",
+            "internalType": "address"
+          }
+        ]
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "phase",
+    "inputs": [],
+    "outputs": [
+      {
+        "name": "",
+        "type": "uint8",
+        "internalType": "enum TypesV31.Phase"
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "positionState",
+    "inputs": [
+      {
+        "name": "id",
+        "type": "uint256",
+        "internalType": "uint256"
+      }
+    ],
+    "outputs": [
+      {
+        "name": "r",
+        "type": "tuple",
+        "internalType": "struct TypesV31.PositionView",
+        "components": [
+          {
+            "name": "validity",
+            "type": "tuple",
+            "internalType": "struct TypesV31.Validity",
+            "components": [
+              {
+                "name": "available",
+                "type": "bool",
+                "internalType": "bool"
+              },
+              {
+                "name": "reason",
+                "type": "uint8",
+                "internalType": "enum TypesV31.Reason"
+              },
+              {
+                "name": "phase",
+                "type": "uint8",
+                "internalType": "enum TypesV31.Phase"
+              },
+              {
+                "name": "stateNonce",
+                "type": "uint256",
+                "internalType": "uint256"
+              }
+            ]
+          },
+          {
+            "name": "owner",
+            "type": "address",
+            "internalType": "address"
+          },
+          {
+            "name": "class",
+            "type": "uint8",
+            "internalType": "enum TypesV31.Class"
+          },
+          {
+            "name": "tokens",
+            "type": "uint256",
+            "internalType": "uint256"
+          },
+          {
+            "name": "basis",
+            "type": "uint256",
+            "internalType": "uint256"
+          },
+          {
+            "name": "shares",
+            "type": "uint256",
+            "internalType": "uint256"
+          },
+          {
+            "name": "quota",
+            "type": "uint256",
+            "internalType": "uint256"
+          },
+          {
+            "name": "phase",
+            "type": "uint8",
+            "internalType": "enum TypesV31.Phase"
+          }
+        ]
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "protectedExit",
+    "inputs": [
+      {
+        "name": "id",
+        "type": "uint256",
+        "internalType": "uint256"
+      },
+      {
+        "name": "q",
+        "type": "uint256",
+        "internalType": "uint256"
+      },
+      {
+        "name": "minPayout",
+        "type": "uint256",
+        "internalType": "uint256"
+      },
+      {
+        "name": "nonce",
+        "type": "uint256",
+        "internalType": "uint256"
+      },
+      {
+        "name": "deadline",
+        "type": "uint256",
+        "internalType": "uint256"
+      }
+    ],
+    "outputs": [
+      {
+        "name": "",
+        "type": "uint256",
+        "internalType": "uint256"
+      }
+    ],
+    "stateMutability": "nonpayable"
+  },
+  {
+    "type": "function",
+    "name": "protectedExitQuote",
+    "inputs": [
+      {
+        "name": "id",
+        "type": "uint256",
+        "internalType": "uint256"
+      },
+      {
+        "name": "q",
+        "type": "uint256",
+        "internalType": "uint256"
+      }
+    ],
+    "outputs": [
+      {
+        "name": "",
+        "type": "tuple",
+        "internalType": "struct TypesV31.ExitQuote",
+        "components": [
+          {
+            "name": "validity",
+            "type": "tuple",
+            "internalType": "struct TypesV31.Validity",
+            "components": [
+              {
+                "name": "available",
+                "type": "bool",
+                "internalType": "bool"
+              },
+              {
+                "name": "reason",
+                "type": "uint8",
+                "internalType": "enum TypesV31.Reason"
+              },
+              {
+                "name": "phase",
+                "type": "uint8",
+                "internalType": "enum TypesV31.Phase"
+              },
+              {
+                "name": "stateNonce",
+                "type": "uint256",
+                "internalType": "uint256"
+              }
+            ]
+          },
+          {
+            "name": "result",
+            "type": "tuple",
+            "internalType": "struct ProtectedSplitLib.Result",
+            "components": [
+              {
+                "name": "cost",
+                "type": "uint256",
+                "internalType": "uint256"
+              },
+              {
+                "name": "value",
+                "type": "uint256",
+                "internalType": "uint256"
+              },
+              {
+                "name": "premium",
+                "type": "uint256",
+                "internalType": "uint256"
+              },
+              {
+                "name": "cap",
+                "type": "uint256",
+                "internalType": "uint256"
+              },
+              {
+                "name": "profit",
+                "type": "uint256",
+                "internalType": "uint256"
+              },
+              {
+                "name": "qSold",
+                "type": "uint256",
+                "internalType": "uint256"
+              },
+              {
+                "name": "burn",
+                "type": "uint256",
+                "internalType": "uint256"
+              },
+              {
+                "name": "payout",
+                "type": "uint256",
+                "internalType": "uint256"
+              }
+            ]
+          },
+          {
+            "name": "bookBurn",
+            "type": "uint256",
+            "internalType": "uint256"
+          },
+          {
+            "name": "depthBurn",
+            "type": "uint256",
+            "internalType": "uint256"
+          }
+        ]
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "redeemQuote",
+    "inputs": [
+      {
+        "name": "id",
+        "type": "uint256",
+        "internalType": "uint256"
+      },
+      {
+        "name": "q",
+        "type": "uint256",
+        "internalType": "uint256"
+      },
+      {
+        "name": "nonce",
+        "type": "uint256",
+        "internalType": "uint256"
+      }
+    ],
+    "outputs": [
+      {
+        "name": "",
+        "type": "tuple",
+        "internalType": "struct TypesV31.ExitQuote",
+        "components": [
+          {
+            "name": "validity",
+            "type": "tuple",
+            "internalType": "struct TypesV31.Validity",
+            "components": [
+              {
+                "name": "available",
+                "type": "bool",
+                "internalType": "bool"
+              },
+              {
+                "name": "reason",
+                "type": "uint8",
+                "internalType": "enum TypesV31.Reason"
+              },
+              {
+                "name": "phase",
+                "type": "uint8",
+                "internalType": "enum TypesV31.Phase"
+              },
+              {
+                "name": "stateNonce",
+                "type": "uint256",
+                "internalType": "uint256"
+              }
+            ]
+          },
+          {
+            "name": "result",
+            "type": "tuple",
+            "internalType": "struct ProtectedSplitLib.Result",
+            "components": [
+              {
+                "name": "cost",
+                "type": "uint256",
+                "internalType": "uint256"
+              },
+              {
+                "name": "value",
+                "type": "uint256",
+                "internalType": "uint256"
+              },
+              {
+                "name": "premium",
+                "type": "uint256",
+                "internalType": "uint256"
+              },
+              {
+                "name": "cap",
+                "type": "uint256",
+                "internalType": "uint256"
+              },
+              {
+                "name": "profit",
+                "type": "uint256",
+                "internalType": "uint256"
+              },
+              {
+                "name": "qSold",
+                "type": "uint256",
+                "internalType": "uint256"
+              },
+              {
+                "name": "burn",
+                "type": "uint256",
+                "internalType": "uint256"
+              },
+              {
+                "name": "payout",
+                "type": "uint256",
+                "internalType": "uint256"
+              }
+            ]
+          },
+          {
+            "name": "bookBurn",
+            "type": "uint256",
+            "internalType": "uint256"
+          },
+          {
+            "name": "depthBurn",
+            "type": "uint256",
+            "internalType": "uint256"
+          }
+        ]
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "reserveState",
+    "inputs": [],
+    "outputs": [
+      {
+        "name": "",
+        "type": "tuple",
+        "internalType": "struct TypesV31.ReserveState",
+        "components": [
+          {
+            "name": "validity",
+            "type": "tuple",
+            "internalType": "struct TypesV31.Validity",
+            "components": [
+              {
+                "name": "available",
+                "type": "bool",
+                "internalType": "bool"
+              },
+              {
+                "name": "reason",
+                "type": "uint8",
+                "internalType": "enum TypesV31.Reason"
+              },
+              {
+                "name": "phase",
+                "type": "uint8",
+                "internalType": "enum TypesV31.Phase"
+              },
+              {
+                "name": "stateNonce",
+                "type": "uint256",
+                "internalType": "uint256"
+              }
+            ]
+          },
+          {
+            "name": "E",
+            "type": "uint256",
+            "internalType": "uint256"
+          },
+          {
+            "name": "R",
+            "type": "uint256",
+            "internalType": "uint256"
+          },
+          {
+            "name": "V",
+            "type": "uint256",
+            "internalType": "uint256"
+          },
+          {
+            "name": "T",
+            "type": "uint256",
+            "internalType": "uint256"
+          },
+          {
+            "name": "O",
+            "type": "uint256",
+            "internalType": "uint256"
+          },
+          {
+            "name": "X0",
+            "type": "uint256",
+            "internalType": "uint256"
+          },
+          {
+            "name": "lastT",
+            "type": "uint256",
+            "internalType": "uint256"
+          },
+          {
+            "name": "H",
+            "type": "uint256",
+            "internalType": "uint256"
+          },
+          {
+            "name": "J",
+            "type": "uint256",
+            "internalType": "uint256"
+          },
+          {
+            "name": "claimCount",
+            "type": "uint256",
+            "internalType": "uint256"
+          },
+          {
+            "name": "stateNonce",
+            "type": "uint256",
+            "internalType": "uint256"
+          }
+        ]
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "router",
+    "inputs": [],
+    "outputs": [
+      {
+        "name": "",
+        "type": "address",
+        "internalType": "address"
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "sell",
+    "inputs": [
+      {
+        "name": "q",
+        "type": "uint256",
+        "internalType": "uint256"
+      },
+      {
+        "name": "minPayout",
+        "type": "uint256",
+        "internalType": "uint256"
+      },
+      {
+        "name": "nonce",
+        "type": "uint256",
+        "internalType": "uint256"
+      },
+      {
+        "name": "deadline",
+        "type": "uint256",
+        "internalType": "uint256"
+      }
+    ],
+    "outputs": [
+      {
+        "name": "",
+        "type": "uint256",
+        "internalType": "uint256"
+      }
+    ],
+    "stateMutability": "nonpayable"
+  },
+  {
+    "type": "function",
+    "name": "stageDeadlines",
+    "inputs": [],
+    "outputs": [
+      {
+        "name": "",
+        "type": "tuple",
+        "internalType": "struct TypesV31.Deadlines",
+        "components": [
+          {
+            "name": "validity",
+            "type": "tuple",
+            "internalType": "struct TypesV31.Validity",
+            "components": [
+              {
+                "name": "available",
+                "type": "bool",
+                "internalType": "bool"
+              },
+              {
+                "name": "reason",
+                "type": "uint8",
+                "internalType": "enum TypesV31.Reason"
+              },
+              {
+                "name": "phase",
+                "type": "uint8",
+                "internalType": "enum TypesV31.Phase"
+              },
+              {
+                "name": "stateNonce",
+                "type": "uint256",
+                "internalType": "uint256"
+              }
+            ]
+          },
+          {
+            "name": "start",
+            "type": "uint64",
+            "internalType": "uint64"
+          },
+          {
+            "name": "stage1End",
+            "type": "uint64",
+            "internalType": "uint64"
+          },
+          {
+            "name": "vetoUntil",
+            "type": "uint64",
+            "internalType": "uint64"
+          },
+          {
+            "name": "stage2Start",
+            "type": "uint64",
+            "internalType": "uint64"
+          },
+          {
+            "name": "stage2End",
+            "type": "uint64",
+            "internalType": "uint64"
+          },
+          {
+            "name": "listedAt",
+            "type": "uint64",
+            "internalType": "uint64"
+          }
+        ]
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "stateNonce",
+    "inputs": [],
+    "outputs": [
+      {
+        "name": "",
+        "type": "uint256",
+        "internalType": "uint256"
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "template",
+    "inputs": [],
+    "outputs": [
+      {
+        "name": "",
+        "type": "bytes32",
+        "internalType": "bytes32"
+      },
+      {
+        "name": "",
+        "type": "uint64",
+        "internalType": "uint64"
+      },
+      {
+        "name": "",
+        "type": "bytes32",
+        "internalType": "bytes32"
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "veto",
+    "inputs": [
+      {
+        "name": "delay",
+        "type": "uint64",
+        "internalType": "uint64"
+      },
+      {
+        "name": "report",
+        "type": "bytes32",
+        "internalType": "bytes32"
+      }
+    ],
+    "outputs": [],
+    "stateMutability": "nonpayable"
+  },
+  {
+    "type": "function",
+    "name": "votingPosition",
+    "inputs": [
+      {
+        "name": "id",
+        "type": "uint256",
+        "internalType": "uint256"
+      }
+    ],
+    "outputs": [
+      {
+        "name": "owner",
+        "type": "address",
+        "internalType": "address"
+      },
+      {
+        "name": "weight",
+        "type": "uint256",
+        "internalType": "uint256"
+      },
+      {
+        "name": "eligible",
+        "type": "bool",
+        "internalType": "bool"
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "event",
+    "name": "AtCostExited",
+    "inputs": [
+      {
+        "name": "raise",
+        "type": "address",
+        "indexed": true,
+        "internalType": "address"
+      },
+      {
+        "name": "phase",
+        "type": "uint8",
+        "indexed": false,
+        "internalType": "enum TypesV31.Phase"
+      },
+      {
+        "name": "stateNonce",
+        "type": "uint256",
+        "indexed": false,
+        "internalType": "uint256"
+      },
+      {
+        "name": "owner",
+        "type": "address",
+        "indexed": true,
+        "internalType": "address"
+      },
+      {
+        "name": "id",
+        "type": "uint256",
+        "indexed": true,
+        "internalType": "uint256"
+      },
+      {
+        "name": "quantity",
+        "type": "uint256",
+        "indexed": false,
+        "internalType": "uint256"
+      },
+      {
+        "name": "result",
+        "type": "tuple",
+        "indexed": false,
+        "internalType": "struct ProtectedSplitLib.Result",
+        "components": [
+          {
+            "name": "cost",
+            "type": "uint256",
+            "internalType": "uint256"
+          },
+          {
+            "name": "value",
+            "type": "uint256",
+            "internalType": "uint256"
+          },
+          {
+            "name": "premium",
+            "type": "uint256",
+            "internalType": "uint256"
+          },
+          {
+            "name": "cap",
+            "type": "uint256",
+            "internalType": "uint256"
+          },
+          {
+            "name": "profit",
+            "type": "uint256",
+            "internalType": "uint256"
+          },
+          {
+            "name": "qSold",
+            "type": "uint256",
+            "internalType": "uint256"
+          },
+          {
+            "name": "burn",
+            "type": "uint256",
+            "internalType": "uint256"
+          },
+          {
+            "name": "payout",
+            "type": "uint256",
+            "internalType": "uint256"
+          }
+        ]
+      },
+      {
+        "name": "balances",
+        "type": "tuple",
+        "indexed": false,
+        "internalType": "struct ProtectedSplitLib.Book",
+        "components": [
+          {
+            "name": "R",
+            "type": "uint256",
+            "internalType": "uint256"
+          },
+          {
+            "name": "V",
+            "type": "uint256",
+            "internalType": "uint256"
+          },
+          {
+            "name": "T",
+            "type": "uint256",
+            "internalType": "uint256"
+          },
+          {
+            "name": "O",
+            "type": "uint256",
+            "internalType": "uint256"
+          },
+          {
+            "name": "E",
+            "type": "uint256",
+            "internalType": "uint256"
+          }
+        ]
+      }
+    ],
+    "anonymous": false
+  },
+  {
+    "type": "event",
+    "name": "BudgetHaircutApplied",
+    "inputs": [
+      {
+        "name": "raise",
+        "type": "address",
+        "indexed": true,
+        "internalType": "address"
+      },
+      {
+        "name": "phase",
+        "type": "uint8",
+        "indexed": false,
+        "internalType": "enum TypesV31.Phase"
+      },
+      {
+        "name": "stateNonce",
+        "type": "uint256",
+        "indexed": false,
+        "internalType": "uint256"
+      },
+      {
+        "name": "proposal",
+        "type": "uint256",
+        "indexed": true,
+        "internalType": "uint256"
+      },
+      {
+        "name": "draw",
+        "type": "uint256",
+        "indexed": false,
+        "internalType": "uint256"
+      },
+      {
+        "name": "cumulativeDraw",
+        "type": "uint256",
+        "indexed": false,
+        "internalType": "uint256"
+      },
+      {
+        "name": "escrow",
+        "type": "uint256",
+        "indexed": false,
+        "internalType": "uint256"
+      },
+      {
+        "name": "totalShares",
+        "type": "uint256",
+        "indexed": false,
+        "internalType": "uint256"
+      },
+      {
+        "name": "index",
+        "type": "uint256",
+        "indexed": false,
+        "internalType": "uint256"
+      },
+      {
+        "name": "bookBurn",
+        "type": "uint256",
+        "indexed": false,
+        "internalType": "uint256"
+      }
+    ],
+    "anonymous": false
+  },
+  {
+    "type": "event",
+    "name": "Deposited",
+    "inputs": [
+      {
+        "name": "raise",
+        "type": "address",
+        "indexed": true,
+        "internalType": "address"
+      },
+      {
+        "name": "phase",
+        "type": "uint8",
+        "indexed": false,
+        "internalType": "enum TypesV31.Phase"
+      },
+      {
+        "name": "stateNonce",
+        "type": "uint256",
+        "indexed": false,
+        "internalType": "uint256"
+      },
+      {
+        "name": "owner",
+        "type": "address",
+        "indexed": true,
+        "internalType": "address"
+      },
+      {
+        "name": "id",
+        "type": "uint256",
+        "indexed": true,
+        "internalType": "uint256"
+      },
+      {
+        "name": "class",
+        "type": "uint8",
+        "indexed": false,
+        "internalType": "enum TypesV31.Class"
+      },
+      {
+        "name": "debit",
+        "type": "uint256",
+        "indexed": false,
+        "internalType": "uint256"
+      },
+      {
+        "name": "tokens",
+        "type": "uint256",
+        "indexed": false,
+        "internalType": "uint256"
+      },
+      {
+        "name": "sold",
+        "type": "uint256",
+        "indexed": false,
+        "internalType": "uint256"
+      },
+      {
+        "name": "escrow",
+        "type": "uint256",
+        "indexed": false,
+        "internalType": "uint256"
+      }
+    ],
+    "anonymous": false
+  },
+  {
+    "type": "event",
+    "name": "DepthAdvanced",
+    "inputs": [
+      {
+        "name": "raise",
+        "type": "address",
+        "indexed": true,
+        "internalType": "address"
+      },
+      {
+        "name": "phase",
+        "type": "uint8",
+        "indexed": false,
+        "internalType": "enum TypesV31.Phase"
+      },
+      {
+        "name": "stateNonce",
+        "type": "uint256",
+        "indexed": false,
+        "internalType": "uint256"
+      },
+      {
+        "name": "oldTime",
+        "type": "uint256",
+        "indexed": false,
+        "internalType": "uint256"
+      },
+      {
+        "name": "newTime",
+        "type": "uint256",
+        "indexed": false,
+        "internalType": "uint256"
+      },
+      {
+        "name": "oldV",
+        "type": "uint256",
+        "indexed": false,
+        "internalType": "uint256"
+      },
+      {
+        "name": "newV",
+        "type": "uint256",
+        "indexed": false,
+        "internalType": "uint256"
+      },
+      {
+        "name": "burn",
+        "type": "uint256",
+        "indexed": false,
+        "internalType": "uint256"
+      }
+    ],
+    "anonymous": false
+  },
+  {
+    "type": "event",
+    "name": "DissolvedByBuilder",
+    "inputs": [
+      {
+        "name": "raise",
+        "type": "address",
+        "indexed": true,
+        "internalType": "address"
+      },
+      {
+        "name": "stateNonce",
+        "type": "uint256",
+        "indexed": false,
+        "internalType": "uint256"
+      },
+      {
+        "name": "builder",
+        "type": "address",
+        "indexed": true,
+        "internalType": "address"
+      }
+    ],
+    "anonymous": false
+  },
+  {
+    "type": "event",
+    "name": "FeeRouted",
+    "inputs": [
+      {
+        "name": "raise",
+        "type": "address",
+        "indexed": true,
+        "internalType": "address"
+      },
+      {
+        "name": "phase",
+        "type": "uint8",
+        "indexed": false,
+        "internalType": "enum TypesV31.Phase"
+      },
+      {
+        "name": "stateNonce",
+        "type": "uint256",
+        "indexed": false,
+        "internalType": "uint256"
+      },
+      {
+        "name": "destination",
+        "type": "address",
+        "indexed": true,
+        "internalType": "address"
+      },
+      {
+        "name": "asset",
+        "type": "address",
+        "indexed": false,
+        "internalType": "address"
+      },
+      {
+        "name": "amount",
+        "type": "uint256",
+        "indexed": false,
+        "internalType": "uint256"
+      },
+      {
+        "name": "source",
+        "type": "bytes32",
+        "indexed": false,
+        "internalType": "bytes32"
+      }
+    ],
+    "anonymous": false
+  },
+  {
+    "type": "event",
+    "name": "Initialized",
+    "inputs": [
+      {
+        "name": "version",
+        "type": "uint64",
+        "indexed": false,
+        "internalType": "uint64"
+      }
+    ],
+    "anonymous": false
+  },
+  {
+    "type": "event",
+    "name": "ListingFinalized",
+    "inputs": [
+      {
+        "name": "raise",
+        "type": "address",
+        "indexed": true,
+        "internalType": "address"
+      },
+      {
+        "name": "phase",
+        "type": "uint8",
+        "indexed": false,
+        "internalType": "enum TypesV31.Phase"
+      },
+      {
+        "name": "stateNonce",
+        "type": "uint256",
+        "indexed": false,
+        "internalType": "uint256"
+      },
+      {
+        "name": "receipt",
+        "type": "tuple",
+        "indexed": false,
+        "internalType": "struct IDexAdapterV31.Receipt",
+        "components": [
+          {
+            "name": "poolId",
+            "type": "bytes32",
+            "internalType": "bytes32"
+          },
+          {
+            "name": "positionId",
+            "type": "bytes32",
+            "internalType": "bytes32"
+          },
+          {
+            "name": "owner",
+            "type": "address",
+            "internalType": "address"
+          },
+          {
+            "name": "sqrtPriceX96",
+            "type": "uint160",
+            "internalType": "uint160"
+          },
+          {
+            "name": "liquidity",
+            "type": "uint128",
+            "internalType": "uint128"
+          },
+          {
+            "name": "usedQuote",
+            "type": "uint256",
+            "internalType": "uint256"
+          },
+          {
+            "name": "usedToken",
+            "type": "uint256",
+            "internalType": "uint256"
+          }
+        ]
+      },
+      {
+        "name": "migration",
+        "type": "tuple",
+        "indexed": false,
+        "internalType": "struct TypesV31.ListingPreview",
+        "components": [
+          {
+            "name": "validity",
+            "type": "tuple",
+            "internalType": "struct TypesV31.Validity",
+            "components": [
+              {
+                "name": "available",
+                "type": "bool",
+                "internalType": "bool"
+              },
+              {
+                "name": "reason",
+                "type": "uint8",
+                "internalType": "enum TypesV31.Reason"
+              },
+              {
+                "name": "phase",
+                "type": "uint8",
+                "internalType": "enum TypesV31.Phase"
+              },
+              {
+                "name": "stateNonce",
+                "type": "uint256",
+                "internalType": "uint256"
+              }
+            ]
+          },
+          {
+            "name": "branch",
+            "type": "uint8",
+            "internalType": "enum TypesV31.Branch"
+          },
+          {
+            "name": "price",
+            "type": "uint256",
+            "internalType": "uint256"
+          },
+          {
+            "name": "sqrtPriceX96",
+            "type": "uint160",
+            "internalType": "uint160"
+          },
+          {
+            "name": "escrowRolled",
+            "type": "uint256",
+            "internalType": "uint256"
+          },
+          {
+            "name": "desiredQuote",
+            "type": "uint256",
+            "internalType": "uint256"
+          },
+          {
+            "name": "desiredToken",
+            "type": "uint256",
+            "internalType": "uint256"
+          },
+          {
+            "name": "usedQuote",
+            "type": "uint256",
+            "internalType": "uint256"
+          },
+          {
+            "name": "usedToken",
+            "type": "uint256",
+            "internalType": "uint256"
+          },
+          {
+            "name": "minQuote",
+            "type": "uint256",
+            "internalType": "uint256"
+          },
+          {
+            "name": "minToken",
+            "type": "uint256",
+            "internalType": "uint256"
+          },
+          {
+            "name": "liquidity",
+            "type": "uint128",
+            "internalType": "uint128"
+          },
+          {
+            "name": "bookBurn",
+            "type": "uint256",
+            "internalType": "uint256"
+          },
+          {
+            "name": "liquidityReserveBurn",
+            "type": "uint256",
+            "internalType": "uint256"
+          },
+          {
+            "name": "depthBurn",
+            "type": "uint256",
+            "internalType": "uint256"
+          },
+          {
+            "name": "quoteDust",
+            "type": "uint256",
+            "internalType": "uint256"
+          },
+          {
+            "name": "backerDelivery",
+            "type": "uint256",
+            "internalType": "uint256"
+          },
+          {
+            "name": "buyerDelivery",
+            "type": "uint256",
+            "internalType": "uint256"
+          },
+          {
+            "name": "builderDelivery",
+            "type": "uint256",
+            "internalType": "uint256"
+          },
+          {
+            "name": "ordinaryDestination",
+            "type": "address",
+            "internalType": "address"
+          },
+          {
+            "name": "builderDestination",
+            "type": "address",
+            "internalType": "address"
+          },
+          {
+            "name": "claimLiabilities",
+            "type": "uint256",
+            "internalType": "uint256"
+          },
+          {
+            "name": "claimsEndOnSuccess",
+            "type": "bool",
+            "internalType": "bool"
+          }
+        ]
+      }
+    ],
+    "anonymous": false
+  },
+  {
+    "type": "event",
+    "name": "MarketBought",
+    "inputs": [
+      {
+        "name": "raise",
+        "type": "address",
+        "indexed": true,
+        "internalType": "address"
+      },
+      {
+        "name": "phase",
+        "type": "uint8",
+        "indexed": false,
+        "internalType": "enum TypesV31.Phase"
+      },
+      {
+        "name": "stateNonce",
+        "type": "uint256",
+        "indexed": false,
+        "internalType": "uint256"
+      },
+      {
+        "name": "owner",
+        "type": "address",
+        "indexed": true,
+        "internalType": "address"
+      },
+      {
+        "name": "id",
+        "type": "uint256",
+        "indexed": true,
+        "internalType": "uint256"
+      },
+      {
+        "name": "trade",
+        "type": "tuple",
+        "indexed": false,
+        "internalType": "struct TypesV31.TradeQuote",
+        "components": [
+          {
+            "name": "validity",
+            "type": "tuple",
+            "internalType": "struct TypesV31.Validity",
+            "components": [
+              {
+                "name": "available",
+                "type": "bool",
+                "internalType": "bool"
+              },
+              {
+                "name": "reason",
+                "type": "uint8",
+                "internalType": "enum TypesV31.Reason"
+              },
+              {
+                "name": "phase",
+                "type": "uint8",
+                "internalType": "enum TypesV31.Phase"
+              },
+              {
+                "name": "stateNonce",
+                "type": "uint256",
+                "internalType": "uint256"
+              }
+            ]
+          },
+          {
+            "name": "gross",
+            "type": "uint256",
+            "internalType": "uint256"
+          },
+          {
+            "name": "ammAmount",
+            "type": "uint256",
+            "internalType": "uint256"
+          },
+          {
+            "name": "tokens",
+            "type": "uint256",
+            "internalType": "uint256"
+          },
+          {
+            "name": "net",
+            "type": "uint256",
+            "internalType": "uint256"
+          },
+          {
+            "name": "fees",
+            "type": "tuple",
+            "internalType": "struct TypesV31.Fees",
+            "components": [
+              {
+                "name": "total",
+                "type": "uint256",
+                "internalType": "uint256"
+              },
+              {
+                "name": "reserve",
+                "type": "uint256",
+                "internalType": "uint256"
+              },
+              {
+                "name": "reward",
+                "type": "uint256",
+                "internalType": "uint256"
+              },
+              {
+                "name": "treasury",
+                "type": "uint256",
+                "internalType": "uint256"
+              }
+            ]
+          },
+          {
+            "name": "priceBefore",
+            "type": "uint256",
+            "internalType": "uint256"
+          },
+          {
+            "name": "priceAfter",
+            "type": "uint256",
+            "internalType": "uint256"
+          },
+          {
+            "name": "priceImpactBps",
+            "type": "uint256",
+            "internalType": "uint256"
+          },
+          {
+            "name": "depthBurn",
+            "type": "uint256",
+            "internalType": "uint256"
+          }
+        ]
+      },
+      {
+        "name": "balances",
+        "type": "tuple",
+        "indexed": false,
+        "internalType": "struct ProtectedSplitLib.Book",
+        "components": [
+          {
+            "name": "R",
+            "type": "uint256",
+            "internalType": "uint256"
+          },
+          {
+            "name": "V",
+            "type": "uint256",
+            "internalType": "uint256"
+          },
+          {
+            "name": "T",
+            "type": "uint256",
+            "internalType": "uint256"
+          },
+          {
+            "name": "O",
+            "type": "uint256",
+            "internalType": "uint256"
+          },
+          {
+            "name": "E",
+            "type": "uint256",
+            "internalType": "uint256"
+          }
+        ]
+      }
+    ],
+    "anonymous": false
+  },
+  {
+    "type": "event",
+    "name": "MarketSold",
+    "inputs": [
+      {
+        "name": "raise",
+        "type": "address",
+        "indexed": true,
+        "internalType": "address"
+      },
+      {
+        "name": "phase",
+        "type": "uint8",
+        "indexed": false,
+        "internalType": "enum TypesV31.Phase"
+      },
+      {
+        "name": "stateNonce",
+        "type": "uint256",
+        "indexed": false,
+        "internalType": "uint256"
+      },
+      {
+        "name": "owner",
+        "type": "address",
+        "indexed": true,
+        "internalType": "address"
+      },
+      {
+        "name": "id",
+        "type": "uint256",
+        "indexed": true,
+        "internalType": "uint256"
+      },
+      {
+        "name": "trade",
+        "type": "tuple",
+        "indexed": false,
+        "internalType": "struct TypesV31.TradeQuote",
+        "components": [
+          {
+            "name": "validity",
+            "type": "tuple",
+            "internalType": "struct TypesV31.Validity",
+            "components": [
+              {
+                "name": "available",
+                "type": "bool",
+                "internalType": "bool"
+              },
+              {
+                "name": "reason",
+                "type": "uint8",
+                "internalType": "enum TypesV31.Reason"
+              },
+              {
+                "name": "phase",
+                "type": "uint8",
+                "internalType": "enum TypesV31.Phase"
+              },
+              {
+                "name": "stateNonce",
+                "type": "uint256",
+                "internalType": "uint256"
+              }
+            ]
+          },
+          {
+            "name": "gross",
+            "type": "uint256",
+            "internalType": "uint256"
+          },
+          {
+            "name": "ammAmount",
+            "type": "uint256",
+            "internalType": "uint256"
+          },
+          {
+            "name": "tokens",
+            "type": "uint256",
+            "internalType": "uint256"
+          },
+          {
+            "name": "net",
+            "type": "uint256",
+            "internalType": "uint256"
+          },
+          {
+            "name": "fees",
+            "type": "tuple",
+            "internalType": "struct TypesV31.Fees",
+            "components": [
+              {
+                "name": "total",
+                "type": "uint256",
+                "internalType": "uint256"
+              },
+              {
+                "name": "reserve",
+                "type": "uint256",
+                "internalType": "uint256"
+              },
+              {
+                "name": "reward",
+                "type": "uint256",
+                "internalType": "uint256"
+              },
+              {
+                "name": "treasury",
+                "type": "uint256",
+                "internalType": "uint256"
+              }
+            ]
+          },
+          {
+            "name": "priceBefore",
+            "type": "uint256",
+            "internalType": "uint256"
+          },
+          {
+            "name": "priceAfter",
+            "type": "uint256",
+            "internalType": "uint256"
+          },
+          {
+            "name": "priceImpactBps",
+            "type": "uint256",
+            "internalType": "uint256"
+          },
+          {
+            "name": "depthBurn",
+            "type": "uint256",
+            "internalType": "uint256"
+          }
+        ]
+      },
+      {
+        "name": "balances",
+        "type": "tuple",
+        "indexed": false,
+        "internalType": "struct ProtectedSplitLib.Book",
+        "components": [
+          {
+            "name": "R",
+            "type": "uint256",
+            "internalType": "uint256"
+          },
+          {
+            "name": "V",
+            "type": "uint256",
+            "internalType": "uint256"
+          },
+          {
+            "name": "T",
+            "type": "uint256",
+            "internalType": "uint256"
+          },
+          {
+            "name": "O",
+            "type": "uint256",
+            "internalType": "uint256"
+          },
+          {
+            "name": "E",
+            "type": "uint256",
+            "internalType": "uint256"
+          }
+        ]
+      }
+    ],
+    "anonymous": false
+  },
+  {
+    "type": "event",
+    "name": "PhaseChanged",
+    "inputs": [
+      {
+        "name": "raise",
+        "type": "address",
+        "indexed": true,
+        "internalType": "address"
+      },
+      {
+        "name": "phase",
+        "type": "uint8",
+        "indexed": false,
+        "internalType": "enum TypesV31.Phase"
+      },
+      {
+        "name": "stateNonce",
+        "type": "uint256",
+        "indexed": false,
+        "internalType": "uint256"
+      },
+      {
+        "name": "stage2Start",
+        "type": "uint64",
+        "indexed": false,
+        "internalType": "uint64"
+      },
+      {
+        "name": "stage2End",
+        "type": "uint64",
+        "indexed": false,
+        "internalType": "uint64"
+      }
+    ],
+    "anonymous": false
+  },
+  {
+    "type": "event",
+    "name": "ProtectedSplitExecuted",
+    "inputs": [
+      {
+        "name": "raise",
+        "type": "address",
+        "indexed": true,
+        "internalType": "address"
+      },
+      {
+        "name": "phase",
+        "type": "uint8",
+        "indexed": false,
+        "internalType": "enum TypesV31.Phase"
+      },
+      {
+        "name": "stateNonce",
+        "type": "uint256",
+        "indexed": false,
+        "internalType": "uint256"
+      },
+      {
+        "name": "owner",
+        "type": "address",
+        "indexed": true,
+        "internalType": "address"
+      },
+      {
+        "name": "id",
+        "type": "uint256",
+        "indexed": true,
+        "internalType": "uint256"
+      },
+      {
+        "name": "quantity",
+        "type": "uint256",
+        "indexed": false,
+        "internalType": "uint256"
+      },
+      {
+        "name": "result",
+        "type": "tuple",
+        "indexed": false,
+        "internalType": "struct ProtectedSplitLib.Result",
+        "components": [
+          {
+            "name": "cost",
+            "type": "uint256",
+            "internalType": "uint256"
+          },
+          {
+            "name": "value",
+            "type": "uint256",
+            "internalType": "uint256"
+          },
+          {
+            "name": "premium",
+            "type": "uint256",
+            "internalType": "uint256"
+          },
+          {
+            "name": "cap",
+            "type": "uint256",
+            "internalType": "uint256"
+          },
+          {
+            "name": "profit",
+            "type": "uint256",
+            "internalType": "uint256"
+          },
+          {
+            "name": "qSold",
+            "type": "uint256",
+            "internalType": "uint256"
+          },
+          {
+            "name": "burn",
+            "type": "uint256",
+            "internalType": "uint256"
+          },
+          {
+            "name": "payout",
+            "type": "uint256",
+            "internalType": "uint256"
+          }
+        ]
+      },
+      {
+        "name": "balances",
+        "type": "tuple",
+        "indexed": false,
+        "internalType": "struct ProtectedSplitLib.Book",
+        "components": [
+          {
+            "name": "R",
+            "type": "uint256",
+            "internalType": "uint256"
+          },
+          {
+            "name": "V",
+            "type": "uint256",
+            "internalType": "uint256"
+          },
+          {
+            "name": "T",
+            "type": "uint256",
+            "internalType": "uint256"
+          },
+          {
+            "name": "O",
+            "type": "uint256",
+            "internalType": "uint256"
+          },
+          {
+            "name": "E",
+            "type": "uint256",
+            "internalType": "uint256"
+          }
+        ]
+      }
+    ],
+    "anonymous": false
+  },
+  {
+    "type": "event",
+    "name": "QuotaDestroyed",
+    "inputs": [
+      {
+        "name": "raise",
+        "type": "address",
+        "indexed": true,
+        "internalType": "address"
+      },
+      {
+        "name": "phase",
+        "type": "uint8",
+        "indexed": false,
+        "internalType": "enum TypesV31.Phase"
+      },
+      {
+        "name": "stateNonce",
+        "type": "uint256",
+        "indexed": false,
+        "internalType": "uint256"
+      },
+      {
+        "name": "owner",
+        "type": "address",
+        "indexed": true,
+        "internalType": "address"
+      },
+      {
+        "name": "id",
+        "type": "uint256",
+        "indexed": true,
+        "internalType": "uint256"
+      },
+      {
+        "name": "quantity",
+        "type": "uint256",
+        "indexed": false,
+        "internalType": "uint256"
+      },
+      {
+        "name": "remainingQuota",
+        "type": "uint256",
+        "indexed": false,
+        "internalType": "uint256"
+      }
+    ],
+    "anonymous": false
+  },
+  {
+    "type": "event",
+    "name": "VetoChanged",
+    "inputs": [
+      {
+        "name": "raise",
+        "type": "address",
+        "indexed": true,
+        "internalType": "address"
+      },
+      {
+        "name": "phase",
+        "type": "uint8",
+        "indexed": false,
+        "internalType": "enum TypesV31.Phase"
+      },
+      {
+        "name": "stateNonce",
+        "type": "uint256",
+        "indexed": false,
+        "internalType": "uint256"
+      },
+      {
+        "name": "report",
+        "type": "bytes32",
+        "indexed": false,
+        "internalType": "bytes32"
+      },
+      {
+        "name": "vetoUntil",
+        "type": "uint64",
+        "indexed": false,
+        "internalType": "uint64"
+      },
+      {
+        "name": "cumulativeDelay",
+        "type": "uint64",
+        "indexed": false,
+        "internalType": "uint64"
+      }
+    ],
+    "anonymous": false
+  },
+  {
+    "type": "error",
+    "name": "Expired",
+    "inputs": []
+  },
+  {
+    "type": "error",
+    "name": "InvalidAmount",
+    "inputs": []
+  },
+  {
+    "type": "error",
+    "name": "InvalidInitialization",
+    "inputs": []
+  },
+  {
+    "type": "error",
+    "name": "InvalidPhase",
+    "inputs": []
+  },
+  {
+    "type": "error",
+    "name": "InvariantFailure",
+    "inputs": []
+  },
+  {
+    "type": "error",
+    "name": "NotInitializing",
+    "inputs": []
+  },
+  {
+    "type": "error",
+    "name": "Reentrancy",
+    "inputs": []
+  },
+  {
+    "type": "error",
+    "name": "SafeCastOverflowedUintDowncast",
+    "inputs": [
+      {
+        "name": "bits",
+        "type": "uint8",
+        "internalType": "uint8"
+      },
+      {
+        "name": "value",
+        "type": "uint256",
+        "internalType": "uint256"
+      }
+    ]
+  },
+  {
+    "type": "error",
+    "name": "SafeERC20FailedOperation",
+    "inputs": [
+      {
+        "name": "token",
+        "type": "address",
+        "internalType": "address"
+      }
+    ]
+  },
+  {
+    "type": "error",
+    "name": "Unauthorized",
+    "inputs": []
+  },
+  {
+    "type": "error",
+    "name": "WrongAssetDelta",
+    "inputs": []
+  }
+]

@@ -1,0 +1,15 @@
+# Netlify builds apps/web (Next.js) for the X Layer testnet deployment.
+[build]
+  base = "apps/web"
+  command = "bun --no-env-file run sync-abi && npx next build"
+  publish = ".next"
+
+[build.environment]
+  NEXT_PUBLIC_CHAIN_ID = "1952"
+  NEXT_PUBLIC_API_URL = "https://testnet-api.portex.vc"
+  NODE_VERSION = "24"
+  BUN_VERSION = "1.4.2"
+  NEXT_TELEMETRY_DISABLED = "1"
+
+[[plugins]]
+  package = "@netlify/plugin-nextjs"

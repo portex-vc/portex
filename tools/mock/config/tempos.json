@@ -1,0 +1,125 @@
+{
+  "$comment": "Mock activity tempo. Times are chain time. Override any value with --set path=value, e.g. --set steady.launchEveryMinutes=[60,90].",
+  "tickSeconds": 20,
+  "warpSeconds": 30,
+  "concurrency": 4,
+  "maxActiveProjects": 14,
+  "gas": {
+    "maxGasPriceGwei": 1,
+    "localMaxGasPriceGwei": 500,
+    "priceMultiplier": 1.15
+  },
+  "funding": {
+    "testnet": {
+      "nativeMin": "0.0005",
+      "nativeTopUp": "0.003",
+      "builderNativeTopUp": "0.008",
+      "nativeMaxPerDay": "0.25",
+      "funderReserve": "0.02"
+    },
+    "local": {
+      "nativeMin": "0.5",
+      "nativeTopUp": "2",
+      "builderNativeTopUp": "5",
+      "nativeMaxPerDay": "100000",
+      "funderReserve": "10"
+    },
+    "usdgTarget": {
+      "builder": 50000,
+      "conservative": 250000,
+      "rollover": 200000,
+      "stage2": 150000,
+      "stage3": 60000,
+      "whale": 2000000,
+      "voter": 200000
+    }
+  },
+  "bootstrap": {
+    "launches": 5,
+    "spacingMinutes": 7,
+    "fates": ["graduate", "graduate", "dissolve-builder", "graduate", "graduate"],
+    "tradeMultiplier": 2
+  },
+  "steady": {
+    "stage1Minutes": [180, 300],
+    "stage2Minutes": [480, 720],
+    "launchEveryMinutes": [110, 130],
+    "launchBatch": [1, 1],
+    "dissolveShare": 0.45,
+    "tradeMultiplier": 1
+  },
+  "occupancy": {
+    "stage1Min": 2,
+    "stage2Min": 2,
+    "maxGapFillsPerHour": 1,
+    "gapStage1Minutes": [10, 40],
+    "gapStage2Minutes": [480, 720],
+    "lookaheadMinutes": 60,
+    "gapLeadMinutes": 20
+  },
+  "volume": {
+    "dailyUsdg": [5000, 40000],
+    "medianDailyUsdg": 14000,
+    "initialBoost": 1.6
+  },
+  "stage1": {
+    "fillBy": [0.6, 0.8],
+    "partialFill": [0.2, 0.55],
+    "exitChancePerHour": 1.5,
+    "maxExits": 2
+  },
+  "stage2": {
+    "quietTradesPerHour": 12,
+    "burstTradesPerHour": 45,
+    "burstChancePerHour": 0.8,
+    "burstMinutes": [5, 20],
+    "sizeSigma": 0.9,
+    "whaleMultiplier": 5,
+    "exitChancePerHour": 0.8,
+    "maxExits": 2
+  },
+  "stage3": {
+    "quietSwapsPerHour": 10,
+    "burstSwapsPerHour": 35,
+    "sizeSigma": 1.0,
+    "whaleMultiplier": 6,
+    "rewardClaimChancePerHour": 1.5
+  },
+  "governance": {
+    "budgetDrawShareOfCapital": 0.04,
+    "maxDraws": 2,
+    "treasuryDelayMinutes": 10,
+    "maxTreasuryProposals": 2,
+    "treasurySpendShareOfCap": 0.5,
+    "yesChance": 0.85,
+    "votesPerTick": 4,
+    "maxTokenVoters": 8
+  },
+  "rollover": {
+    "chancePerHour": 4,
+    "claimChancePerTick": 0.5
+  },
+  "offchain": {
+    "feedbackPerProject": [1, 2],
+    "feedbackChancePerHour": 3
+  },
+  "ai": {
+    "enabled": true,
+    "maxCallsPerHour": 120,
+    "concurrency": 2,
+    "timeoutMs": 60000,
+    "retries": 3,
+    "maxTokens": 2500,
+    "temperature": 0.8,
+    "waitMs": 15000,
+    "warpWaitMs": 150000,
+    "reviewersPerRaise": [2, 4],
+    "backConviction": 0.55,
+    "exitConviction": 0.3,
+    "rereviewMinutes": 240,
+    "externalCapShare": 0.25,
+    "externalKeeper": true,
+    "sentimentEveryMinutes": 180,
+    "discoverEveryTicks": 5
+  }
+}

@@ -1,0 +1,309 @@
+[
+  {
+    "type": "constructor",
+    "inputs": [
+      {
+        "name": "curator_",
+        "type": "address",
+        "internalType": "address"
+      }
+    ],
+    "stateMutability": "nonpayable"
+  },
+  {
+    "type": "function",
+    "name": "curator",
+    "inputs": [],
+    "outputs": [
+      {
+        "name": "",
+        "type": "address",
+        "internalType": "address"
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "deprecate",
+    "inputs": [
+      {
+        "name": "templateId",
+        "type": "bytes32",
+        "internalType": "bytes32"
+      },
+      {
+        "name": "version",
+        "type": "uint64",
+        "internalType": "uint64"
+      }
+    ],
+    "outputs": [],
+    "stateMutability": "nonpayable"
+  },
+  {
+    "type": "function",
+    "name": "getVersion",
+    "inputs": [
+      {
+        "name": "templateId",
+        "type": "bytes32",
+        "internalType": "bytes32"
+      },
+      {
+        "name": "version",
+        "type": "uint64",
+        "internalType": "uint64"
+      }
+    ],
+    "outputs": [
+      {
+        "name": "",
+        "type": "tuple",
+        "internalType": "struct PortexRegistry.TemplateVersion",
+        "components": [
+          {
+            "name": "raiseImpl",
+            "type": "address",
+            "internalType": "address"
+          },
+          {
+            "name": "poolImpl",
+            "type": "address",
+            "internalType": "address"
+          },
+          {
+            "name": "vaultImpl",
+            "type": "address",
+            "internalType": "address"
+          },
+          {
+            "name": "governorImpl",
+            "type": "address",
+            "internalType": "address"
+          },
+          {
+            "name": "dexAdapter",
+            "type": "address",
+            "internalType": "address"
+          },
+          {
+            "name": "bundleHash",
+            "type": "bytes32",
+            "internalType": "bytes32"
+          },
+          {
+            "name": "publishedAt",
+            "type": "uint64",
+            "internalType": "uint64"
+          },
+          {
+            "name": "deprecated",
+            "type": "bool",
+            "internalType": "bool"
+          }
+        ]
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "latestVersion",
+    "inputs": [
+      {
+        "name": "templateId",
+        "type": "bytes32",
+        "internalType": "bytes32"
+      }
+    ],
+    "outputs": [
+      {
+        "name": "",
+        "type": "uint64",
+        "internalType": "uint64"
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "publish",
+    "inputs": [
+      {
+        "name": "templateId",
+        "type": "bytes32",
+        "internalType": "bytes32"
+      },
+      {
+        "name": "version",
+        "type": "uint64",
+        "internalType": "uint64"
+      },
+      {
+        "name": "raiseImpl",
+        "type": "address",
+        "internalType": "address"
+      },
+      {
+        "name": "poolImpl",
+        "type": "address",
+        "internalType": "address"
+      },
+      {
+        "name": "vaultImpl",
+        "type": "address",
+        "internalType": "address"
+      },
+      {
+        "name": "governorImpl",
+        "type": "address",
+        "internalType": "address"
+      },
+      {
+        "name": "dexAdapter",
+        "type": "address",
+        "internalType": "address"
+      }
+    ],
+    "outputs": [],
+    "stateMutability": "nonpayable"
+  },
+  {
+    "type": "function",
+    "name": "versionAt",
+    "inputs": [
+      {
+        "name": "templateId",
+        "type": "bytes32",
+        "internalType": "bytes32"
+      },
+      {
+        "name": "index",
+        "type": "uint256",
+        "internalType": "uint256"
+      }
+    ],
+    "outputs": [
+      {
+        "name": "",
+        "type": "uint64",
+        "internalType": "uint64"
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "versionCount",
+    "inputs": [
+      {
+        "name": "templateId",
+        "type": "bytes32",
+        "internalType": "bytes32"
+      }
+    ],
+    "outputs": [
+      {
+        "name": "",
+        "type": "uint256",
+        "internalType": "uint256"
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "event",
+    "name": "VersionDeprecated",
+    "inputs": [
+      {
+        "name": "templateId",
+        "type": "bytes32",
+        "indexed": true,
+        "internalType": "bytes32"
+      },
+      {
+        "name": "version",
+        "type": "uint64",
+        "indexed": true,
+        "internalType": "uint64"
+      }
+    ],
+    "anonymous": false
+  },
+  {
+    "type": "event",
+    "name": "VersionPublished",
+    "inputs": [
+      {
+        "name": "templateId",
+        "type": "bytes32",
+        "indexed": true,
+        "internalType": "bytes32"
+      },
+      {
+        "name": "version",
+        "type": "uint64",
+        "indexed": true,
+        "internalType": "uint64"
+      },
+      {
+        "name": "raiseImpl",
+        "type": "address",
+        "indexed": false,
+        "internalType": "address"
+      },
+      {
+        "name": "poolImpl",
+        "type": "address",
+        "indexed": false,
+        "internalType": "address"
+      },
+      {
+        "name": "vaultImpl",
+        "type": "address",
+        "indexed": false,
+        "internalType": "address"
+      },
+      {
+        "name": "governorImpl",
+        "type": "address",
+        "indexed": false,
+        "internalType": "address"
+      },
+      {
+        "name": "dexAdapter",
+        "type": "address",
+        "indexed": false,
+        "internalType": "address"
+      },
+      {
+        "name": "bundleHash",
+        "type": "bytes32",
+        "indexed": false,
+        "internalType": "bytes32"
+      }
+    ],
+    "anonymous": false
+  },
+  {
+    "type": "error",
+    "name": "OnlyCurator",
+    "inputs": []
+  },
+  {
+    "type": "error",
+    "name": "VersionExists",
+    "inputs": []
+  },
+  {
+    "type": "error",
+    "name": "VersionMissing",
+    "inputs": []
+  },
+  {
+    "type": "error",
+    "name": "ZeroImplementation",
+    "inputs": []
+  }
+]

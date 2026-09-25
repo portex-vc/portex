@@ -1,0 +1,31 @@
+{
+  "name": "@portex/tools",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Portex tools: local dev stack, deployment, demo seed, simulation and testnet mock activity.",
+  "type": "module",
+  "exports": {
+    "./seed-v31": "./src/seed-v31.ts",
+    "./fixture-v31": "./src/fixture-v31.ts",
+    "./lib/v31": "./src/lib/v31.ts",
+    "./lib/chain": "./src/lib/chain.ts"
+  },
+  "scripts": {
+    "simulate": "bun --no-env-file src/simulate.ts",
+    "seed": "bun --no-env-file src/seed.ts",
+    "dev": "bash dev.sh",
+    "mock:run": "bun --no-env-file mock/run.ts",
+    "mock:seed": "bun --no-env-file mock/seed.ts",
+    "mock:images": "bun --no-env-file mock/images.ts",
+    "mock:test": "bun --no-env-file test mock",
+    "mock:typecheck": "tsc --noEmit -p mock/tsconfig.json"
+  },
+  "dependencies": {
+    "viem": "2.56.8",
+    "@portex/api": "workspace:*"
+  },
+  "devDependencies": {
+    "@types/node": "24.13.6",
+    "typescript": "5.9.3"
+  }
+}

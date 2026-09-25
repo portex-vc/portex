@@ -1,0 +1,1212 @@
+[
+  {
+    "type": "constructor",
+    "inputs": [
+      {
+        "name": "curator_",
+        "type": "address",
+        "internalType": "address"
+      }
+    ],
+    "stateMutability": "nonpayable"
+  },
+  {
+    "type": "function",
+    "name": "MAX_STAGE_LENGTH",
+    "inputs": [],
+    "outputs": [
+      {
+        "name": "",
+        "type": "uint64",
+        "internalType": "uint64"
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "MAX_SURCHARGE_BPS",
+    "inputs": [],
+    "outputs": [
+      {
+        "name": "",
+        "type": "uint16",
+        "internalType": "uint16"
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "MAX_TRADE_FEE_BPS",
+    "inputs": [],
+    "outputs": [
+      {
+        "name": "",
+        "type": "uint16",
+        "internalType": "uint16"
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "MAX_TREASURY_VESTING",
+    "inputs": [],
+    "outputs": [
+      {
+        "name": "",
+        "type": "uint64",
+        "internalType": "uint64"
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "bundleHash",
+    "inputs": [
+      {
+        "name": "i",
+        "type": "tuple",
+        "internalType": "struct PortexRegistryV31.Implementations",
+        "components": [
+          {
+            "name": "raise",
+            "type": "address",
+            "internalType": "address"
+          },
+          {
+            "name": "token",
+            "type": "address",
+            "internalType": "address"
+          },
+          {
+            "name": "vesting",
+            "type": "address",
+            "internalType": "address"
+          },
+          {
+            "name": "governor",
+            "type": "address",
+            "internalType": "address"
+          },
+          {
+            "name": "claims",
+            "type": "address",
+            "internalType": "address"
+          },
+          {
+            "name": "adapter",
+            "type": "address",
+            "internalType": "address"
+          },
+          {
+            "name": "quote",
+            "type": "address",
+            "internalType": "address"
+          },
+          {
+            "name": "attester",
+            "type": "address",
+            "internalType": "address"
+          },
+          {
+            "name": "council",
+            "type": "address",
+            "internalType": "address"
+          },
+          {
+            "name": "treasury",
+            "type": "address",
+            "internalType": "address"
+          }
+        ]
+      },
+      {
+        "name": "p",
+        "type": "tuple",
+        "internalType": "struct TypesV31.Parameters",
+        "components": [
+          {
+            "name": "kappaMax",
+            "type": "uint256",
+            "internalType": "uint256"
+          },
+          {
+            "name": "budgetCeilingMax",
+            "type": "uint256",
+            "internalType": "uint256"
+          },
+          {
+            "name": "vetoMax",
+            "type": "uint64",
+            "internalType": "uint64"
+          },
+          {
+            "name": "vetoTotal",
+            "type": "uint64",
+            "internalType": "uint64"
+          },
+          {
+            "name": "vetoCooldown",
+            "type": "uint64",
+            "internalType": "uint64"
+          },
+          {
+            "name": "voting",
+            "type": "uint64",
+            "internalType": "uint64"
+          },
+          {
+            "name": "dispute",
+            "type": "uint64",
+            "internalType": "uint64"
+          },
+          {
+            "name": "execution",
+            "type": "uint64",
+            "internalType": "uint64"
+          },
+          {
+            "name": "proposalInterval",
+            "type": "uint64",
+            "internalType": "uint64"
+          },
+          {
+            "name": "minimumBackers",
+            "type": "uint16",
+            "internalType": "uint16"
+          },
+          {
+            "name": "tradeFeeBps",
+            "type": "uint16",
+            "internalType": "uint16"
+          },
+          {
+            "name": "surchargeBps",
+            "type": "uint16",
+            "internalType": "uint16"
+          },
+          {
+            "name": "stage1Min",
+            "type": "uint64",
+            "internalType": "uint64"
+          },
+          {
+            "name": "stage1Max",
+            "type": "uint64",
+            "internalType": "uint64"
+          },
+          {
+            "name": "stage2Min",
+            "type": "uint64",
+            "internalType": "uint64"
+          },
+          {
+            "name": "stage2Max",
+            "type": "uint64",
+            "internalType": "uint64"
+          },
+          {
+            "name": "treasuryVesting",
+            "type": "uint64",
+            "internalType": "uint64"
+          }
+        ]
+      }
+    ],
+    "outputs": [
+      {
+        "name": "",
+        "type": "bytes32",
+        "internalType": "bytes32"
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "curator",
+    "inputs": [],
+    "outputs": [
+      {
+        "name": "",
+        "type": "address",
+        "internalType": "address"
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "deprecate",
+    "inputs": [
+      {
+        "name": "templateId",
+        "type": "bytes32",
+        "internalType": "bytes32"
+      },
+      {
+        "name": "version",
+        "type": "uint64",
+        "internalType": "uint64"
+      }
+    ],
+    "outputs": [],
+    "stateMutability": "nonpayable"
+  },
+  {
+    "type": "function",
+    "name": "getVersion",
+    "inputs": [
+      {
+        "name": "templateId",
+        "type": "bytes32",
+        "internalType": "bytes32"
+      },
+      {
+        "name": "version",
+        "type": "uint64",
+        "internalType": "uint64"
+      }
+    ],
+    "outputs": [
+      {
+        "name": "",
+        "type": "tuple",
+        "internalType": "struct PortexRegistryV31.TemplateVersion",
+        "components": [
+          {
+            "name": "implementations",
+            "type": "tuple",
+            "internalType": "struct PortexRegistryV31.Implementations",
+            "components": [
+              {
+                "name": "raise",
+                "type": "address",
+                "internalType": "address"
+              },
+              {
+                "name": "token",
+                "type": "address",
+                "internalType": "address"
+              },
+              {
+                "name": "vesting",
+                "type": "address",
+                "internalType": "address"
+              },
+              {
+                "name": "governor",
+                "type": "address",
+                "internalType": "address"
+              },
+              {
+                "name": "claims",
+                "type": "address",
+                "internalType": "address"
+              },
+              {
+                "name": "adapter",
+                "type": "address",
+                "internalType": "address"
+              },
+              {
+                "name": "quote",
+                "type": "address",
+                "internalType": "address"
+              },
+              {
+                "name": "attester",
+                "type": "address",
+                "internalType": "address"
+              },
+              {
+                "name": "council",
+                "type": "address",
+                "internalType": "address"
+              },
+              {
+                "name": "treasury",
+                "type": "address",
+                "internalType": "address"
+              }
+            ]
+          },
+          {
+            "name": "parameters",
+            "type": "tuple",
+            "internalType": "struct TypesV31.Parameters",
+            "components": [
+              {
+                "name": "kappaMax",
+                "type": "uint256",
+                "internalType": "uint256"
+              },
+              {
+                "name": "budgetCeilingMax",
+                "type": "uint256",
+                "internalType": "uint256"
+              },
+              {
+                "name": "vetoMax",
+                "type": "uint64",
+                "internalType": "uint64"
+              },
+              {
+                "name": "vetoTotal",
+                "type": "uint64",
+                "internalType": "uint64"
+              },
+              {
+                "name": "vetoCooldown",
+                "type": "uint64",
+                "internalType": "uint64"
+              },
+              {
+                "name": "voting",
+                "type": "uint64",
+                "internalType": "uint64"
+              },
+              {
+                "name": "dispute",
+                "type": "uint64",
+                "internalType": "uint64"
+              },
+              {
+                "name": "execution",
+                "type": "uint64",
+                "internalType": "uint64"
+              },
+              {
+                "name": "proposalInterval",
+                "type": "uint64",
+                "internalType": "uint64"
+              },
+              {
+                "name": "minimumBackers",
+                "type": "uint16",
+                "internalType": "uint16"
+              },
+              {
+                "name": "tradeFeeBps",
+                "type": "uint16",
+                "internalType": "uint16"
+              },
+              {
+                "name": "surchargeBps",
+                "type": "uint16",
+                "internalType": "uint16"
+              },
+              {
+                "name": "stage1Min",
+                "type": "uint64",
+                "internalType": "uint64"
+              },
+              {
+                "name": "stage1Max",
+                "type": "uint64",
+                "internalType": "uint64"
+              },
+              {
+                "name": "stage2Min",
+                "type": "uint64",
+                "internalType": "uint64"
+              },
+              {
+                "name": "stage2Max",
+                "type": "uint64",
+                "internalType": "uint64"
+              },
+              {
+                "name": "treasuryVesting",
+                "type": "uint64",
+                "internalType": "uint64"
+              }
+            ]
+          },
+          {
+            "name": "bundleHash",
+            "type": "bytes32",
+            "internalType": "bytes32"
+          },
+          {
+            "name": "publishedAt",
+            "type": "uint64",
+            "internalType": "uint64"
+          },
+          {
+            "name": "deprecated",
+            "type": "bool",
+            "internalType": "bool"
+          }
+        ]
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "protocolParameters",
+    "inputs": [],
+    "outputs": [
+      {
+        "name": "",
+        "type": "tuple",
+        "internalType": "struct TypesV31.Parameters",
+        "components": [
+          {
+            "name": "kappaMax",
+            "type": "uint256",
+            "internalType": "uint256"
+          },
+          {
+            "name": "budgetCeilingMax",
+            "type": "uint256",
+            "internalType": "uint256"
+          },
+          {
+            "name": "vetoMax",
+            "type": "uint64",
+            "internalType": "uint64"
+          },
+          {
+            "name": "vetoTotal",
+            "type": "uint64",
+            "internalType": "uint64"
+          },
+          {
+            "name": "vetoCooldown",
+            "type": "uint64",
+            "internalType": "uint64"
+          },
+          {
+            "name": "voting",
+            "type": "uint64",
+            "internalType": "uint64"
+          },
+          {
+            "name": "dispute",
+            "type": "uint64",
+            "internalType": "uint64"
+          },
+          {
+            "name": "execution",
+            "type": "uint64",
+            "internalType": "uint64"
+          },
+          {
+            "name": "proposalInterval",
+            "type": "uint64",
+            "internalType": "uint64"
+          },
+          {
+            "name": "minimumBackers",
+            "type": "uint16",
+            "internalType": "uint16"
+          },
+          {
+            "name": "tradeFeeBps",
+            "type": "uint16",
+            "internalType": "uint16"
+          },
+          {
+            "name": "surchargeBps",
+            "type": "uint16",
+            "internalType": "uint16"
+          },
+          {
+            "name": "stage1Min",
+            "type": "uint64",
+            "internalType": "uint64"
+          },
+          {
+            "name": "stage1Max",
+            "type": "uint64",
+            "internalType": "uint64"
+          },
+          {
+            "name": "stage2Min",
+            "type": "uint64",
+            "internalType": "uint64"
+          },
+          {
+            "name": "stage2Max",
+            "type": "uint64",
+            "internalType": "uint64"
+          },
+          {
+            "name": "treasuryVesting",
+            "type": "uint64",
+            "internalType": "uint64"
+          }
+        ]
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "publish",
+    "inputs": [
+      {
+        "name": "templateId",
+        "type": "bytes32",
+        "internalType": "bytes32"
+      },
+      {
+        "name": "version",
+        "type": "uint64",
+        "internalType": "uint64"
+      },
+      {
+        "name": "implementations",
+        "type": "tuple",
+        "internalType": "struct PortexRegistryV31.Implementations",
+        "components": [
+          {
+            "name": "raise",
+            "type": "address",
+            "internalType": "address"
+          },
+          {
+            "name": "token",
+            "type": "address",
+            "internalType": "address"
+          },
+          {
+            "name": "vesting",
+            "type": "address",
+            "internalType": "address"
+          },
+          {
+            "name": "governor",
+            "type": "address",
+            "internalType": "address"
+          },
+          {
+            "name": "claims",
+            "type": "address",
+            "internalType": "address"
+          },
+          {
+            "name": "adapter",
+            "type": "address",
+            "internalType": "address"
+          },
+          {
+            "name": "quote",
+            "type": "address",
+            "internalType": "address"
+          },
+          {
+            "name": "attester",
+            "type": "address",
+            "internalType": "address"
+          },
+          {
+            "name": "council",
+            "type": "address",
+            "internalType": "address"
+          },
+          {
+            "name": "treasury",
+            "type": "address",
+            "internalType": "address"
+          }
+        ]
+      }
+    ],
+    "outputs": [],
+    "stateMutability": "nonpayable"
+  },
+  {
+    "type": "function",
+    "name": "quoteCodeHash",
+    "inputs": [
+      {
+        "name": "",
+        "type": "address",
+        "internalType": "address"
+      }
+    ],
+    "outputs": [
+      {
+        "name": "",
+        "type": "bytes32",
+        "internalType": "bytes32"
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "quoteFrozen",
+    "inputs": [
+      {
+        "name": "",
+        "type": "address",
+        "internalType": "address"
+      }
+    ],
+    "outputs": [
+      {
+        "name": "",
+        "type": "bool",
+        "internalType": "bool"
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "setProtocolParameters",
+    "inputs": [
+      {
+        "name": "p",
+        "type": "tuple",
+        "internalType": "struct TypesV31.Parameters",
+        "components": [
+          {
+            "name": "kappaMax",
+            "type": "uint256",
+            "internalType": "uint256"
+          },
+          {
+            "name": "budgetCeilingMax",
+            "type": "uint256",
+            "internalType": "uint256"
+          },
+          {
+            "name": "vetoMax",
+            "type": "uint64",
+            "internalType": "uint64"
+          },
+          {
+            "name": "vetoTotal",
+            "type": "uint64",
+            "internalType": "uint64"
+          },
+          {
+            "name": "vetoCooldown",
+            "type": "uint64",
+            "internalType": "uint64"
+          },
+          {
+            "name": "voting",
+            "type": "uint64",
+            "internalType": "uint64"
+          },
+          {
+            "name": "dispute",
+            "type": "uint64",
+            "internalType": "uint64"
+          },
+          {
+            "name": "execution",
+            "type": "uint64",
+            "internalType": "uint64"
+          },
+          {
+            "name": "proposalInterval",
+            "type": "uint64",
+            "internalType": "uint64"
+          },
+          {
+            "name": "minimumBackers",
+            "type": "uint16",
+            "internalType": "uint16"
+          },
+          {
+            "name": "tradeFeeBps",
+            "type": "uint16",
+            "internalType": "uint16"
+          },
+          {
+            "name": "surchargeBps",
+            "type": "uint16",
+            "internalType": "uint16"
+          },
+          {
+            "name": "stage1Min",
+            "type": "uint64",
+            "internalType": "uint64"
+          },
+          {
+            "name": "stage1Max",
+            "type": "uint64",
+            "internalType": "uint64"
+          },
+          {
+            "name": "stage2Min",
+            "type": "uint64",
+            "internalType": "uint64"
+          },
+          {
+            "name": "stage2Max",
+            "type": "uint64",
+            "internalType": "uint64"
+          },
+          {
+            "name": "treasuryVesting",
+            "type": "uint64",
+            "internalType": "uint64"
+          }
+        ]
+      }
+    ],
+    "outputs": [],
+    "stateMutability": "nonpayable"
+  },
+  {
+    "type": "function",
+    "name": "versionAt",
+    "inputs": [
+      {
+        "name": "templateId",
+        "type": "bytes32",
+        "internalType": "bytes32"
+      },
+      {
+        "name": "index",
+        "type": "uint256",
+        "internalType": "uint256"
+      }
+    ],
+    "outputs": [
+      {
+        "name": "",
+        "type": "uint64",
+        "internalType": "uint64"
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "versionCount",
+    "inputs": [
+      {
+        "name": "templateId",
+        "type": "bytes32",
+        "internalType": "bytes32"
+      }
+    ],
+    "outputs": [
+      {
+        "name": "",
+        "type": "uint256",
+        "internalType": "uint256"
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "whitelistQuote",
+    "inputs": [
+      {
+        "name": "",
+        "type": "address",
+        "internalType": "address"
+      },
+      {
+        "name": "",
+        "type": "bool",
+        "internalType": "bool"
+      },
+      {
+        "name": "",
+        "type": "bool",
+        "internalType": "bool"
+      },
+      {
+        "name": "",
+        "type": "bool",
+        "internalType": "bool"
+      }
+    ],
+    "outputs": [],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "whitelistQuote",
+    "inputs": [
+      {
+        "name": "asset",
+        "type": "address",
+        "internalType": "address"
+      },
+      {
+        "name": "feeOnTransfer",
+        "type": "bool",
+        "internalType": "bool"
+      },
+      {
+        "name": "rebasing",
+        "type": "bool",
+        "internalType": "bool"
+      },
+      {
+        "name": "pausable",
+        "type": "bool",
+        "internalType": "bool"
+      },
+      {
+        "name": "quoteFrozen_",
+        "type": "bool",
+        "internalType": "bool"
+      }
+    ],
+    "outputs": [],
+    "stateMutability": "nonpayable"
+  },
+  {
+    "type": "event",
+    "name": "ProtocolParametersUpdated",
+    "inputs": [
+      {
+        "name": "parameters",
+        "type": "tuple",
+        "indexed": false,
+        "internalType": "struct TypesV31.Parameters",
+        "components": [
+          {
+            "name": "kappaMax",
+            "type": "uint256",
+            "internalType": "uint256"
+          },
+          {
+            "name": "budgetCeilingMax",
+            "type": "uint256",
+            "internalType": "uint256"
+          },
+          {
+            "name": "vetoMax",
+            "type": "uint64",
+            "internalType": "uint64"
+          },
+          {
+            "name": "vetoTotal",
+            "type": "uint64",
+            "internalType": "uint64"
+          },
+          {
+            "name": "vetoCooldown",
+            "type": "uint64",
+            "internalType": "uint64"
+          },
+          {
+            "name": "voting",
+            "type": "uint64",
+            "internalType": "uint64"
+          },
+          {
+            "name": "dispute",
+            "type": "uint64",
+            "internalType": "uint64"
+          },
+          {
+            "name": "execution",
+            "type": "uint64",
+            "internalType": "uint64"
+          },
+          {
+            "name": "proposalInterval",
+            "type": "uint64",
+            "internalType": "uint64"
+          },
+          {
+            "name": "minimumBackers",
+            "type": "uint16",
+            "internalType": "uint16"
+          },
+          {
+            "name": "tradeFeeBps",
+            "type": "uint16",
+            "internalType": "uint16"
+          },
+          {
+            "name": "surchargeBps",
+            "type": "uint16",
+            "internalType": "uint16"
+          },
+          {
+            "name": "stage1Min",
+            "type": "uint64",
+            "internalType": "uint64"
+          },
+          {
+            "name": "stage1Max",
+            "type": "uint64",
+            "internalType": "uint64"
+          },
+          {
+            "name": "stage2Min",
+            "type": "uint64",
+            "internalType": "uint64"
+          },
+          {
+            "name": "stage2Max",
+            "type": "uint64",
+            "internalType": "uint64"
+          },
+          {
+            "name": "treasuryVesting",
+            "type": "uint64",
+            "internalType": "uint64"
+          }
+        ]
+      }
+    ],
+    "anonymous": false
+  },
+  {
+    "type": "event",
+    "name": "QuoteWhitelisted",
+    "inputs": [
+      {
+        "name": "quote",
+        "type": "address",
+        "indexed": true,
+        "internalType": "address"
+      },
+      {
+        "name": "codeHash",
+        "type": "bytes32",
+        "indexed": false,
+        "internalType": "bytes32"
+      },
+      {
+        "name": "quoteFrozen",
+        "type": "bool",
+        "indexed": false,
+        "internalType": "bool"
+      }
+    ],
+    "anonymous": false
+  },
+  {
+    "type": "event",
+    "name": "VersionDeprecated",
+    "inputs": [
+      {
+        "name": "templateId",
+        "type": "bytes32",
+        "indexed": true,
+        "internalType": "bytes32"
+      },
+      {
+        "name": "version",
+        "type": "uint64",
+        "indexed": true,
+        "internalType": "uint64"
+      }
+    ],
+    "anonymous": false
+  },
+  {
+    "type": "event",
+    "name": "VersionPublished",
+    "inputs": [
+      {
+        "name": "templateId",
+        "type": "bytes32",
+        "indexed": true,
+        "internalType": "bytes32"
+      },
+      {
+        "name": "version",
+        "type": "uint64",
+        "indexed": true,
+        "internalType": "uint64"
+      },
+      {
+        "name": "bundleHash",
+        "type": "bytes32",
+        "indexed": false,
+        "internalType": "bytes32"
+      },
+      {
+        "name": "implementations",
+        "type": "tuple",
+        "indexed": false,
+        "internalType": "struct PortexRegistryV31.Implementations",
+        "components": [
+          {
+            "name": "raise",
+            "type": "address",
+            "internalType": "address"
+          },
+          {
+            "name": "token",
+            "type": "address",
+            "internalType": "address"
+          },
+          {
+            "name": "vesting",
+            "type": "address",
+            "internalType": "address"
+          },
+          {
+            "name": "governor",
+            "type": "address",
+            "internalType": "address"
+          },
+          {
+            "name": "claims",
+            "type": "address",
+            "internalType": "address"
+          },
+          {
+            "name": "adapter",
+            "type": "address",
+            "internalType": "address"
+          },
+          {
+            "name": "quote",
+            "type": "address",
+            "internalType": "address"
+          },
+          {
+            "name": "attester",
+            "type": "address",
+            "internalType": "address"
+          },
+          {
+            "name": "council",
+            "type": "address",
+            "internalType": "address"
+          },
+          {
+            "name": "treasury",
+            "type": "address",
+            "internalType": "address"
+          }
+        ]
+      },
+      {
+        "name": "parameters",
+        "type": "tuple",
+        "indexed": false,
+        "internalType": "struct TypesV31.Parameters",
+        "components": [
+          {
+            "name": "kappaMax",
+            "type": "uint256",
+            "internalType": "uint256"
+          },
+          {
+            "name": "budgetCeilingMax",
+            "type": "uint256",
+            "internalType": "uint256"
+          },
+          {
+            "name": "vetoMax",
+            "type": "uint64",
+            "internalType": "uint64"
+          },
+          {
+            "name": "vetoTotal",
+            "type": "uint64",
+            "internalType": "uint64"
+          },
+          {
+            "name": "vetoCooldown",
+            "type": "uint64",
+            "internalType": "uint64"
+          },
+          {
+            "name": "voting",
+            "type": "uint64",
+            "internalType": "uint64"
+          },
+          {
+            "name": "dispute",
+            "type": "uint64",
+            "internalType": "uint64"
+          },
+          {
+            "name": "execution",
+            "type": "uint64",
+            "internalType": "uint64"
+          },
+          {
+            "name": "proposalInterval",
+            "type": "uint64",
+            "internalType": "uint64"
+          },
+          {
+            "name": "minimumBackers",
+            "type": "uint16",
+            "internalType": "uint16"
+          },
+          {
+            "name": "tradeFeeBps",
+            "type": "uint16",
+            "internalType": "uint16"
+          },
+          {
+            "name": "surchargeBps",
+            "type": "uint16",
+            "internalType": "uint16"
+          },
+          {
+            "name": "stage1Min",
+            "type": "uint64",
+            "internalType": "uint64"
+          },
+          {
+            "name": "stage1Max",
+            "type": "uint64",
+            "internalType": "uint64"
+          },
+          {
+            "name": "stage2Min",
+            "type": "uint64",
+            "internalType": "uint64"
+          },
+          {
+            "name": "stage2Max",
+            "type": "uint64",
+            "internalType": "uint64"
+          },
+          {
+            "name": "treasuryVesting",
+            "type": "uint64",
+            "internalType": "uint64"
+          }
+        ]
+      }
+    ],
+    "anonymous": false
+  },
+  {
+    "type": "error",
+    "name": "InvalidConfig",
+    "inputs": []
+  },
+  {
+    "type": "error",
+    "name": "SafeCastOverflowedUintDowncast",
+    "inputs": [
+      {
+        "name": "bits",
+        "type": "uint8",
+        "internalType": "uint8"
+      },
+      {
+        "name": "value",
+        "type": "uint256",
+        "internalType": "uint256"
+      }
+    ]
+  },
+  {
+    "type": "error",
+    "name": "Unauthorized",
+    "inputs": []
+  }
+]

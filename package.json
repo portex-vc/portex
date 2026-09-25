@@ -1,0 +1,23 @@
+{
+  "name": "portex",
+  "private": true,
+  "description": "Portex monorepo. apps/web (Next.js) \u00b7 apps/api (Bun + Hono) \u00b7 packages/contracts (Foundry) \u00b7 tools (dev stack, deploy, seed, mock activity).",
+  "workspaces": [
+    "apps/*",
+    "packages/*",
+    "tools"
+  ],
+  "scripts": {
+    "dev": "bash tools/dev.sh",
+    "build": "bun run --filter @portex/web build",
+    "lint": "bun run --filter @portex/web lint",
+    "test": "bun run test:contracts && bun run test:api && bun run test:web",
+    "test:contracts": "cd packages/contracts && forge test",
+    "test:api": "bun run --filter @portex/api test",
+    "test:web": "bun run --filter @portex/web test",
+    "e2e": "bun run --filter @portex/web e2e",
+    "deploy:local": "bash packages/contracts/scripts/deploy-local.sh",
+    "seed": "bun run --filter @portex/tools seed",
+    "simulate": "bun run --filter @portex/tools simulate"
+  }
+}

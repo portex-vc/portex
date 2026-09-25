@@ -1,0 +1,3 @@
+[test]
+# Fixture deployment workspaces contain Foundry library symlinks, not backend tests.
+root = "./test"

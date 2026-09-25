@@ -1,0 +1,104 @@
+/*
+  One drawing sequence, in the order the backer lives it: the buy-in, the market value of their tokens and
+  their protected cost, then the exit value revealing left to right (it is dashed, so it is revealed by a clip,
+  not drawn), then the open market. The resting state is the base style; animations run from the hidden state
+  (fill-mode: backwards), so the figure is complete without motion.
+*/
+.floorTop {
+  stop-color: rgb(var(--protected));
+  stop-opacity: 0.14;
+}
+.floorBottom {
+  stop-color: rgb(var(--protected));
+  stop-opacity: 0;
+}
+
+.fade {
+  animation: fade 700ms cubic-bezier(0.22, 1, 0.36, 1) 150ms backwards;
+}
+.popBuy {
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: pop 420ms cubic-bezier(0.22, 1, 0.36, 1) 350ms backwards;
+}
+.fadeLabel {
+  animation: rise 520ms cubic-bezier(0.22, 1, 0.36, 1) 450ms backwards;
+}
+.drawValue {
+  animation: draw 1500ms cubic-bezier(0.65, 0, 0.35, 1) 600ms backwards;
+}
+.drawFloor {
+  animation: draw 1200ms cubic-bezier(0.65, 0, 0.35, 1) 700ms backwards;
+  filter: drop-shadow(0 0 6px rgb(var(--protected) / 0.35));
+}
+.reveal {
+  transform-box: fill-box;
+  transform-origin: left center;
+  animation: reveal 1300ms cubic-bezier(0.65, 0, 0.35, 1) 1250ms backwards;
+}
+.popEnd {
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: pop 420ms cubic-bezier(0.22, 1, 0.36, 1) 1850ms backwards;
+}
+.popMeet {
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: pop 360ms cubic-bezier(0.22, 1, 0.36, 1) 2450ms backwards;
+}
+.drawMarket {
+  animation: draw 850ms cubic-bezier(0.22, 1, 0.36, 1) 2300ms backwards;
+}
+.popTail {
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: pop 360ms cubic-bezier(0.22, 1, 0.36, 1) 3050ms backwards;
+}
+
+@keyframes draw {
+  from {
+    stroke-dasharray: 1;
+    stroke-dashoffset: 1;
+  }
+  to {
+    stroke-dasharray: 1;
+    stroke-dashoffset: 0;
+  }
+}
+@keyframes reveal {
+  from {
+    transform: scaleX(0);
+  }
+}
+@keyframes fade {
+  from {
+    opacity: 0;
+  }
+}
+@keyframes rise {
+  from {
+    opacity: 0;
+    transform: translate(-50%, calc(-100% + 4px));
+  }
+}
+@keyframes pop {
+  from {
+    opacity: 0;
+    transform: scale(0.4);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .fade,
+  .popBuy,
+  .fadeLabel,
+  .drawValue,
+  .drawFloor,
+  .reveal,
+  .popEnd,
+  .popMeet,
+  .drawMarket,
+  .popTail {
+    animation: none;
+  }
+}

@@ -1,0 +1,78 @@
+# One ignore file for the whole monorepo. Everything listed here is regenerated or local.
+
+# Secrets: never committed. Only the example is tracked.
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+
+# Dependencies (one hoisted install at the root; package-local folders if bun needs them)
+node_modules/
+
+# Build output and caches
+.next/
+.next-*/
+out/
+dist/
+build/
+coverage/
+.turbo/
+.cache/
+*.tsbuildinfo
+next-env.d.ts
+
+# Contract ABIs copied into the apps by `bun run sync-abi`
+apps/web/src/generated/
+apps/api/src/generated/
+
+# Contracts (Foundry): compiler output, local-chain broadcasts and manifests.
+# Testnet/mainnet broadcasts and manifests (1952, 196) are kept as deployment records.
+packages/contracts/cache/
+packages/contracts/broadcast/*/31337/
+packages/contracts/broadcast/**/dry-run/
+packages/contracts/deployments/31337*.json
+packages/contracts/deployments/*.simulated.json
+packages/contracts/deployments/*.pending.json
+packages/contracts/docs/
+
+# Local runtime data: API databases, dev-stack and test runs, mock activity state
+apps/api/data/
+tools/artifacts/
+tools/mock/state/
+*.db
+*.db-shm
+*.db-wal
+*.log
+# Audit evidence is part of the record (linked from the contracts README).
+
+# Test output (Playwright)
+apps/web/e2e/.tmp*/
+apps/web/e2e/screenshots/
+apps/web/test-results/
+apps/web/playwright-report/
+
+# Scratch folders
+.work/
+.archive/
+
+# OS and editors
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+*.swp
+
+# AI-facing and internal documents: agent instructions, briefs, reviews and working notes.
+# The public documentation is README.md plus the protocol specifications in docs/.
+.ai/
+CLAUDE.md
+CLAUDE.local.md
+AGENTS.md
+agents.md
+GEMINI.md
+.claude/
+.cursor/
+.codex/
+.windsurf/
+.aider*

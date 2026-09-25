@@ -1,0 +1,22 @@
+{
+  "name": "@portex/contracts",
+  "version": "0.1.0",
+  "description": "Portex protocol contracts (Foundry): sources, exported ABIs and deployment manifests.",
+  "license": "MIT",
+  "files": [
+    "abi",
+    "deployments",
+    "src"
+  ],
+  "exports": {
+    "./abi/*": "./abi/*",
+    "./deployments/*": "./deployments/*",
+    "./package.json": "./package.json"
+  },
+  "scripts": {
+    "build": "forge build",
+    "test": "forge test",
+    "deploy:local": "bash scripts/deploy-local.sh"
+  },
+  "private": true
+}

@@ -1,0 +1,32 @@
+.intro {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  background: rgb(var(--bg));
+  color: rgb(var(--fg));
+}
+
+:global(html[data-intro="play"]) .intro,
+:global(html[data-intro="done"]) .intro {
+  display: flex;
+}
+:global(html[data-intro="play"]) .intro {
+  animation: out 520ms cubic-bezier(0.65, 0, 0.35, 1) 1650ms forwards;
+}
+:global(html[data-intro="done"]) .intro {
+  opacity: 0;
+  visibility: hidden;
+  transition:
+    opacity 280ms cubic-bezier(0.22, 1, 0.36, 1),
+    visibility 0s linear 280ms;
+}
+
+@keyframes out {
+  to {
+    opacity: 0;
+    visibility: hidden;
+  }
+}

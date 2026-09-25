@@ -1,0 +1,27 @@
+{
+  "name": "@portex/api",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Portex API (Bun + Hono): chain indexer, read API, AI analyst and attester.",
+  "type": "module",
+  "exports": {
+    "./generated/v31-abis": "./src/generated/v31-abis.ts",
+    "./lib/signed-request": "./src/lib/signed-request.ts"
+  },
+  "scripts": {
+    "sync-abi": "bun --no-env-file run scripts/sync-abi.ts",
+    "dev": "bun --no-env-file run sync-abi && bun --no-env-file --watch src/server-v2.ts",
+    "start": "bun --no-env-file run sync-abi && bun --no-env-file run src/server-v2.ts",
+    "test": "bun --no-env-file run sync-abi && bun --no-env-file test"
+  },
+  "dependencies": {
+    "@anthropic-ai/sdk": "0.65.0",
+    "hono": "4.13.8",
+    "viem": "2.56.8"
+  },
+  "devDependencies": {
+    "@types/bun": "1.4.2",
+    "typescript": "5.9.3",
+    "@portex/tools": "workspace:*"
+  }
+}
