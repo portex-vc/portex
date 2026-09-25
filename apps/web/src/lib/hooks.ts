@@ -221,12 +221,22 @@ export function useTx() {
         functionName: tx.functionName,
         args: tx.args,
       });
+      // Gas can grow between estimate and mining (Stage 2 decay after its first second, a swap crossing
+      // ticks), so send a 1.5x limit; unused gas is refunded.
+      const estimate = await getPublicClient(wagmiConfig)!.estimateContractGas({
+        account: owner,
+        address: tx.address,
+        abi: tx.abi,
+        functionName: tx.functionName,
+        args: tx.args ?? [],
+      } as never);
       const hash = await writeContractAsync({
         account: owner,
         address: tx.address,
         abi: tx.abi,
         functionName: tx.functionName,
         args: (tx.args ?? []) as never[],
+        gas: (estimate * 3n) / 2n,
       });
       submitted = hash;
       txStore.update(id, { hash, phase: "confirming" });

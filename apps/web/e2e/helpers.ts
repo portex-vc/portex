@@ -27,7 +27,9 @@ export async function write(index: number, address: string, abi: Abi, functionNa
   const account = actor(index),
     wallet = createWalletClient({ chain: foundry, account, transport: http(RPC_URL), pollingInterval: 100 });
   const { request } = await client.simulateContract({ address: address as Address, abi, functionName, args, account });
-  const hash = await wallet.writeContract(request);
+  // Same 1.5x gas margin as the app: gas use can grow between estimate and mining.
+  const gas = await client.estimateContractGas({ address: address as Address, abi, functionName, args, account });
+  const hash = await wallet.writeContract({ ...request, gas: (gas * 3n) / 2n });
   const receipt = await client.waitForTransactionReceipt({ hash });
   expect(receipt.status).toBe("success");
   await indexed();

@@ -76,3 +76,6 @@ GEMINI.md
 .codex/
 .windsurf/
 .aider*
+
+# Netlify CLI build state
+.netlify/

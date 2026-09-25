@@ -53,4 +53,4 @@ jobs:
         env:
           NETLIFY_AUTH_TOKEN: ${{ secrets.NETLIFY_AUTH_TOKEN }}
           NETLIFY_SITE_ID: ${{ secrets.NETLIFY_SITE_ID }}
-        run: npx --yes netlify-cli@27.9.0 deploy --build --prod --site "$NETLIFY_SITE_ID" --message "${GITHUB_SHA::7}"
+        run: npx --yes netlify-cli@27.9.0 deploy --build --prod --filter @portex/web --site "$NETLIFY_SITE_ID" --message "${GITHUB_SHA::7}"

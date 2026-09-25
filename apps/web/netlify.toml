@@ -1,8 +1,9 @@
-# Netlify builds apps/web (Next.js) for the X Layer testnet deployment.
+# Netlify builds this package (@portex/web, Next.js) for the X Layer testnet deployment.
+# Monorepo: deploy with `netlify deploy --filter @portex/web`. The command and the publish
+# path are resolved from the repository root.
 [build]
-  base = "apps/web"
-  command = "bun --no-env-file run sync-abi && npx next build"
-  publish = ".next"
+  command = "cd apps/web && bun --no-env-file run sync-abi && npx next build"
+  publish = "apps/web/.next"
 
 [build.environment]
   NEXT_PUBLIC_CHAIN_ID = "1952"

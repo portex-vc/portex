@@ -1,7 +1,7 @@
 import { readFileSync } from 'node:fs';
 import { resolve, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { decodeEventLog, getAddress, toHex, type Abi, type Address, type Hex } from 'viem';
+import { decodeErrorResult, decodeEventLog, getAddress, parseAbi, toHex, type Abi, type Address, type Hex } from 'viem';
 import { mnemonicToAccount, privateKeyToAccount } from 'viem/accounts';
 import * as A from '@portex/api/generated/v31-abis';
 import { makePublicClient, makeWalletClient, setBalance, warp, now, BUILDER, DEPLOYER, COUNCIL, type Actor } from './chain';
@@ -17,6 +17,10 @@ export function backer(index: number): Actor {
   const account = privateKeyToAccount(privateKey);
   return { index, label: `v31-backer-${index}`, privateKey, account, address: account.address };
 }
+/** Library errors (TypesV31) thrown through linked libraries, which the contract ABIs do not list. */
+const PROTOCOL_ERRORS = parseAbi(['error Unauthorized()', 'error InvalidConfig()', 'error InvalidPhase()', 'error InvalidAmount()',
+  'error InvalidPosition()', 'error StaleNonce()', 'error Expired()', 'error Slippage()', 'error InvariantFailure()',
+  'error WrongAssetDelta()', 'error Reentrancy()', 'error VenueFailure()']);
 export class V31Context {
   readonly client;
   readonly deployment: Record<string, any>;
@@ -37,11 +41,30 @@ export class V31Context {
   }
   async write(actor: Actor, address: string, abi: Abi, functionName: string, args: readonly unknown[] = []) {
     const wallet = this.wallet(actor);
-    const simulation = await this.client.simulateContract({ address: address as Address, abi, functionName, args, account: actor.account } as never);
-    const hash = await wallet.writeContract({ ...simulation.request, account: actor.account, chain: wallet.chain } as never);
+    const call = { address: address as Address, abi, functionName, args, account: actor.account } as never;
+    const simulation = await this.client.simulateContract(call);
+    // Gas is estimated against the pending block, but anvil may mine the transaction a second later. Time-dependent
+    // paths (Stage 2 depth decay, daily reward accrual) then cost more than the estimate: in the same second as
+    // Stage 2 opens, a buy estimates ~370k gas without decay and needs ~460k with it. Give every write headroom.
+    const gas = await this.client.estimateContractGas(call);
+    const hash = await wallet.writeContract({ ...simulation.request, gas: gas + gas / 2n, account: actor.account, chain: wallet.chain } as never);
     const receipt = await this.client.waitForTransactionReceipt({ hash });
-    check(receipt.status === 'success', `${functionName} reverted: ${hash}`);
+    if (receipt.status !== 'success') throw new Error(`${functionName} reverted: ${hash} (${await this.revertReason(hash, receipt.gasUsed, abi)})`);
     return receipt;
+  }
+  /** Why a mined transaction reverted: the decoded custom error or reason string, or a gas exhaustion. */
+  async revertReason(hash: Hex, gasUsed: bigint, abi: Abi): Promise<string> {
+    try {
+      const tx = await this.client.getTransaction({ hash });
+      const gas = `gas used ${gasUsed} of ${tx.gas}`;
+      const trace = await this.client.request({ method: 'debug_traceTransaction', params: [hash, { tracer: 'callTracer' }] } as never) as { output?: Hex; error?: string };
+      // A nested call that runs out of gas makes the outer call revert without data, below the limit (63/64 rule).
+      if (!trace.output || trace.output === '0x') return `${trace.error ?? 'no revert data'}; ${gas}${gasUsed * 10n >= tx.gas * 9n ? ': out of gas' : ''}`;
+      try {
+        const e = decodeErrorResult({ abi: [...abi, ...PROTOCOL_ERRORS] as Abi, data: trace.output });
+        return `${e.errorName}(${(e.args ?? []).map(String).join(', ')}); ${gas}`;
+      } catch { return `revert data ${trace.output}; ${gas}`; }
+    } catch (error) { return `reason unavailable: ${String(error).slice(0, 120)}`; }
   }
   async fund(actor: Actor, amount = usd(1_000_000)) {
     await setBalance(this.client, actor.address, 100n * 10n ** 18n);
