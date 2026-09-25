@@ -9,10 +9,9 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { appChain, appChainSwitch, explorerUrl } from "@/lib/chains";
-import { erc20Abi } from "@/lib/contracts";
 import { env, isLocalChain } from "@/lib/env";
 import { humanizeError } from "@/lib/errors";
-import { useApiConfig } from "@/lib/hooks";
+import { useApiConfig, useWallet } from "@/lib/hooks";
 import { LOCAL_CONNECTOR_ID } from "@/lib/local-connector";
 import { useLocalAccount, useLocalAccountName } from "@/lib/use-account-label";
 import { useNumbers } from "@/lib/use-numbers";
@@ -39,7 +38,7 @@ import { useTranslations } from "next-intl";
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import type { Address } from "viem";
-import { useAccount, useConnect, useDisconnect, useReadContract, useSwitchChain, type Connector } from "wagmi";
+import { useAccount, useConnect, useDisconnect, useSwitchChain, type Connector } from "wagmi";
 
 /** Product network names are limited to the X Layer networks. */
 export function useNetworkName() {
@@ -161,14 +160,8 @@ function AccountMenu({ address }: { address: Address }) {
   const { data: config } = useApiConfig();
   const [copied, setCopied] = useState(false);
   const wrong = chainId !== env.chainId;
-  const balance = useReadContract({
-    address: config?.quote.address as Address | undefined,
-    abi: erc20Abi,
-    functionName: "balanceOf",
-    args: [address],
-    chainId: appChain.id,
-    query: { enabled: Boolean(config), refetchInterval: 15_000 },
-  });
+  const wallet = useWallet(address, 15_000);
+  const balance = wallet.data?.quote.balance;
   const symbol = config?.quote.symbol ?? "USDG";
   const label = local ? localName(local) : shortAddress(address);
   const isLocalConnector = connector?.id === LOCAL_CONNECTOR_ID;
@@ -237,7 +230,7 @@ function AccountMenu({ address }: { address: Address }) {
           <div className="flex items-baseline justify-between gap-3">
             <dt className="text-fg-2">{t("balance", { symbol })}</dt>
             <dd className="num text-sm font-medium" data-testid="wallet-balance">
-              {wrong ? "—" : balance.data !== undefined ? n.quote(balance.data as bigint) : "…"}{" "}
+              {wrong ? "—" : balance !== undefined ? n.quote(balance) : "…"}{" "}
               <span className="text-xs font-normal text-fg-3">{symbol}</span>
             </dd>
           </div>

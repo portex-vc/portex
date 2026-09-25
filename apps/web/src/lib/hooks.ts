@@ -1,17 +1,17 @@
 "use client";
 
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { simulateContract, getPublicClient } from "@wagmi/core";
 import { useTranslations } from "next-intl";
 import { useEffect, useState, useSyncExternalStore } from "react";
 import { toast } from "sonner";
-import type { Abi, Address } from "viem";
-import { useAccount, useReadContract, useConfig as useWagmiConfig, useWriteContract } from "wagmi";
+import type { Abi, Address, TransactionReceipt } from "viem";
+import { useAccount, useConfig as useWagmiConfig, useWriteContract } from "wagmi";
 import { api, type Phase } from "./api";
-import { erc20Abi } from "./contracts";
 import { humanizeError } from "./errors";
 import { env } from "./env";
 import { txStore, useTransaction } from "./tx-store";
+import { walletPublicClient } from "./wallet-client";
+import { walletAllowance } from "./wallet-data";
 import type { Row } from "@/components/figures";
 
 /**
@@ -50,7 +50,10 @@ export const queryKeys = {
   report: (raise: string) => ["report", raise] as const,
   feedback: (raise: string) => ["feedback", raise] as const,
   proposals: (raise: string) => ["proposals", raise] as const,
+  // Under the proposals key, so every proposal invalidation refreshes the votes too.
+  votes: (raise: string, user?: string) => ["proposals", raise, "votes", user?.toLowerCase() ?? "none"] as const,
   rolloverSources: (user?: string) => ["rollover-sources", user ?? "none"] as const,
+  wallet: (user?: string) => ["wallet", user?.toLowerCase() ?? "none"] as const,
   health: ["health"] as const,
 };
 
@@ -173,6 +176,28 @@ export function useProposals(raise: string, enabled: boolean) {
   });
 }
 
+/** `user`'s votes and voting power on every proposal of `raise`. */
+export function useVotes(raise: string, user?: string) {
+  return useQuery({
+    queryKey: queryKeys.votes(raise, user),
+    queryFn: () => api.votes(raise, user!),
+    enabled: Boolean(user),
+    refetchInterval: 10_000,
+    retry: 1,
+  });
+}
+
+/** Balances and allowances of `user` (quote and every project token), indexed by the API. */
+export function useWallet(user?: string, refetchInterval = 10_000) {
+  return useQuery({
+    queryKey: queryKeys.wallet(user),
+    queryFn: () => api.wallet(user!),
+    enabled: Boolean(user),
+    refetchInterval,
+    retry: 1,
+  });
+}
+
 /* ---------- Chain writes ---------- */
 
 interface TxRequest {
@@ -202,7 +227,7 @@ export function useTx() {
       label: string;
       preview?: Row[];
       invalidate?: readonly (readonly unknown[])[];
-      onSuccess?: (hash: `0x${string}`) => void | Promise<void>;
+      onSuccess?: (hash: `0x${string}`, receipt: TransactionReceipt) => void | Promise<void>;
     },
   ): Promise<`0x${string}` | null> {
     if (txStore.busy()) return null;
@@ -214,16 +239,18 @@ export function useTx() {
       if (!(await txStore.review(id, opts.preview ?? []))) return null;
       txStore.update(id, { phase: "wallet" });
       if (chainId !== env.chainId) throw { errorName: "WrongChain" };
-      await simulateContract(wagmiConfig, {
+      // Simulate, estimate and wait through the wallet's own provider, never an RPC URL of ours.
+      const wallet = await walletPublicClient(wagmiConfig);
+      await wallet.simulateContract({
         account: owner,
         address: tx.address,
         abi: tx.abi,
         functionName: tx.functionName,
         args: tx.args,
-      });
+      } as never);
       // Gas can grow between estimate and mining (Stage 2 decay after its first second, a swap crossing
       // ticks), so send a 1.5x limit; unused gas is refunded.
-      const estimate = await getPublicClient(wagmiConfig)!.estimateContractGas({
+      const estimate = await wallet.estimateContractGas({
         account: owner,
         address: tx.address,
         abi: tx.abi,
@@ -240,7 +267,7 @@ export function useTx() {
       });
       submitted = hash;
       txStore.update(id, { hash, phase: "confirming" });
-      const receipt = await getPublicClient(wagmiConfig)!.waitForTransactionReceipt({ hash });
+      const receipt = await wallet.waitForTransactionReceipt({ hash });
       if (receipt.status === "reverted") {
         revertedReceipt = true;
         throw new Error("Transaction reverted");
@@ -256,7 +283,7 @@ export function useTx() {
       for (const key of opts.invalidate ?? []) {
         await queryClient.invalidateQueries({ queryKey: key as unknown[] });
       }
-      await opts.onSuccess?.(hash);
+      await opts.onSuccess?.(hash, receipt);
       txStore.update(id, { phase: "complete" });
       toast.success(t("confirmed", { action }));
       return hash;
@@ -264,9 +291,9 @@ export function useTx() {
       if (tx.functionName === "list" && submitted && revertedReceipt) {
         let revertData = String(err);
         try {
-          const client = getPublicClient(wagmiConfig);
-          const sent = await client!.getTransaction({ hash: submitted });
-          await client!.call({
+          const client = await walletPublicClient(wagmiConfig);
+          const sent = await client.getTransaction({ hash: submitted });
+          await client.call({
             account: sent.from,
             to: sent.to!,
             data: sent.input,
@@ -297,24 +324,15 @@ export function useTx() {
   return { send, pending };
 }
 
-/** ERC-20 approval helper: reports current allowance and exposes an approve write. */
+/** ERC-20 approval helper: the current allowance from the API's indexed wallet snapshot. */
 export function useAllowance(
   token: Address | undefined,
   owner: Address | undefined,
   spender: Address | undefined,
   needed: bigint,
 ) {
-  const query = useReadContract({
-    address: token,
-    abi: erc20Abi,
-    functionName: "allowance",
-    args: owner && spender ? [owner, spender] : undefined,
-    query: {
-      enabled: Boolean(token && owner && spender),
-      refetchInterval: 15_000,
-    },
-  });
-  const allowance = (query.data as bigint | undefined) ?? 0n;
+  const query = useWallet(token && spender ? owner : undefined);
+  const allowance = token && spender ? walletAllowance(query.data, token, spender) : 0n;
   return {
     allowance,
     needsApproval: needed > 0n && allowance < needed,

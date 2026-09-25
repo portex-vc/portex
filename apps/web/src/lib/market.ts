@@ -79,10 +79,26 @@ export interface PoolTrade {
   logIndex: number;
 }
 
+/** `/v2/markets/:a/quote`: an exact-input pool quote, computed by the API at `blockNumber`. */
+export interface MarketQuote {
+  /** Raw units of the output asset. */
+  amountOut: string;
+  /** USDG per whole token, decimal string. */
+  averagePrice: string;
+  impactBps: number;
+  /** Raw units of the input asset. */
+  feeAmount: string;
+  blockNumber: number;
+  /** False when the pool cannot fill the trade (`reason` says why); `amountOut` is then "0". */
+  available?: boolean;
+  reason?: string | null;
+}
+
 async function get<T>(path: string): Promise<T> {
   let res: Response;
   try {
-    res = await fetch(`${env.apiUrl}${path}`);
+    // Not from the browser's HTTP cache (see `request` in `lib/api.ts`).
+    res = await fetch(`${env.apiUrl}${path}`, { cache: "no-store" });
   } catch {
     throw new ApiError("unreachable", `Backend unreachable at ${env.apiUrl}`, 0);
   }
@@ -99,6 +115,8 @@ export const marketApi = {
   candles: (address: string, interval: Interval) =>
     get<CandlesResponse>(`/v2/raises/${address}/candles?interval=${interval}`),
   trades: (address: string, limit = 60) => get<PoolTrade[]>(`/v2/raises/${address}/pool-trades?limit=${limit}`),
+  quote: (address: string, side: "buy" | "sell", amountIn: bigint) =>
+    get<MarketQuote>(`/v2/markets/${address}/quote?side=${side}&amountIn=${amountIn}`),
 };
 
 export const marketKeys = {

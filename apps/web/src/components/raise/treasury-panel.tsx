@@ -7,7 +7,7 @@ import { useTx } from "@/lib/hooks";
 import { useNumbers } from "@/lib/use-numbers";
 import { useTranslations } from "next-intl";
 import type { Abi, Address } from "viem";
-import { useAccount, useReadContract } from "wagmi";
+import { useAccount } from "wagmi";
 import { raiseInvalidations } from "./common";
 
 const YEAR = 365 * 24 * 60 * 60;
@@ -28,12 +28,7 @@ export function TreasuryPanel({ detail: r }: { detail: RaiseDetail }) {
   const unlockedPct = allocation > 0n ? Number(((allocation - locked) * 10000n) / allocation) / 100 : 0;
   const years = Number(t.vestingDuration) / YEAR;
   const pendingFees = BigInt(r.feeAccruals.treasury);
-  const disposed = useReadContract({
-    address: r.token as Address,
-    abi: tokenAbi,
-    functionName: "disposedQuote",
-    query: { enabled: listed, refetchInterval: 15000 },
-  });
+  const disposed = listed ? BigInt(t.disposedQuote ?? 0) : 0n;
   const sweep = (abi: Abi, target: string, fn: string, label: string, value: string) =>
     send(
       { address: target as Address, abi, functionName: fn, args: [] },
@@ -119,15 +114,13 @@ export function TreasuryPanel({ detail: r }: { detail: RaiseDetail }) {
               onClick={() => sweep(raiseAbi, r.address, "collectLPFees", "collectLPFees", "—")}
             />
           ) : null}
-          {listed && disposed.data ? (
+          {disposed > 0n ? (
             <ActionButton
               size="sm"
               variant="outline"
               label={v("claimDisposed")}
               pending={pending}
-              onClick={() =>
-                sweep(tokenAbi, r.token, "claimDisposed", "claimDisposed", n.quote(disposed.data as bigint))
-              }
+              onClick={() => sweep(tokenAbi, r.token, "claimDisposed", "claimDisposed", n.quote(disposed))}
             />
           ) : null}
         </div>

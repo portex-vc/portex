@@ -4,11 +4,10 @@ import { raiseFactoryAbi } from "./contracts";
 import { creationConfig, validateCreation, type FormState } from "./create-form";
 import { useApiConfig, useTx } from "./hooks";
 import { useSignedWrite } from "./use-signed-write";
-import { waitForTransactionReceipt } from "@wagmi/core";
 import { useTranslations } from "next-intl";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
-import { decodeEventLog, type Address } from "viem";
+import { decodeEventLog, type Address, type TransactionReceipt } from "viem";
 import { useAccount, useConfig } from "wagmi";
 export function useCreateRaise(form: FormState) {
   const t = useTranslations("create"),
@@ -53,6 +52,7 @@ export function useCreateRaise(form: FormState) {
       return;
     }
     const cfg = creationConfig(form, apiConfig.quote.address as Address, apiConfig);
+    let receipt = undefined as TransactionReceipt | undefined;
     const hash = await send(
       {
         address: apiConfig.addresses.factory as Address,
@@ -69,10 +69,13 @@ export function useCreateRaise(form: FormState) {
           [v("treasury"), v("treasuryIntro"), "meta"],
         ],
         invalidate: [["raises"]],
+        // The receipt useTx already waited for (through the wallet) carries the new raise's address.
+        onSuccess: (_, confirmed) => {
+          receipt = confirmed;
+        },
       },
     );
-    if (!hash) return;
-    const receipt = await waitForTransactionReceipt(config, { hash });
+    if (!hash || !receipt) return;
     for (const log of receipt.logs) {
       try {
         const decoded = decodeEventLog({ abi: raiseFactoryAbi, data: log.data, topics: log.topics });

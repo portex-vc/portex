@@ -2,7 +2,12 @@
 export const env = {
   apiUrl: process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8790",
   chainId: Number(process.env.NEXT_PUBLIC_CHAIN_ID ?? "1952"),
-  rpcLocal: process.env.NEXT_PUBLIC_RPC_LOCAL ?? "http://127.0.0.1:8545",
+  /**
+   * The local node, for the local chain's dev tooling only (burner wallet, time travel). Any other build folds
+   * this to "", so no localhost RPC is bundled; the app itself never sends JSON-RPC (see `lib/wagmi.ts`).
+   */
+  rpcLocal:
+    process.env.NEXT_PUBLIC_CHAIN_ID === "31337" ? (process.env.NEXT_PUBLIC_RPC_LOCAL ?? "http://127.0.0.1:8545") : "",
   /** WalletConnect Cloud project id. Without it the WalletConnect option is hidden; never invent one. */
   walletConnectProjectId: process.env.NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID?.trim() || null,
 };

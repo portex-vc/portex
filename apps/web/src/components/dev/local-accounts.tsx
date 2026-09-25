@@ -3,9 +3,8 @@
 import { CopyValue } from "@/components/copy-value";
 import { Button } from "@/components/ui/button";
 import type { DevAccount } from "@/lib/api";
-import { erc20Abi } from "@/lib/contracts";
 import { humanizeError } from "@/lib/errors";
-import { useApiConfig, useHydrated } from "@/lib/hooks";
+import { useApiConfig, useHydrated, useWallet } from "@/lib/hooks";
 import { LOCAL_CONNECTOR_ID, setSelectedLocalAccountIndex } from "@/lib/local-connector";
 import { useLocalAccountName, useLocalAccounts } from "@/lib/use-account-label";
 import { useNumbers } from "@/lib/use-numbers";
@@ -13,8 +12,7 @@ import { cn, shortAddress } from "@/lib/utils";
 import { Check, Loader2 } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { useState } from "react";
-import type { Address } from "viem";
-import { useAccount, useConnect, useReadContract } from "wagmi";
+import { useAccount, useConnect } from "wagmi";
 
 /**
  * Local test accounts (chain 31337 only). This panel is the only place in the app where they
@@ -87,7 +85,6 @@ export function LocalAccountsPanel() {
               <Row
                 key={account.index}
                 account={account}
-                quote={config?.quote.address as Address | undefined}
                 symbol={config?.quote.symbol ?? "USDG"}
                 active={usingLocal && address?.toLowerCase() === account.address.toLowerCase()}
                 pending={pending === account.index}
@@ -104,7 +101,6 @@ export function LocalAccountsPanel() {
 
 function Row({
   account,
-  quote,
   symbol,
   active,
   pending,
@@ -112,7 +108,6 @@ function Row({
   onUse,
 }: {
   account: DevAccount;
-  quote?: Address;
   symbol: string;
   active: boolean;
   pending: boolean;
@@ -122,13 +117,8 @@ function Row({
   const t = useTranslations("localAccounts");
   const name = useLocalAccountName();
   const n = useNumbers();
-  const balance = useReadContract({
-    address: quote,
-    abi: erc20Abi,
-    functionName: "balanceOf",
-    args: [account.address as Address],
-    query: { enabled: Boolean(quote), refetchInterval: 10_000 },
-  });
+  const wallet = useWallet(account.address);
+  const balance = wallet.data?.quote.balance;
   return (
     <li
       data-testid={`local-account-${account.index}`}
@@ -151,8 +141,7 @@ function Row({
       </div>
       <p className="num col-span-2 row-start-3 text-xs text-fg-2 md:col-span-1 md:row-start-auto md:text-right md:text-sm md:text-fg">
         <span className="text-fg-3 md:hidden">{t("balance", { symbol })} · </span>
-        {balance.data !== undefined ? n.quote(balance.data as bigint) : "—"}{" "}
-        <span className="text-xs text-fg-3">{symbol}</span>
+        {balance !== undefined ? n.quote(balance) : "—"} <span className="text-xs text-fg-3">{symbol}</span>
       </p>
       <div className="col-start-2 row-start-1 flex justify-end md:col-start-auto md:row-start-auto">
         {active ? (

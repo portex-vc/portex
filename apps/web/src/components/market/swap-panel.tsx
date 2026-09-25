@@ -10,6 +10,7 @@ import { displayAmountInput, normalizeAmountEdit } from "@/lib/amount-input";
 import { queryKeys, useAllowance, useNow, usePosition, useTx } from "@/lib/hooks";
 import {
   executionPrice,
+  marketApi,
   marketKeys,
   minimumReceived,
   parseSlippage,
@@ -27,7 +28,7 @@ import { Info, RefreshCw, Wallet } from "lucide-react";
 import { useLocale, useTranslations } from "next-intl";
 import { useEffect, useState } from "react";
 import type { Address } from "viem";
-import { useAccount, usePublicClient } from "wagmi";
+import { useAccount } from "wagmi";
 
 const SLIPPAGE_PRESETS = ["0.5", "1", "2"];
 /** Above this the review shows the impact as a warning. */
@@ -43,8 +44,9 @@ function useDebounced<T>(value: T, ms: number): T {
 }
 
 /**
- * Exact-input swaps through the Portex router: live quote from `quoteExactIn` (simulated), price impact against the
- * pool price, minimum received under the slippage bound, then approve and swap through the transaction drawer.
+ * Exact-input swaps through the Portex router: live quote from the API's pool quote, price impact against the
+ * pool price, minimum received under the slippage bound, then approve and swap through the transaction drawer
+ * (the wallet simulates the swap before signing).
  */
 export function SwapPanel({
   market: m,
@@ -63,7 +65,6 @@ export function SwapPanel({
   const locale = useLocale();
   const now = useNow();
   const { address } = useAccount();
-  const client = usePublicClient();
   const { send, pending } = useTx();
   const { data: position } = usePosition(m.address, address);
   const [side, setSide] = useState<"buy" | "sell">("buy");
@@ -78,15 +79,11 @@ export function SwapPanel({
   const quote = useQuery({
     queryKey: [...marketKeys.market(m.address), "quote", side, debounced.toString(), router],
     queryFn: async () => {
-      const { result } = await client!.simulateContract({
-        address: router!,
-        abi: swapRouterAbi,
-        functionName: "quoteExactIn",
-        args: [m.token as Address, buy, debounced],
-      });
-      return result as bigint;
+      const q = await marketApi.quote(m.address, side, debounced);
+      if (q.available === false) throw new Error(q.reason ?? "Quote unavailable");
+      return BigInt(q.amountOut);
     },
-    enabled: Boolean(router && client && debounced > 0n),
+    enabled: Boolean(router && debounced > 0n),
     refetchInterval: 10_000,
     retry: false,
   });
@@ -134,7 +131,7 @@ export function SwapPanel({
     ["markets"],
     queryKeys.position(m.address, address),
     queryKeys.raise(m.address),
-    ["readContract"],
+    ["wallet"],
   ] as const;
 
   async function submit() {

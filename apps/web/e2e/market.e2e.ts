@@ -1,5 +1,5 @@
 import { test, expect, type Page } from "@playwright/test";
-import { actor, api, audit, client, confirm, connect, findRaise, indexed } from "./helpers";
+import { actor, api, audit, client, confirm, connect, findRaise } from "./helpers";
 import { WEB_URL } from "./env";
 import en from "../messages/en.json";
 
@@ -84,7 +84,15 @@ test("M — buy then sell in the Stage 3 pool; the tape and the chart record bot
   } finally {
     await client.request({ method: "evm_revert", params: [snapshot] } as never);
     await client.request({ method: "evm_mine", params: [] } as never);
-    await indexed();
+    // The pre-revert indexed block is above the new head, so `indexed()` would pass at once. Wait until the API has
+    // rolled back to the reverted chain and re-indexed exactly its head, with every raise's state rebuilt.
+    const head = Number(await client.getBlockNumber({ cacheTime: 0 }));
+    await expect
+      .poll(async () => (await api<{ indexedBlock: number }>("/health")).indexedBlock, { timeout: 60_000 })
+      .toBe(head);
+    await expect
+      .poll(async () => (await api<{ symbol: string }[]>("/raises")).some((r) => r.symbol === "ATLAS"))
+      .toBe(true);
   }
 });
 

@@ -21,16 +21,14 @@ import {
   type ParameterKey,
   type ProtocolParameters,
 } from "@/lib/admin";
-import { appChain } from "@/lib/chains";
 import { registryAbi } from "@/lib/contracts";
-import { queryKeys, useTx } from "@/lib/hooks";
+import { queryKeys, useApiConfig, useTx } from "@/lib/hooks";
 import { useNumbers } from "@/lib/use-numbers";
 import { cn } from "@/lib/utils";
 import { Info, Lock, Pencil, RotateCcw } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { useMemo, useState } from "react";
 import type { Address } from "viem";
-import { useReadContract } from "wagmi";
 import { AdminSection, Fact } from "./shared";
 
 type Draft = Partial<Record<ParameterKey, { value: string; unit?: DurationUnit }>>;
@@ -49,20 +47,19 @@ export function useParameterFormat() {
   };
 }
 
-/** The live `protocolParameters()` of the registry. */
+/** The live `protocolParameters()` of the registry, served by `/v2/config`. */
 export function useProtocolParameters(registry?: string) {
-  const read = useReadContract({
-    address: registry as Address | undefined,
-    abi: registryAbi,
-    functionName: "protocolParameters",
-    chainId: appChain.id,
-    query: { enabled: Boolean(registry), staleTime: 15_000 },
-  });
+  const config = useApiConfig();
+  const live = registry && config.data?.addresses.registry.toLowerCase() === registry.toLowerCase();
+  const parameters = useMemo(
+    () => (live ? toParameters(config.data?.protocolParameters) : null),
+    [live, config.data?.protocolParameters],
+  );
   return {
-    parameters: toParameters(read.data),
-    isLoading: read.isLoading,
-    isError: read.isError,
-    refetch: read.refetch,
+    parameters,
+    isLoading: Boolean(registry) && config.isLoading,
+    isError: config.isError,
+    refetch: config.refetch,
   };
 }
 

@@ -6,15 +6,15 @@ import { TestnetTimingNote } from "@/components/testnet-timing";
 import { SpendEditor } from "@/components/builder/spend-editor";
 import { TreasuryPanel } from "./treasury-panel";
 import { CardHeading, Fig, Meter, NativeSelect, QuoteTable, type Row } from "@/components/figures";
-import type { Position, Proposal, RaiseDetail } from "@/lib/api";
-import { governanceAbi, raiseAbi, tokenAbi } from "@/lib/contracts";
-import { useNow, usePosition, useProposals, useTx } from "@/lib/hooks";
+import type { Position, Proposal, ProposalVotes, RaiseDetail } from "@/lib/api";
+import { governanceAbi } from "@/lib/contracts";
+import { useHealth, useNow, usePosition, useProposals, useTx, useVotes } from "@/lib/hooks";
 import { useNumbers } from "@/lib/use-numbers";
 import { cn, shortAddress } from "@/lib/utils";
 import { useTranslations } from "next-intl";
 import { useState } from "react";
 import type { Address } from "viem";
-import { useAccount, useBlockNumber, useReadContract } from "wagmi";
+import { useAccount } from "wagmi";
 import { raiseInvalidations } from "./common";
 
 const QUORUM = 40;
@@ -26,14 +26,10 @@ export function ProposalsPanel({ detail: r }: { detail: RaiseDetail }) {
   const { address } = useAccount();
   const { data: p } = usePosition(r.address, address);
   const { data: proposals, isLoading } = useProposals(r.address, true);
+  const { data: votes } = useVotes(r.address, address);
   const listed = r.phase === "Stage3";
   const budget = r.governance.config.enabled;
-  const capital = useReadContract({
-    address: r.address as Address,
-    abi: raiseAbi,
-    functionName: "eligibleCapital",
-    query: { refetchInterval: 10000, enabled: !listed },
-  });
+  const capital = r.governance.state.eligibleCapital;
   const held =
     p?.positions.filter((x) => x.positionState.class !== "Buyer" && BigInt(x.positionState.tokens) > 0n) ?? [];
   return (
@@ -58,7 +54,7 @@ export function ProposalsPanel({ detail: r }: { detail: RaiseDetail }) {
           <dl className="grid grid-cols-2 gap-5 sm:grid-cols-4">
             <Fig
               label={v("eligibleCapital")}
-              value={capital.data !== undefined ? n.quote(capital.data as bigint) : "—"}
+              value={capital !== undefined ? n.quote(capital) : "—"}
               unit={r.quote.symbol}
             />
             {budget ? (
@@ -97,7 +93,13 @@ export function ProposalsPanel({ detail: r }: { detail: RaiseDetail }) {
           <CardHeading eyebrow={v("futureBounds")} />
           <ul className="divide-y divide-hairline">
             {held.map((x) => (
-              <Bounds key={x.id} detail={r} id={x.id} label={`#${x.id} · ${v(`class${x.positionState.class}`)}`} />
+              <Bounds
+                key={x.id}
+                detail={r}
+                id={x.id}
+                bounds={x.futureClaimBounds}
+                label={`#${x.id} · ${v(`class${x.positionState.class}`)}`}
+              />
             ))}
           </ul>
           <p className="text-2xs leading-relaxed text-fg-3">{v("boundsConditions")}</p>
@@ -109,7 +111,15 @@ export function ProposalsPanel({ detail: r }: { detail: RaiseDetail }) {
       ) : proposals?.length ? (
         [...proposals]
           .reverse()
-          .map((proposal) => <ProposalCard key={proposal.id} detail={r} proposal={proposal} positions={p} />)
+          .map((proposal) => (
+            <ProposalCard
+              key={proposal.id}
+              detail={r}
+              proposal={proposal}
+              positions={p}
+              votes={votes?.votes.find((x) => x.proposal === proposal.id)}
+            />
+          ))
       ) : (
         <section className="surface-1 flex flex-col items-center gap-3 p-8 text-center" data-testid="no-proposals">
           <Mark size={24} className="text-fg-3" />
@@ -121,17 +131,19 @@ export function ProposalsPanel({ detail: r }: { detail: RaiseDetail }) {
   );
 }
 
-function Bounds({ detail: r, id, label }: { detail: RaiseDetail; id: string; label: string }) {
+function Bounds({
+  detail: r,
+  id,
+  bounds: b,
+  label,
+}: {
+  detail: RaiseDetail;
+  id: string;
+  bounds: Position["positions"][number]["futureClaimBounds"];
+  label: string;
+}) {
   const v = useTranslations("v31"),
     n = useNumbers();
-  const bounds = useReadContract({
-    address: r.address as Address,
-    abi: raiseAbi,
-    functionName: "futureClaimBounds",
-    args: [BigInt(id), 1],
-    query: { refetchInterval: 5000 },
-  });
-  const b = bounds.data as { validity: { available: boolean }; lower: bigint; upper: bigint } | undefined;
   return (
     <li className="flex items-baseline justify-between gap-3 py-2.5" data-testid={`claim-bounds-${id}`}>
       <span className="text-xs text-fg-2">{label}</span>
@@ -140,7 +152,7 @@ function Bounds({ detail: r, id, label }: { detail: RaiseDetail; id: string; lab
           <>
             {n.quote(b.lower)} – {n.quote(b.upper)} <span className="text-xs text-fg-3">{r.quote.symbol}</span>
           </>
-        ) : bounds.isLoading ? (
+        ) : b === undefined ? (
           "…"
         ) : (
           <span className="text-xs text-fg-3">{v("unavailableShort")}</span>
@@ -167,10 +179,13 @@ function ProposalCard({
   detail: r,
   proposal: p,
   positions,
+  votes: voter,
 }: {
   detail: RaiseDetail;
   proposal: Proposal;
   positions?: Position;
+  /** The connected account's votes on this proposal (undefined while loading or disconnected). */
+  votes?: ProposalVotes;
 }) {
   const v = useTranslations("v31"),
     n = useNumbers(),
@@ -184,60 +199,21 @@ function ProposalCard({
     positions?.positions.filter((x) => x.positionState.class === "Backer" && BigInt(x.positionState.basis) > 0n) ?? [];
   const selected = eligible.find((x) => x.id === picked) ?? eligible[0];
   const governor = r.modules.governor as Address;
-  const vote = useReadContract({
-    address: governor,
-    abi: governanceAbi,
-    functionName: "voteOf",
-    args: [BigInt(p.id), BigInt(selected?.id ?? 0)],
-    query: { enabled: !token && Boolean(selected), refetchInterval: 5000 },
-  });
-  const tokenVote = useReadContract({
-    address: governor,
-    abi: governanceAbi,
-    functionName: "tokenVoteOf",
-    args: address ? [BigInt(p.id), address] : undefined,
-    query: { enabled: token && Boolean(address), refetchInterval: 5000 },
-  });
-  const power = useReadContract({
-    address: governor,
-    abi: governanceAbi,
-    functionName: "votingPower",
-    args: address ? [BigInt(p.id), address] : undefined,
-    query: { enabled: token && Boolean(address) && p.state === "Voting", refetchInterval: 10000 },
-  });
+  const { data: health } = useHealth();
+  const snapshotBlock = p.snapshotBlock ?? r.governance.state.tokenSnapshotBlock;
+  const head = health?.head ?? undefined;
   // The snapshot measures the end of the proposal's block, so voting opens with the next block.
-  const snapshotBlock = useReadContract({
-    address: r.token as Address,
-    abi: tokenAbi,
-    functionName: "snapshotBlock",
-    query: { enabled: token && p.state === "Voting", refetchInterval: 10000 },
-  });
-  const { data: head } = useBlockNumber({ watch: token && p.state === "Voting" });
-  const opening =
-    token && snapshotBlock.data !== undefined && head !== undefined && head <= (snapshotBlock.data as bigint);
-  const tokenValue = useReadContract({
-    address: governor,
-    abi: governanceAbi,
-    functionName: "quoteValue",
-    args: [BigInt(p.tokenAmount)],
-    query: { enabled: token && BigInt(p.tokenAmount) > 0n, refetchInterval: 15000 },
-  });
-  const active = useReadContract({
-    address: governor,
-    abi: governanceAbi,
-    functionName: "activeProposalId",
-    query: { refetchInterval: 5000 },
-  });
-  const cast = token
-    ? (tokenVote.data as { cast: boolean } | undefined)?.cast
-    : (vote.data as { cast: boolean } | undefined)?.cast;
-  const weight = (power.data as bigint | undefined) ?? 0n;
+  const opening = token && snapshotBlock != null && head != null && head <= snapshotBlock;
+  const activeId = r.governance.state.activeProposalId;
+  const cast =
+    voter?.mode === "Token" ? voter.tokenVote.cast : selected ? voter?.positions[selected.id]?.cast : undefined;
+  const weight = BigInt(voter?.mode === "Token" ? voter.votingPower : 0);
   const yes = BigInt(p.yesWeight),
     no = BigInt(p.noWeight),
     snapshot = BigInt(p.capitalSnapshot),
     amount = BigInt(p.amount),
     cap = BigInt(p.cap);
-  const spendValue = amount + ((tokenValue.data as bigint | undefined) ?? 0n);
+  const spendValue = amount + BigInt(p.tokenValue ?? 0);
   const ratio = (a: bigint, b: bigint) => (b > 0n ? Number((a * 10000n) / b) / 100 : 0);
   const participation = ratio(yes + no, snapshot);
   const approval = ratio(yes, yes + no);
@@ -248,7 +224,7 @@ function ProposalCard({
       ? "finalize"
       : p.state === "Executable"
         ? "execute"
-        : p.state === "Expired" && active.data === BigInt(p.id)
+        : p.state === "Expired" && activeId !== undefined && BigInt(activeId) === BigInt(p.id)
           ? "expire"
           : null;
   const usd = (x: bigint | string) => `${n.quote(x)} ${r.quote.symbol}`;
@@ -382,7 +358,7 @@ function ProposalCard({
               </>
             ) : (
               <p className="text-xs text-fg-2">
-                {power.isLoading ? v("checking") : opening ? v("votingOpensNextBlock") : v("noVotingTokens")}
+                {!voter ? v("checking") : opening ? v("votingOpensNextBlock") : v("noVotingTokens")}
               </p>
             )}
             <p className="text-2xs leading-relaxed text-fg-3">{v("voteNoteToken")}</p>
@@ -410,7 +386,7 @@ function ProposalCard({
                     variant={support ? "default" : "outline"}
                     data-testid={support ? "vote-yes" : "vote-no"}
                     label={v(support ? "voteYes" : "voteNo")}
-                    reason={vote.isPending ? v("checking") : null}
+                    reason={!voter ? v("checking") : null}
                     pending={pending}
                     onClick={() =>
                       call("vote", [BigInt(p.id), BigInt(selected!.id), support], support ? "voteYes" : "voteNo")

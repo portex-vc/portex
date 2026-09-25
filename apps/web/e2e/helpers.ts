@@ -166,6 +166,8 @@ export async function audit(page: Page, name: string, fullPage = false) {
   }, initial);
   if (original) await page.setViewportSize(original);
 }
+/** The local node's requests from the page; the burner wallet tags them (`?source=portex-local-wallet`). */
+export const localNode = (url: URL) => url.origin === new URL(RPC_URL).origin;
 /**
  * Hold browser JSON-RPC calls of the given methods for `ms` (to photograph the drawer's signing and
  * pending phases). Returns a release function.
@@ -178,8 +180,8 @@ export async function holdRpc(page: Page, methods: string[], ms: number) {
       await new Promise((resolve) => setTimeout(resolve, ms));
     await route.continue().catch(() => {});
   };
-  await page.route(RPC_URL, handler);
-  return () => page.unroute(RPC_URL, handler);
+  await page.route(localNode, handler);
+  return () => page.unroute(localNode, handler);
 }
 export async function confirm(page: Page, evidence: { review?: string; done?: string } = {}) {
   const drawer = page.getByTestId("transaction-drawer");

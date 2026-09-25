@@ -8,7 +8,6 @@ import { TypeBadge } from "@/components/raise/type-badge";
 import { TestnetRibbon } from "@/components/testnet-timing";
 import { diffParameters, PARAMETER_GROUPS, toParameters, type ProtocolParameters } from "@/lib/admin";
 import type { ApiConfig } from "@/lib/api";
-import { appChain } from "@/lib/chains";
 import { registryAbi } from "@/lib/contracts";
 import { queryKeys, useTx } from "@/lib/hooks";
 import { launchTypeKey } from "@/lib/launch-types";
@@ -18,8 +17,8 @@ import { ChevronDown } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { useState } from "react";
 import type { Address } from "viem";
-import { useReadContract } from "wagmi";
 import { useParameterFormat } from "./parameters-section";
+import { quoteStatus } from "./quote-section";
 import { AdminSection, ConfirmRow, Fact } from "./shared";
 
 type Template = ApiConfig["templates"][number];
@@ -37,26 +36,10 @@ const IMPLEMENTATION_KEYS = [
 ] as const;
 
 /** Whether the registry would accept `quote` in a published bundle: whitelisted, frozen, same code. */
-function useQuoteAdmitted(registry: string, quote?: string) {
-  const opts = { enabled: Boolean(quote), staleTime: 15_000 };
-  const frozen = useReadContract({
-    address: registry as Address,
-    abi: registryAbi,
-    functionName: "quoteFrozen",
-    args: [quote as Address],
-    chainId: appChain.id,
-    query: opts,
-  });
-  const hash = useReadContract({
-    address: registry as Address,
-    abi: registryAbi,
-    functionName: "quoteCodeHash",
-    args: [quote as Address],
-    chainId: appChain.id,
-    query: opts,
-  });
-  if (frozen.data === undefined || hash.data === undefined) return null;
-  return frozen.data === true && !/^0x0{64}$/.test(String(hash.data));
+function quoteAdmitted(config: ApiConfig, quote?: string): boolean | null {
+  const status = quoteStatus(config, quote);
+  if (!status) return null;
+  return status.frozen && !/^0x0{64}$/.test(status.codeHash);
 }
 
 export function VersionsSection({
@@ -76,7 +59,7 @@ export function VersionsSection({
         {names.map((name) => (
           <TemplateCard
             key={name}
-            registry={config.addresses.registry}
+            config={config}
             versions={config.templates
               .filter((x) => x.name === name)
               .sort((a, b) => (BigInt(b.version) > BigInt(a.version) ? 1 : -1))}
@@ -90,12 +73,12 @@ export function VersionsSection({
 }
 
 function TemplateCard({
-  registry,
+  config,
   versions,
   current,
   canEdit,
 }: {
-  registry: string;
+  config: ApiConfig;
   versions: Template[];
   current: ProtocolParameters | null;
   canEdit: boolean;
@@ -113,7 +96,8 @@ function TemplateCard({
   const next = (BigInt(latest.version) + 1n).toString();
   const pinnedLatest = toParameters(latest.parameters);
   const changes = current && pinnedLatest ? diffParameters(pinnedLatest, current) : [];
-  const admitted = useQuoteAdmitted(registry, latest.implementations.quote);
+  const registry = config.addresses.registry;
+  const admitted = quoteAdmitted(config, latest.implementations.quote);
 
   async function publish() {
     const implementations = Object.fromEntries(

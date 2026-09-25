@@ -12,7 +12,7 @@ import { useNumbers } from "@/lib/use-numbers";
 import { useTranslations } from "next-intl";
 import { useState } from "react";
 import { isAddress, type Address } from "viem";
-import { useAccount, useReadContract } from "wagmi";
+import { useAccount } from "wagmi";
 
 /**
  * Builder-only treasury spend proposal (base layer): Stage 2 pays USDG fee income by capital vote;
@@ -31,11 +31,7 @@ export function SpendEditor({ detail: r }: { detail: RaiseDetail }) {
   const [uri, setUri] = useState("");
   const quoteAmount = parseTradeAmount(quoteInput, true);
   const tokenAmount = parseTradeAmount(tokenInput, false);
-  const last = useReadContract({
-    address: r.modules.governor as Address,
-    abi: governanceAbi,
-    functionName: "lastProposalAt",
-  });
+  const lastProposalAt = Number(r.governance.state.lastProposalAt ?? 0);
   const params = r.governance.config.parameters;
   const listed = r.phase === "Stage3";
   const required = Number(params.voting) + Number(params.dispute) + Number(params.execution);
@@ -46,7 +42,7 @@ export function SpendEditor({ detail: r }: { detail: RaiseDetail }) {
       ? v("unavailable")
       : proposals?.some((p) => ["Voting", "AwaitingFinalization", "Dispute", "Executable"].includes(p.state))
         ? v("proposalActive")
-        : last.data && now < Number(last.data) + Number(params.proposalInterval)
+        : lastProposalAt > 0 && now < lastProposalAt + Number(params.proposalInterval)
           ? v("proposalCooldown")
           : !listed && now + required > r.deadlines.stage2End
             ? v("proposalTooLate")

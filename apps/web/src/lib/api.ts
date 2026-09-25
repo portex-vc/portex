@@ -49,6 +49,12 @@ export interface ApiConfig {
   };
   /** Lowercase API admin addresses (ADMIN_ADDRESSES): may run analyses without the rate limit. */
   admins?: string[];
+  /** `registry.curator()`: the account that governs parameters, versions and quote assets. */
+  curator?: string | null;
+  /** Live `registry.protocolParameters()`: what the next published version pins. */
+  protocolParameters?: ParametersV2 | null;
+  /** `quoteFrozen(q)` and `quoteCodeHash(q)` for the config quote and every version's pinned quote. */
+  quotes?: Record<string, { frozen: boolean; codeHash: string }>;
   stageBounds?: {
     stage1Min: Uint | number;
     stage1Max: Uint | number;
@@ -143,6 +149,8 @@ export interface RaiseSummary {
   stateNonce: Uint;
   blockNumber: number;
   chainTime: number;
+  /** The attester and council this raise was created with (`modules()`, fixed at creation). */
+  modules?: { attester: string; council: string };
 }
 export interface ReserveStateV2 {
   validity: ValidityV2;
@@ -233,7 +241,19 @@ export interface RaiseDetail extends RaiseSummary {
   feeAccruals: { reserveRetained: Uint; rewards: Uint; treasury: Uint };
   governance: {
     config: { builder: string; parameters: ParametersV2; enabled: boolean };
-    state: { end: Uint; escrow: Uint; remainingCeiling: Uint };
+    state: {
+      end: Uint;
+      escrow: Uint;
+      remainingCeiling: Uint;
+      /** `governor.lastProposalAt()`: start of the proposal cooldown. */
+      lastProposalAt?: Uint;
+      /** `governor.activeProposalId()`, "0" when none. */
+      activeProposalId?: Uint;
+      /** `raise.eligibleCapital()`: capital that votes in Stage 2. */
+      eligibleCapital?: Uint;
+      /** `token.snapshotBlock()`: token votes count from the block after it. */
+      tokenSnapshotBlock?: number;
+    };
   };
   listingPreview: ListingPreviewV2 | { validity: ValidityV2 } | null;
   listingStatus: (ListingStatusV2 & { id: Uint })[] | null;
@@ -255,6 +275,8 @@ export interface TreasuryState {
   spentQuote: Uint;
   spentTokens: Uint;
   spendCapBps: number;
+  /** `token.disposedQuote()`: quote the token holds for the treasury to sweep (Stage 3). */
+  disposedQuote?: Uint;
 }
 export type RolloverKind = "CostExit" | "ProtectedExit" | "DissolutionClaim";
 export interface RolloverSource {
@@ -337,6 +359,8 @@ export interface Position {
     protectedExitQuote: ExitQuoteV2 | null;
     listingStatus: ListingStatusV2;
     atRiskBasis: Uint;
+    /** `futureClaimBounds(id, 1)` on budget raises in Stage 1 and Stage 2; null otherwise. */
+    futureClaimBounds?: { validity: ValidityV2; lower: Uint; upper: Uint } | null;
   }[];
   buyerLedger: { tokens: Uint; marketExitQuote: TradeQuoteV2 };
   delivery: { tokens: Uint; originalQuota: Uint; frozenRecord: true };
@@ -430,6 +454,56 @@ export interface Proposal {
   approvalBps: number;
   cap: Uint;
   executedTx: string | null;
+  /** Token proposals: `governor.quoteValue(tokenAmount)`, the quote value of the proposal's tokens. */
+  tokenValue?: Uint;
+  /** Token proposals: the block the proposal opened in; token votes count from the next block. */
+  snapshotBlock?: number | null;
+}
+export interface VoteRecord {
+  weight: Uint;
+  support: boolean;
+  cast: boolean;
+  cancelled: boolean;
+}
+/** One proposal's votes of one account: its token vote (Stage 3) or each of its positions' votes (Stage 2). */
+export type ProposalVotes =
+  | { proposal: Uint; mode: "Token"; tokenVote: VoteRecord; votingPower: Uint; canVote: boolean }
+  | { proposal: Uint; mode: "Capital"; positions: Record<string, VoteRecord> };
+/** `/v2/raises/:a/votes/:user`. */
+export interface UserVotes {
+  raise: string;
+  user: string;
+  blockNumber: number;
+  chainTime: number;
+  votes: ProposalVotes[];
+}
+/** `/v2/users/:u/wallet`: balances and allowances from indexed Transfer and Approval events. */
+export interface UserWallet {
+  blockNumber: number;
+  quote: { address: string; balance: Uint; allowances: Record<string, Uint> };
+  tokens: { raise: string; token: string; symbol: string; balance: Uint; allowances: Record<string, Uint> }[];
+  native: { balance: Uint };
+}
+/**
+ * `/v2/raises/:a/quote`: a Stage 1 or Stage 2 quote, shaped like the raise's own quote view (a position exit's
+ * `ExitQuoteV2` fields, or a trade's `TradeQuoteV2` fields), computed by the API at `blockNumber`.
+ */
+export type RaiseQuote = {
+  raise: string;
+  kind: "deposit" | "buy" | "costExit" | "protectedExit" | "sell";
+  stateNonce: Uint;
+  blockNumber: number;
+  chainTime: number;
+  amountOut: Uint;
+} & (ExitQuoteV2 | TradeQuoteV2);
+export interface RaiseQuoteParams {
+  side: "buy" | "sell";
+  amount: bigint;
+  /** A position exit (side "sell"), at cost or with protected profit. */
+  position?: string;
+  exit?: "cost" | "protected";
+  /** The buyer-ledger owner (side "sell" without a position). */
+  owner?: string;
 }
 export interface Inbox {
   user: string;
@@ -562,6 +636,9 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
   let res: Response;
   try {
     res = await fetch(`${env.apiUrl}${path}`, {
+      // Never answer from the browser's HTTP cache: the API marks public reads `stale-while-revalidate`, which would
+      // hand the refetch after a transaction the pre-transaction response. Polling and invalidation keep data live.
+      cache: "no-store",
       ...init,
       headers: { "content-type": "application/json", ...(init?.headers ?? {}) },
     });
@@ -611,6 +688,15 @@ export const api = {
   reports: (raise: string) => request<Report[]>(`/v2/raises/${raise}/reports`),
   feedback: (raise: string) => request<Feedback[]>(`/v2/raises/${raise}/feedback`),
   proposals: (raise: string) => request<Proposal[]>(`/v2/raises/${raise}/proposals`),
+  votes: (raise: string, user: string) => request<UserVotes>(`/v2/raises/${raise}/votes/${user}`),
+  wallet: (user: string) => request<UserWallet>(`/v2/users/${user}/wallet`),
+  raiseQuote: (raise: string, params: RaiseQuoteParams) => {
+    const query = new URLSearchParams({ side: params.side, amount: params.amount.toString() });
+    if (params.position !== undefined) query.set("position", params.position);
+    if (params.exit) query.set("exit", params.exit);
+    if (params.owner) query.set("owner", params.owner);
+    return request<RaiseQuote>(`/v2/raises/${raise}/quote?${query}`);
+  },
   rolloverSources: (user: string) =>
     request<{ user: string; now: number; router: string | null; sources: RolloverSource[] }>(
       `/v2/users/${user}/rollover-sources`,

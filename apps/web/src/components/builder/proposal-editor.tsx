@@ -11,7 +11,7 @@ import { raiseInvalidations } from "@/components/raise/common";
 import { useTranslations } from "next-intl";
 import { useState } from "react";
 import type { Address } from "viem";
-import { useAccount, useReadContract } from "wagmi";
+import { useAccount } from "wagmi";
 export function ProposalEditor({ detail: r }: { detail: RaiseDetail }) {
   const v = useTranslations("v31"),
     n = useNumbers(),
@@ -22,11 +22,7 @@ export function ProposalEditor({ detail: r }: { detail: RaiseDetail }) {
   const [amount, setAmount] = useState(""),
     [uri, setUri] = useState("");
   const value = parseTradeAmount(amount, true);
-  const last = useReadContract({
-    address: r.modules.governor as Address,
-    abi: governanceAbi,
-    functionName: "lastProposalAt",
-  });
+  const lastProposalAt = Number(r.governance.state.lastProposalAt ?? 0);
   const params = r.governance.config.parameters;
   const remaining = BigInt(r.governance.state.remainingCeiling),
     escrow = BigInt(r.E);
@@ -37,7 +33,7 @@ export function ProposalEditor({ detail: r }: { detail: RaiseDetail }) {
       ? v("stage2Only")
       : proposals?.some((p) => ["Voting", "AwaitingFinalization", "Dispute", "Executable"].includes(p.state))
         ? v("proposalActive")
-        : last.data && now < Number(last.data) + Number(params.proposalInterval)
+        : lastProposalAt > 0 && now < lastProposalAt + Number(params.proposalInterval)
           ? v("proposalCooldown")
           : now + required > r.deadlines.stage2End
             ? v("proposalTooLate")

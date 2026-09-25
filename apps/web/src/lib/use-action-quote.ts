@@ -1,12 +1,10 @@
 "use client";
 import { useQuery } from "@tanstack/react-query";
-import { usePublicClient } from "wagmi";
 import type { Address } from "viem";
-import { api, type RaiseDetail } from "./api";
-import { raiseAbi } from "./contracts";
+import { api, type ExitResultV2, type RaiseDetail, type TradeQuoteV2 } from "./api";
 import { depositQuote, quoteDeadline } from "./quotes";
 export type MoneyAction = "deposit" | "exitAtCost" | "protectedExit" | "buy" | "sell";
-type Validity = { available: boolean; reason: number; phase: number; stateNonce: bigint };
+type Validity = { available: boolean; stateNonce: bigint };
 type Exit = {
   validity: Validity;
   result: {
@@ -47,11 +45,10 @@ export function useActionQuote(
   positionId: string,
   owner?: Address,
 ) {
-  const client = usePublicClient();
   return useQuery({
     queryKey: ["action-quote", detail.address, action, amount.toString(), positionId, owner, detail.stateNonce],
     // Deposit and buy quotes need no account, so a visitor can preview terms before connecting.
-    enabled: Boolean(client && amount > 0n && (owner || action === "deposit" || action === "buy")),
+    enabled: amount > 0n && Boolean(owner || action === "deposit" || action === "buy"),
     refetchInterval: 5000,
     retry: 1,
     queryFn: async (): Promise<ActionQuote> => {
@@ -68,41 +65,70 @@ export function useActionQuote(
           change: q.change,
         };
       }
-      const block = await client!.getBlock();
-      const read = (functionName: string, args: unknown[] = []) =>
-        client!.readContract({
-          address: detail.address as Address,
-          abi: raiseAbi,
-          functionName,
-          args,
-          blockNumber: block.number,
-        });
-      const nonce = (await read("stateNonce")) as bigint;
-      const deadline = quoteDeadline(Number(block.timestamp));
-      if (action === "exitAtCost" || action === "protectedExit") {
-        const quote = (await read(
-          action === "exitAtCost" ? "redeemQuote" : "protectedExitQuote",
-          action === "exitAtCost" ? [BigInt(positionId), amount, nonce] : [BigInt(positionId), amount],
-        )) as Exit;
+      // The API mirrors the contract's quote views at one block; the wallet re-checks at signing.
+      const exit = action === "exitAtCost" || action === "protectedExit";
+      const quote = await api.raiseQuote(detail.address, {
+        side: action === "buy" ? "buy" : "sell",
+        amount,
+        ...(exit
+          ? { position: positionId, exit: action === "exitAtCost" ? ("cost" as const) : ("protected" as const) }
+          : { owner }),
+      });
+      const chainTime = quote.chainTime;
+      const validity = toValidity(quote.validity);
+      const deadline = quoteDeadline(chainTime);
+      if (exit) {
+        const result = "result" in quote ? toExit(quote.result) : undefined;
         return {
-          available: quote.validity.available,
-          nonce: quote.validity.stateNonce,
+          available: validity.available && Boolean(result),
+          nonce: validity.stateNonce,
           deadline,
-          output: quote.validity.available ? quote.result.payout : 0n,
-          exit: quote.validity.available ? quote.result : undefined,
+          output: validity.available && result ? result.payout : 0n,
+          exit: validity.available ? result : undefined,
         };
       }
-      const quote = (await read(
-        action === "buy" ? "marketBuyQuote" : "marketExitQuote",
-        action === "buy" ? [amount] : [owner, amount],
-      )) as Trade;
+      const trade = "gross" in quote ? toTrade(quote, validity) : undefined;
       return {
-        available: quote.validity.available,
-        nonce: quote.validity.stateNonce,
+        available: validity.available && Boolean(trade),
+        nonce: validity.stateNonce,
         deadline,
-        output: quote.validity.available ? (action === "buy" ? quote.tokens : quote.net) : 0n,
-        trade: quote.validity.available ? quote : undefined,
+        output: validity.available && trade ? (action === "buy" ? trade.tokens : trade.net) : 0n,
+        trade: validity.available ? trade : undefined,
       };
     },
   });
+}
+
+function toValidity(v: { available: boolean; stateNonce: string }): Validity {
+  return { available: v.available, stateNonce: BigInt(v.stateNonce) };
+}
+
+function toExit(r: ExitResultV2): Exit["result"] {
+  return {
+    cost: BigInt(r.cost),
+    value: BigInt(r.value),
+    premium: BigInt(r.premium),
+    cap: BigInt(r.cap),
+    profit: BigInt(r.profit),
+    qSold: BigInt(r.qSold),
+    burn: BigInt(r.burn),
+    payout: BigInt(r.payout),
+  };
+}
+
+function toTrade(q: Extract<TradeQuoteV2, { gross: string }>, validity: Validity): Trade {
+  return {
+    validity,
+    gross: BigInt(q.gross),
+    ammAmount: BigInt(q.ammAmount),
+    tokens: BigInt(q.tokens),
+    net: BigInt(q.net),
+    fees: {
+      total: BigInt(q.fees.total),
+      reserve: BigInt(q.fees.reserve),
+      reward: BigInt(q.fees.reward),
+      treasury: BigInt(q.fees.treasury),
+    },
+    priceImpactBps: BigInt(q.priceImpactBps),
+  };
 }

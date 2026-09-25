@@ -2,7 +2,7 @@ import { test, expect, type Page } from "@playwright/test";
 import { execFileSync } from "node:child_process";
 import { writeFileSync } from "node:fs";
 import { formatUnits, parseUnits, type Abi, type Address } from "viem";
-import { WEB_URL, RPC_URL, TMP_DIR } from "./env";
+import { WEB_URL, TMP_DIR } from "./env";
 import venueAbi from "../src/generated/abi/UniswapV4Adapter.json";
 import {
   api,
@@ -18,6 +18,7 @@ import {
   fixtureDeposit,
   guarded,
   indexed,
+  localNode,
   money,
   positions,
   usd,
@@ -315,7 +316,7 @@ test("E — listing pending keeps sells/cost exits, lists permissionlessly, then
   await audit(page, "raise-listingpending-backer", true);
   // Reproduce a venue failure after simulation but before the signed transaction is mined.
   let faultArmed = true;
-  await page.route(RPC_URL, async (route) => {
+  await page.route(localNode, async (route) => {
     const body = route.request().postDataJSON() as { method?: string };
     if (faultArmed && body.method === "eth_sendRawTransaction") {
       faultArmed = false;
@@ -333,7 +334,7 @@ test("E — listing pending keeps sells/cost exits, lists permissionlessly, then
   expect(failed).toHaveLength(1);
   expect(failed[0].hash).toMatch(/^0x[\da-f]{64}$/i);
   expect(failed[0].revertData.length).toBeGreaterThan(0);
-  await page.unroute(RPC_URL);
+  await page.unroute(localNode);
   await venueFault(r.modules.adapter, false);
   await page.keyboard.press("Escape");
   await page.getByTestId("list-action").click();

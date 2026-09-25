@@ -8,6 +8,18 @@ import { env } from "./env";
 
 export const LOCAL_CONNECTOR_ID = "portex-local-accounts";
 
+/**
+ * The burner wallet's own node endpoint. The query tag marks its traffic (signing, and the simulate, gas and
+ * receipt calls the app sends through any wallet's provider) so `e2e/no-rpc.e2e.ts` can tell a wallet's
+ * requests from the app's. The app itself never sends JSON-RPC; see `lib/wagmi.ts`.
+ */
+export const LOCAL_WALLET_SOURCE = "portex-local-wallet";
+const walletRpcUrl = (() => {
+  const url = new URL(env.rpcLocal);
+  url.searchParams.set("source", LOCAL_WALLET_SOURCE);
+  return url.toString();
+})();
+
 const STORAGE_KEY_INDEX = "portex.localAccountIndex";
 const STORAGE_KEY_CONNECTED = "portex.localConnected";
 
@@ -74,10 +86,10 @@ export function localAccountsConnector() {
     async function request({ method, params }: { method: string; params?: unknown[] }): Promise<unknown> {
       const account = await resolveAccount();
       const viemAccount = privateKeyToAccount(account.privateKey as Hex);
-      const wallet = createWalletClient({ account: viemAccount, chain, transport: http(env.rpcLocal) });
+      const wallet = createWalletClient({ account: viemAccount, chain, transport: http(walletRpcUrl) });
 
-      // Plain reads are forwarded to the local RPC.
-      const rpc = http(env.rpcLocal)({ chain });
+      // Everything else a wallet answers (eth_call, eth_estimateGas, receipts) is forwarded to the local node.
+      const rpc = http(walletRpcUrl)({ chain });
       const forward = () => rpc.request({ method, params } as never);
 
       switch (method) {
@@ -103,11 +115,13 @@ export function localAccountsConnector() {
           });
         }
         case "eth_sendTransaction": {
-          const [tx] = params as [{ to?: Address; data?: Hex; value?: Hex }];
+          const [tx] = params as [{ to?: Address; data?: Hex; value?: Hex; gas?: Hex }];
           return wallet.sendTransaction({
             to: tx.to,
             data: tx.data ?? "0x",
             value: tx.value ? BigInt(tx.value) : undefined,
+            // Honour the app's gas limit (its 1.5x margin), as a browser wallet does.
+            gas: tx.gas ? BigInt(tx.gas) : undefined,
           });
         }
         case "wallet_switchEthereumChain": {

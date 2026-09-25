@@ -78,7 +78,7 @@ export default function DevPage() {
             [t("recipient"), local ? name(local) : shortAddress(user)],
             [t("amount"), `${n.quote(parseQuote(amount))} ${apiConfig.quote.symbol}`],
           ],
-          invalidate: [["readContract"], ["position"]],
+          invalidate: [["wallet"], ["position"]],
         },
       );
     } finally {

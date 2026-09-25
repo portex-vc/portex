@@ -1,14 +1,11 @@
 "use client";
 
 import { appChain, explorerUrl, xLayerTestnet } from "@/lib/chains";
-import { registryAbi } from "@/lib/contracts";
 import { useApiConfig, useHealth } from "@/lib/hooks";
 import { cn, shortAddress } from "@/lib/utils";
 import { ArrowUpRight, Check, Copy } from "lucide-react";
 import { useFormatter, useTranslations } from "next-intl";
 import { useState } from "react";
-import type { Address } from "viem";
-import { useReadContract } from "wagmi";
 
 function CopyButton({ value, label }: { value: string; label: string }) {
   const t = useTranslations("common");
@@ -106,12 +103,7 @@ export function DeployedContracts() {
   const manifest = (health as unknown as { deployment?: Record<string, unknown> } | undefined)?.deployment ?? null;
   const pick = (key: string) => (typeof manifest?.[key] === "string" ? (manifest[key] as string) : null);
   const a = config?.addresses;
-  const { data: curator } = useReadContract({
-    address: a?.registry as Address | undefined,
-    abi: registryAbi,
-    functionName: "curator",
-    query: { enabled: Boolean(a?.registry) },
-  });
+  const curator = config?.curator;
   const current = ["ESCROW_LAUNCH", "BUDGET_LAUNCH"]
     .map(
       (name) =>
@@ -157,7 +149,7 @@ export function DeployedContracts() {
     {
       title: t("groups.roles"),
       rows: [
-        { label: t("curator"), value: curator as string | undefined, kind: "address" },
+        { label: t("curator"), value: curator, kind: "address" },
         { label: t("attester"), value: a?.attester, kind: "address" },
         { label: t("council"), value: a?.council, kind: "address" },
       ],

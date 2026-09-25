@@ -33,7 +33,7 @@ export function TestUsdgFaucet({ quoteAddress }: { quoteAddress?: string }) {
                 [t("recipient"), address],
                 [t("amount"), `${n.quote(amount)} TEST USDG`],
               ],
-              invalidate: [["readContract"], ["position"]],
+              invalidate: [["wallet"], ["position"]],
             },
           )
         }

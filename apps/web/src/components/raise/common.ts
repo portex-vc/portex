@@ -7,7 +7,7 @@ export function raiseInvalidations(address: string, user?: string): (readonly un
     queryKeys.trades(address),
     queryKeys.priceHistory(address),
     queryKeys.proposals(address),
-    ["readContract"],
+    ["wallet"],
     ["inbox"],
     ["rollover-sources"],
     ...(user ? [queryKeys.position(address, user)] : []),

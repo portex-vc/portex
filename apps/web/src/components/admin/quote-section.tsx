@@ -4,15 +4,16 @@ import { ActionButton } from "@/components/action-button";
 import { CopyValue } from "@/components/copy-value";
 import { Input } from "@/components/ui/input";
 import type { ApiConfig } from "@/lib/api";
-import { appChain } from "@/lib/chains";
 import { erc20Abi, registryAbi } from "@/lib/contracts";
 import { queryKeys, useTx } from "@/lib/hooks";
 import { cn, shortAddress } from "@/lib/utils";
+import { walletPublicClient } from "@/lib/wallet-client";
+import { useQuery } from "@tanstack/react-query";
 import { Check, Minus } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { useState } from "react";
 import { isAddress, type Address } from "viem";
-import { useReadContract } from "wagmi";
+import { useAccount, useConfig } from "wagmi";
 import { AdminSection, ConfirmRow, Fact, Switch } from "./shared";
 
 const FLAGS = ["feeOnTransfer", "rebasing", "pausable", "quoteFrozen"] as const;
@@ -33,30 +34,21 @@ function Status({ ok, yes, no }: { ok: boolean | undefined; yes: string; no: str
   );
 }
 
+/** Registry status of one quote asset (`quoteFrozen`, `quoteCodeHash`), served by `/v2/config`. */
+export function quoteStatus(config: ApiConfig, quote?: string): { frozen: boolean; codeHash: string } | undefined {
+  if (!quote) return undefined;
+  return Object.entries(config.quotes ?? {}).find(([k]) => k.toLowerCase() === quote.toLowerCase())?.[1];
+}
+
 export function QuoteSection({ config, canEdit }: { config: ApiConfig; canEdit: boolean }) {
   const t = useTranslations("admin.quote");
   const tv = useTranslations("v31");
   const registry = config.addresses.registry as Address;
   const quote = config.quote.address as Address;
-  const read = { staleTime: 15_000 };
-  const frozen = useReadContract({
-    address: registry,
-    abi: registryAbi,
-    functionName: "quoteFrozen",
-    args: [quote],
-    chainId: appChain.id,
-    query: read,
-  });
-  const codeHash = useReadContract({
-    address: registry,
-    abi: registryAbi,
-    functionName: "quoteCodeHash",
-    args: [quote],
-    chainId: appChain.id,
-    query: read,
-  });
-  const hash = codeHash.data as string | undefined;
+  const status = quoteStatus(config, quote);
+  const hash = status?.codeHash;
   const whitelisted = hash === undefined ? undefined : !/^0x0{64}$/.test(hash);
+  const frozen = status?.frozen ?? (config.quotes ? undefined : config.quote.quoteFrozen);
 
   return (
     <AdminSection id="quote" title={t("title")} description={t("description")} roles={["curator"]}>
@@ -67,7 +59,7 @@ export function QuoteSection({ config, canEdit }: { config: ApiConfig; canEdit: 
             <span className="text-xs text-fg-3">· {tv("decimals", { count: config.quote.decimals })}</span>
             <span className="ml-auto flex gap-1.5">
               <Status ok={whitelisted} yes={t("whitelisted")} no={t("notWhitelisted")} />
-              <Status ok={frozen.data as boolean | undefined} yes={t("frozen")} no={t("notFrozen")} />
+              <Status ok={frozen} yes={t("frozen")} no={t("notFrozen")} />
             </span>
           </div>
           <dl className="mt-4 divide-y divide-fg/[0.06] border-t border-fg/[0.07]">
@@ -99,12 +91,19 @@ function WhitelistForm({ registry }: { registry: Address }) {
   const [confirming, setConfirming] = useState(false);
   const { send, pending } = useTx();
   const valid = isAddress(asset.trim());
-  const decimals = useReadContract({
-    address: valid ? (asset.trim() as Address) : undefined,
-    abi: erc20Abi,
-    functionName: "decimals",
-    chainId: appChain.id,
-    query: { enabled: valid, retry: false },
+  // A pre-signing check of an address the curator typed: asked through the curator's own wallet.
+  const wagmiConfig = useConfig();
+  const { isConnected } = useAccount();
+  const decimals = useQuery({
+    queryKey: ["wallet-check", "decimals", asset.trim().toLowerCase()],
+    queryFn: async () =>
+      (await walletPublicClient(wagmiConfig)).readContract({
+        address: asset.trim() as Address,
+        abi: erc20Abi,
+        functionName: "decimals",
+      } as never) as Promise<number>,
+    enabled: valid && isConnected,
+    retry: false,
   });
   const badFlags = flags.feeOnTransfer || flags.rebasing || flags.pausable;
   const reason = !valid

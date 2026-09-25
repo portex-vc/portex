@@ -1,6 +1,7 @@
 "use client";
 
-import { createConfig, createStorage, http, type CreateConnectorFn } from "wagmi";
+import { custom } from "viem";
+import { createConfig, createStorage, type CreateConnectorFn } from "wagmi";
 import { injected, walletConnect } from "wagmi/connectors";
 import { appChain, chains } from "./chains";
 import { localAccountsConnector } from "./local-connector";
@@ -44,12 +45,25 @@ const connectors: CreateConnectorFn[] = [
   ...(isLocalChain ? [localAccountsConnector()] : []),
 ];
 
+/**
+ * The browser never talks to an RPC endpoint: displayed data comes from the Portex API, and transaction-time
+ * calls (simulate, gas estimate, receipt wait) go through the connected wallet's own provider
+ * (`lib/wallet-client.ts`). So wagmi's own public client gets a transport that makes no request at all, and a
+ * stray read fails loudly here instead of reaching an RPC. The chain's public RPC URL stays only as
+ * EIP-3085 metadata for `wallet_addEthereumChain`.
+ */
+const noRpc = custom({
+  async request({ method }: { method: string }) {
+    throw new Error(`Portex does not send "${method}" to an RPC endpoint; chain data comes from the Portex API.`);
+  },
+});
+
 export const wagmiConfig = createConfig({
   // The app chain first: wagmi uses the first chain as the default for new connections.
   chains,
   connectors,
   transports: {
-    [appChain.id]: http(appChain.rpcUrls.default.http[0]),
+    [appChain.id]: noRpc,
   },
   ssr: true,
   storage: createStorage({
