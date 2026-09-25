@@ -35,9 +35,9 @@
     }
   },
   "bootstrap": {
-    "launches": 5,
+    "launches": 2,
     "spacingMinutes": 2,
-    "fates": ["graduate", "graduate", "dissolve-builder", "graduate", "graduate"],
+    "fates": ["graduate", "graduate"],
     "tradeMultiplier": 2
   },
   "steady": {
@@ -52,8 +52,8 @@
     "stage1Min": 2,
     "stage2Min": 2,
     "stage3Min": 1,
-    "maxGapFillsPerHour": 1,
-    "gapStage1Minutes": [10, 40],
+    "maxGapFillsPerHour": 12,
+    "gapStage1Minutes": [6, 12],
     "gapStage2Minutes": [480, 720],
     "lookaheadMinutes": 60,
     "gapLeadMinutes": 20
