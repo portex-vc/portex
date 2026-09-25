@@ -1,6 +1,7 @@
 name: Deploy server
 
-# After CI passes on main, the DigitalOcean server pulls main and rebuilds its Docker stack (deploy/update.sh).
+# After CI passes on main, ship that commit to the DigitalOcean server, which unpacks and rebuilds it
+# (deploy/update.sh). The server holds no GitHub credentials; its deploy key can only run that script.
 on:
   workflow_run:
     workflows: [CI]
@@ -19,8 +20,14 @@ jobs:
     if: github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success'
     runs-on: ubuntu-latest
     environment: testnet
+    permissions:
+      contents: read
     steps:
-      - name: Update the server
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+        with:
+          persist-credentials: false
+          ref: ${{ github.event.workflow_run.head_sha || github.sha }}
+      - name: Ship the commit and rebuild
         env:
           SSH_KEY: ${{ secrets.DEPLOY_SSH_KEY }}
           HOST: ${{ secrets.DEPLOY_HOST }}
@@ -30,5 +37,5 @@ jobs:
           printf '%s\n' "$SSH_KEY" > ~/.ssh/deploy
           chmod 600 ~/.ssh/deploy
           printf '%s\n' "$KNOWN_HOSTS" > ~/.ssh/known_hosts
-          # The key is restricted server-side to running deploy/update.sh.
-          ssh -i ~/.ssh/deploy -o BatchMode=yes deploy@"$HOST" update
+          # The key is restricted server-side to running deploy/update.sh, which reads the archive from stdin.
+          git archive --format=tar HEAD | ssh -i ~/.ssh/deploy -o BatchMode=yes deploy@"$HOST" deploy

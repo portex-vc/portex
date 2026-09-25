@@ -171,7 +171,7 @@ overrides any value in `tools/mock/config/tempos.json`.
 | Part | Where | How it updates |
 |---|---|---|
 | Web app | Netlify (`netlify.toml`) | `Deploy web` workflow: after CI passes on `main`, builds `apps/web` and publishes it. |
-| API, database and activity runner | DigitalOcean droplet, Docker Compose (`deploy/`) | `Deploy server` workflow: after CI passes on `main`, the server pulls `main` and rebuilds (`deploy/update.sh`). The SQLite database, uploads and runner state live on the droplet's data volume. |
+| API, database and activity runner | DigitalOcean droplet, Docker Compose (`deploy/`) | `Deploy server` workflow: after CI passes on `main`, the commit is shipped to the server, which unpacks it as a new release and rebuilds (`deploy/update.sh`). The SQLite database, uploads and runner state live on the droplet's data volume. |
 | Domains | Cloudflare (`portex.vc`) | `testnet.portex.vc` → Netlify, `testnet-api.portex.vc` → the droplet, both proxied. The origins accept traffic only from Cloudflare's IP ranges. |
 
 The workflows need these repository secrets: `DEPLOY_SSH_KEY`, `DEPLOY_HOST`, `DEPLOY_KNOWN_HOSTS`,
