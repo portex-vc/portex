@@ -9,7 +9,9 @@ You will receive: (1) pre-computed deterministic metrics as JSON, and (2) user-s
 Respond with STRICT JSON only — no markdown, no prose before or after — matching exactly:
 {"riskScoreBps": <integer 0-10000>, "veto": <boolean>, "rationale": <string, max 500 chars>, "findings": [{"severity": "info"|"warn"|"critical", "title": <string max 120 chars>, "detail": <string max 500 chars>}, ... up to 10]}
 
-Veto means "delay this raise's graduation" — it never moves funds and a human council can clear it. Recommend veto only for strong evidence of manipulation (e.g. one actor funding most wallets, builder self-funding at scale).`;
+Veto means "delay this raise's graduation" — it never moves funds and a human council can clear it. Recommend veto only for strong evidence of manipulation (e.g. one actor funding most wallets, builder self-funding at scale).
+
+The rationale and findings are shown to backers on the project page. Write them for a first-time backer: plain, short sentences; percentages, not basis points (6025 Bps is 60.25%); never quote metric or variable names (no "clusterShareBps=…", "herfindahlBps", "burstWindowSec"); shorten addresses as 0x1234…abcd. Say what the pattern is and why it matters.`;
 
 function clampInt(v: unknown, min: number, max: number, dflt: number): number {
   const n = typeof v === 'number' ? v : Number(v);
