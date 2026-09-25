@@ -2,6 +2,7 @@
 import { ActionButton } from "@/components/action-button";
 import { Mark } from "@/components/brand/logo";
 import { ProposalEditor } from "@/components/builder/proposal-editor";
+import { TestnetTimingNote } from "@/components/testnet-timing";
 import { SpendEditor } from "@/components/builder/spend-editor";
 import { TreasuryPanel } from "./treasury-panel";
 import { CardHeading, Fig, Meter, NativeSelect, QuoteTable, type Row } from "@/components/figures";
@@ -39,7 +40,11 @@ export function ProposalsPanel({ detail: r }: { detail: RaiseDetail }) {
     <div className="space-y-4" data-testid="governance-tab">
       <TreasuryPanel detail={r} />
       <section className="surface-1 space-y-5 p-5">
-        <CardHeading eyebrow={v("proposalsEyebrow")} title={v(listed ? "governanceTitleToken" : "governanceTitle")} />
+        <CardHeading
+          eyebrow={v("proposalsEyebrow")}
+          title={v(listed ? "governanceTitleToken" : "governanceTitle")}
+          aside={<TestnetTimingNote pinned={r.governance.config.parameters} />}
+        />
         {listed ? (
           <dl className="grid grid-cols-2 gap-5 sm:grid-cols-3">
             <Fig label={v("capPerSpend")} value={n.pct(r.treasury.spendCapBps)} />

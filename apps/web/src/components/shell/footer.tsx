@@ -56,8 +56,8 @@ export function Footer() {
           <Link href="/protocol" className="transition-colors hover:text-fg">
             {t("contracts")}
           </Link>
-          <Link href="/wiki" className="transition-colors hover:text-fg" data-testid="footer-wiki">
-            {t("wiki")}
+          <Link href="/docs" className="transition-colors hover:text-fg" data-testid="footer-docs">
+            {t("docs")}
           </Link>
         </nav>
       </div>

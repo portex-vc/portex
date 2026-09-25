@@ -9,7 +9,8 @@
     "menu": "Menú",
     "close": "Cerrar",
     "markets": "Mercados",
-    "admin": "Admin"
+    "admin": "Admin",
+    "docs": "Docs"
   },
   "locale": {
     "label": "Idioma"
@@ -159,9 +160,8 @@
     "chain": "Cadena",
     "contracts": "Contratos",
     "tests": "{count} pruebas · invariantes en verde",
-    "docs": "Documento de diseño",
-    "links": "Pie de página",
-    "wiki": "Wiki"
+    "docs": "Docs",
+    "links": "Pie de página"
   },
   "glossary": {
     "veto": "El analista puede demorar la Etapa 1 dentro de límites fijados. No puede aprobar un lanzamiento ni tocar fondos.",
@@ -986,8 +986,8 @@
     "treasuryAllocation": "Asignación de tesorería",
     "treasuryLocked": "Aún bloqueado",
     "treasuryUnlocked": "Liberado, gastable por votación",
-    "treasurySchedule": "Se libera de forma lineal durante {years} años desde el listado, cerca del {pct} del suministro al año.",
-    "treasuryBeforeListing": "La asignación llega a la tesorería al listar y luego se libera durante {years} años.",
+    "treasurySchedule": "Se libera de forma lineal durante {period} desde el listado, cerca del {pct} del suministro al año.",
+    "treasuryBeforeListing": "La asignación llega a la tesorería al listar y luego se libera durante {period}.",
     "treasurySpent": "Gastado por votación",
     "governanceTitleToken": "La tesorería solo gasta por votación de los titulares de tokens",
     "voteNoteToken": "Los votos cuentan los tokens que tenías al abrirse la propuesta. Los constructores no pueden votar los gastos de tesorería.",
@@ -1016,7 +1016,8 @@
     "proposalsEyebrow": "Propuestas",
     "capPerSpend": "Tope por gasto · parte del valor a favor",
     "votingTimelock": "Votación · bloqueo temporal",
-    "treasuryVesting": "Periodo de liberación de la tesorería"
+    "treasuryVesting": "Periodo de liberación de la tesorería",
+    "treasuryScheduleShort": "Se libera de forma lineal durante {period} desde el listado."
   },
   "wallet": {
     "connect": "Conectar wallet",
@@ -1436,10 +1437,27 @@
       "never": "Aún sin analizar"
     }
   },
-  "wiki": {
-    "eyebrow": "Documentación",
-    "title": "Wiki",
-    "description": "Cómo funciona Portex: las tres etapas, qué protege tu capital y dónde termina esa protección, los dos tipos de lanzamiento, las salidas, la tesorería gobernada, las comisiones y la negociación tras el listado.",
+  "testnet": {
+    "ribbon": "Plantilla de testnet",
+    "marker": "Plazos de testnet",
+    "title": "Plazos acortados para testnet",
+    "explanation": "Estos plazos están acortados para pruebas. En esta testnet los mismos contratos funcionan con parámetros de gobernanza en minutos y horas, así que un ciclo completo cabe en un día. En producción, la Etapa 1 dura {stage1} y la Etapa 2, {stage2}.",
+    "hint": "Acortados para testnet · en producción: Etapa 1 {stage1}, Etapa 2 {stage2}",
+    "footnote": "Estos son los plazos de producción; los proyectos de esta testnet usan plazos acortados.",
+    "here": "Esta testnet",
+    "production": "Producción",
+    "rows": {
+      "stage1": "Etapa 1",
+      "stage2": "Etapa 2",
+      "votes": "Votación · disputa · ejecución",
+      "veto": "Veto",
+      "treasury": "Liberación de tesorería"
+    },
+    "vetoValue": "≤{max} · {total} en total"
+  },
+  "docs": {
+    "title": "Docs",
+    "description": "Cómo funciona Portex y cómo usarlo: guías paso a paso para patrocinadores, creadores, operadores, analistas y administradores, las tres etapas, qué protege tu capital y dónde termina esa protección, la tesorería gobernada, las comisiones, la negociación tras el listado y los contratos desplegados.",
     "contents": "Contenido",
     "anchor": "Enlace a esta sección",
     "groups": {
@@ -1447,8 +1465,10 @@
       "stages": "Las etapas",
       "money": "Dinero",
       "governance": "Gobernanza",
-      "trading": "Mercado y testnet",
-      "reference": "Referencia"
+      "trading": "Mercado",
+      "reference": "Referencia",
+      "guides": "Guías",
+      "network": "Red y contratos"
     },
     "stepper": {
       "Stage1": {
@@ -1464,7 +1484,7 @@
         "what": "El proyecto cotiza en Uniswap v4. La protección ha terminado; rige el riesgo de mercado normal."
       },
       "dissolution": "Un proyecto que no se gradúa de la Etapa 1 se disuelve, y cada posición recupera su coste íntegro.",
-      "note": "Las duraciones son los valores por defecto de producción; en testnet son mucho más cortas. Consulta Plazos gobernados.",
+      "note": "Las duraciones son los valores por defecto de producción. Si esta red fija plazos más cortos, aparecen bajo cada etapa.",
       "dissolutionLabel": "Disolución"
     },
     "s": {
@@ -1516,7 +1536,7 @@
         "price": "Cómo se mueve el precio",
         "priceText": "El libro combina los USDG reales de los compradores externos con una profundidad virtual que disminuye de forma lineal a lo largo de la etapa. En el primer instante el precio es exactamente el precio final de la Etapa 1; en el último, exactamente el precio de apertura del pool. Entre medias converge de forma gradual, de modo que una ola de especulación no puede adelantarse mucho a la demanda real.",
         "protects": "Qué te protege",
-        "protectsNote": "Tu coste sigue en custodia y puedes recuperarlo en cualquier momento. El beneficio nunca sale del capital de otros patrocinadores: solo sale de la reserva que financiaron los compradores externos. Sin demanda externa, no hay beneficio ni pérdida.",
+        "protectsNote": "Tu coste sigue en custodia y puedes recuperarlo en cualquier momento. El beneficio nunca sale del capital de otros patrocinadores: solo sale de la reserva que financiaron los compradores externos. Sin demanda externa, no hay beneficio ni pérdida. En un Lanzamiento con Presupuesto, un presupuesto aprobado por votación de los patrocinadores puede reducir tu coste.",
         "ends": "Cómo termina",
         "endsText": "El listado es obligatorio al vencer la Etapa 2, haya la demanda que haya, y cualquiera puede ejecutarlo. Si falla la llamada al mercado, toda la transacción se revierte: las salidas al coste siguen abiertas y cualquiera puede volver a intentarlo."
       },
@@ -1541,11 +1561,7 @@
         "title": "Tipos de lanzamiento",
         "lede": "Ambos tipos comparten las mismas etapas, protecciones, reglas de tesorería y comisiones. Solo difieren en una cosa: si un presupuesto votado puede retirar fondos de la ronda antes del listado.",
         "table": {
-          "head": [
-            "",
-            "Lanzamiento en Custodia",
-            "Lanzamiento con Presupuesto"
-          ],
+          "head": ["", "Lanzamiento en Custodia", "Lanzamiento con Presupuesto"],
           "rows": [
             [
               "Retiros de la ronda",
@@ -1557,11 +1573,7 @@
               "—",
               "Como mucho el 10% del capital que vota a favor. El coste de cada posición se reduce en proporción."
             ],
-            [
-              "Lo que devuelve una salida al coste",
-              "Tu coste original",
-              "Tu coste tras los retiros votados"
-            ],
+            ["Lo que devuelve una salida al coste", "Tu coste original", "Tu coste tras los retiros votados"],
             [
               "Ingresos del creador",
               "Presupuestos de tesorería aprobados por votación (comisiones y la asignación del 10%) y los ingresos propios del proyecto",
@@ -1575,7 +1587,7 @@
           ]
         },
         "escrow": "Lanzamiento en Custodia",
-        "escrowText": "El contrato no da al creador ningún acceso a los fondos de los patrocinadores. El equipo se financia como un proyecto que se sostiene por sí mismo: con la tesorería, cuyos ingresos son las comisiones de negociación y una asignación del 10% del suministro que se libera en cinco años, y que solo se gasta mediante propuestas aprobadas por votación; y con los ingresos propios del producto.",
+        "escrowText": "El contrato no da al creador ningún acceso a los fondos de los patrocinadores. El equipo se financia como un proyecto que se sostiene por sí mismo: con la tesorería, cuyos ingresos son las comisiones de negociación y una asignación del 10% del suministro que se libera en cinco años{{treasuryVesting}}, y que solo se gasta mediante propuestas aprobadas por votación; y con los ingresos propios del producto.",
         "budget": "Lanzamiento con Presupuesto",
         "budgetText": "Para equipos que necesitan capital antes del listado. El creador elige un techo de presupuesto al crear el lanzamiento, y se muestra antes de que nadie deposite. En la Etapa 2, cada retiro es una propuesta que los patrocinadores votan con su capital; un retiro aprobado reduce en proporción el coste de todas las posiciones. Durante la votación y el periodo de disputa los patrocinadores pueden seguir saliendo al coste, así que nadie queda atado a un presupuesto que rechaza."
       },
@@ -1607,37 +1619,21 @@
         "title": "Comisiones",
         "lede": "Portex no cobra ninguna comisión de protocolo. Cada comisión que recauda un lanzamiento se queda en ese lanzamiento.",
         "table": {
-          "head": [
-            "Cuándo",
-            "Comisión",
-            "A dónde va"
-          ],
+          "head": ["Cuándo", "Comisión", "A dónde va"],
           "rows": [
-            [
-              "Depósitos y salidas de la Etapa 1",
-              "Ninguna",
-              "—"
-            ],
+            ["Depósitos y salidas de la Etapa 1", "Ninguna", "—"],
             [
               "Compras y ventas de compradores externos en la Etapa 2",
               "1% de cada operación",
               "40% se queda en la reserva del libro, 30% para las recompensas Diamond Hand, 30% para la tesorería del proyecto"
             ],
-            [
-              "Salidas al coste y salidas protegidas",
-              "Ninguna",
-              "—"
-            ],
+            ["Salidas al coste y salidas protegidas", "Ninguna", "—"],
             [
               "Intercambios en el pool de Portex tras el listado",
               "Comisión del pool de Uniswap v4: 1%",
               "Las comisiones de la liquidez bloqueada del protocolo van a la tesorería del proyecto"
             ],
-            [
-              "Traslados y devoluciones por disolución",
-              "Ninguna",
-              "—"
-            ]
+            ["Traslados y devoluciones por disolución", "Ninguna", "—"]
           ]
         },
         "p1": "La parte de la reserva da profundidad al libro que financia las salidas protegidas. Las partes de recompensas y de tesorería se guardan en compartimentos separados y nunca se mezclan con el capital."
@@ -1650,10 +1646,10 @@
           "La parte de tesorería de las comisiones de negociación de la Etapa 2.",
           "Las comisiones que genera la liquidez bloqueada del protocolo tras el listado.",
           "Los fondos de recompensas que ya no se pueden repartir.",
-          "El 10% del suministro de tokens, que llega en el listado y se libera en línea recta durante cinco años (valor por defecto de producción). Los tokens bloqueados nunca se pueden gastar."
+          "El 10% del suministro de tokens, que llega en el listado y se libera en línea recta durante cinco años (valor por defecto de producción){{treasuryVesting}}. Los tokens bloqueados nunca se pueden gastar."
         ],
         "capital": "Antes del listado: votación por capital",
-        "capitalText": "En la Etapa 2, las propuestas se votan con el capital aportado, un peso por posición de patrocinador, nunca con tokens. Una propuesta necesita un cuórum del 40% del capital con derecho a voto y un 60% de aprobación, y puede gastar como mucho el 10% del capital que vota a favor. La votación dura tres días; después, una propuesta aprobada pasa por un periodo de disputa de siete días, durante el que cualquier patrocinador puede seguir saliendo al coste, y puede ejecutarse en los dos días siguientes. Salir anula el voto de esa posición.",
+        "capitalText": "En la Etapa 2, las propuestas se votan con el capital aportado, nunca con tokens: cada posición de patrocinador vota una vez, con un peso igual a su coste. Una propuesta necesita un cuórum del 40% del capital con derecho a voto y un 60% de aprobación, y puede gastar como mucho el 10% del capital que vota a favor. La votación dura tres días{{voting}}; después, una propuesta aprobada pasa por un periodo de disputa de siete días{{dispute}}, durante el que cualquier patrocinador puede seguir saliendo al coste, y puede ejecutarse en los dos días siguientes{{execution}}. Salir anula el voto de esa posición. Solo hay una propuesta a la vez, y cada propuesta nueva llega al menos un día después de la anterior{{proposalInterval}}.",
         "tokens": "Después del listado: votación por tokens",
         "tokensText": "En la Etapa 3, los titulares de tokens votan con su saldo al final del bloque en el que se hizo la propuesta, de modo que los tokens prestados no pueden inclinar el resultado. Una propuesta se aprueba con el 60% de los votos emitidos, y su valor total no puede superar el 5% del valor de mercado de los tokens que votan a favor, valorados al menor entre el precio de listado y el precio actual del pool. Las direcciones del creador no pueden votar.",
         "team": "Cómo se paga al equipo",
@@ -1663,7 +1659,7 @@
         "title": "El analista de IA",
         "lede": "Cada ronda en la Etapa 1 la revisa un analista de IA que publica un informe de riesgo en la página del proyecto. Tiene un solo poder: demorar.",
         "list": [
-          "Puede aplicar un veto que demora la graduación de la Etapa 1: como mucho dos días por veto y siete en total, con un día de espera entre vetos, y nunca más allá del máximo de la Etapa 1.",
+          "Puede aplicar un veto que demora la graduación de la Etapa 1: como mucho dos días por veto{{vetoMax}} y siete en total{{vetoTotal}}, con un día de espera entre vetos{{vetoCooldown}}, y nunca más allá del máximo de la Etapa 1.",
           "No puede aprobar un lanzamiento, rechazar uno que cumplió sus condiciones ni tocar fondos.",
           "Las salidas al coste siguen abiertas durante una demora.",
           "El consejo puede levantar un veto antes de tiempo. El margen de demora ya usado no se recupera.",
@@ -1674,15 +1670,11 @@
         "title": "Roles y sus límites",
         "lede": "Unas pocas direcciones tienen roles acotados, fijados en cada lanzamiento. Ninguna puede cambiar un lanzamiento en curso ni mover los fondos de los patrocinadores.",
         "table": {
-          "head": [
-            "Rol",
-            "Puede",
-            "No puede"
-          ],
+          "head": ["Rol", "Puede", "No puede"],
           "rows": [
             [
               "Curador",
-              "Publicar nuevas versiones de plantilla, añadir el activo de cotización a la lista blanca y fijar parámetros gobernados para versiones futuras",
+              "Publicar nuevas versiones de plantilla, retirar versiones para los lanzamientos nuevos, admitir el activo de cotización y fijar parámetros gobernados para versiones futuras",
               "Cambiar una versión publicada o un lanzamiento existente; tocar fondos"
             ],
             [
@@ -1704,6 +1696,11 @@
               "Cualquiera",
               "Hacer avanzar una etapa cuando vence, ejecutar el listado y finalizar o ejecutar propuestas",
               "—"
+            ],
+            [
+              "Administrador de la API (fuera de la cadena)",
+              "Ejecutar el analista de IA a demanda, sin límite de frecuencia",
+              "Nada on-chain"
             ]
           ]
         },
@@ -1712,61 +1709,8 @@
       "timings": {
         "title": "Plazos gobernados",
         "lede": "La duración de las etapas y las ventanas de gobernanza son parámetros del protocolo. El curador los fija solo para versiones futuras; cada versión fija sus valores y cada lanzamiento conserva los de su versión.",
-        "table": {
-          "head": [
-            "Parámetro",
-            "Producción",
-            "Testnet"
-          ],
-          "rows": [
-            [
-              "Duración de la Etapa 1",
-              "15–60 días",
-              "10 minutos – 60 días"
-            ],
-            [
-              "Duración de la Etapa 2",
-              "35–70 días",
-              "30 minutos – 70 días"
-            ],
-            [
-              "Periodo de votación",
-              "3 días",
-              "10 minutos"
-            ],
-            [
-              "Periodo de disputa",
-              "7 días",
-              "10 minutos"
-            ],
-            [
-              "Ventana de ejecución",
-              "2 días",
-              "10 minutos"
-            ],
-            [
-              "Veto individual más largo",
-              "2 días",
-              "10 minutos"
-            ],
-            [
-              "Margen total de veto",
-              "7 días",
-              "30 minutos"
-            ],
-            [
-              "Espera entre vetos",
-              "1 día",
-              "10 minutos"
-            ],
-            [
-              "Liberación de la asignación de tesorería",
-              "5 años (1.825 días)",
-              "7 días"
-            ]
-          ]
-        },
-        "p1": "El creador elige la duración de las etapas de cada lanzamiento dentro de estos límites, y queda fijada antes del primer depósito. Los valores cortos de testnet permiten ver un ciclo de vida completo en una tarde; los lanzamientos de producción usan los valores de producción."
+        "p1": "La tabla compara los valores por defecto de producción con los que fija hoy un lanzamiento nuevo en esta red, leídos en vivo de la versión de plantilla actual.",
+        "p2": "El creador elige la duración de las etapas de cada lanzamiento dentro de estos límites, y queda fijada antes del primer depósito. En testnet los plazos se acortan para poder ver un ciclo de vida completo en un día; los contratos son idénticos y solo cambian los parámetros gobernados. Los lanzamientos de producción usan los valores de producción."
       },
       "markets": {
         "title": "Mercados y negociación",
@@ -1781,14 +1725,13 @@
         ]
       },
       "testnet": {
-        "title": "Testnet y Test USDG",
-        "lede": "Portex funciona en la testnet de X Layer (cadena 1952) con un activo de cotización de prueba.",
+        "title": "Conectarse a la testnet de X Layer",
+        "lede": "Portex funciona en la testnet de X Layer con un activo de cotización de prueba. Tu wallet necesita esta red y un poco de OKB de testnet para el gas.",
         "list": [
-          "**Test USDG** es un token de faucet que cualquiera puede acuñar, con 6 decimales como USDG. No tiene ningún valor monetario y nunca es USDG real.",
-          "Cuando tu saldo está vacío, los paneles de depósito y de negociación, y un Portafolio vacío, ofrecen acuñar 10.000 Test USDG en una sola transacción.",
-          "Los lanzamientos de testnet pueden usar los plazos cortos de [Plazos gobernados](#timings), de modo que un proyecto puede pasar de la Etapa 1 al mercado abierto en menos de una hora.",
-          "Los pools usan un PoolManager de Uniswap v4 desplegado a partir de la versión v4.0.0 sin modificar.",
-          "Las transacciones necesitan un poco de OKB de testnet para el gas."
+          "Al pulsar **Conectar wallet**, la app pide a tu wallet que cambie a la testnet de X Layer y que la añada si no la tiene. También puedes añadirla a mano con los valores de arriba.",
+          "Consigue OKB de testnet para el gas en el [faucet de X Layer de OKX](https://web3.okx.com/xlayer/faucet).",
+          "**TEST USDG** es un token de faucet que cualquiera puede acuñar, con 6 decimales como USDG. No tiene ningún valor monetario y nunca es USDG real. Cuando tu saldo está vacío, los paneles de depósito y de negociación, y un Portafolio vacío, ofrecen acuñar 10.000 TEST USDG en una sola transacción.",
+          "Los lanzamientos de testnet pueden usar plazos acortados, de modo que un proyecto puede pasar de la Etapa 1 al mercado abierto en menos de una hora. Consulta [Plazos gobernados](#timings)."
         ]
       },
       "faq": {
@@ -1834,6 +1777,10 @@
           {
             "q": "¿Se puede cambiar un lanzamiento después de que deposite?",
             "a": "No. Su código, sus parámetros y sus roles quedan fijados al crearse. Las versiones nuevas solo se aplican a lanzamientos nuevos."
+          },
+          {
+            "q": "¿Dónde puedo comprobar los contratos?",
+            "a": "Todas las direcciones figuran en [Contratos desplegados](#contracts), con un enlace al explorador de bloques."
           }
         ]
       },
@@ -1912,9 +1859,234 @@
           {
             "term": "Veto",
             "def": "Una demora que el analista de IA puede aplicar a la graduación de la Etapa 1, dentro de un margen fijo."
+          },
+          {
+            "term": "Hash del paquete",
+            "def": "La huella de una versión de plantilla: sus implementaciones, parámetros y roles. Cada lanzamiento registra la de la versión con la que se creó; consulta [Contratos desplegados](#contracts)."
           }
         ]
+      },
+      "guideBacker": {
+        "title": "Guía del patrocinador",
+        "lede": "Desde tu primer depósito hasta el listado, o hasta recuperar tu capital.",
+        "join": "Entrar en una ronda",
+        "joinSteps": [
+          "Abre **Proyectos** y elige un proyecto en la **Etapa 1 · Incubación**. Su página muestra la etapa y el tiempo restante, y la pestaña **Resumen** reúne la descripción, el informe del analista de IA y las novedades del creador.",
+          "Pulsa **Conectar wallet**. En testnet, si tu saldo de USDG está vacío, el panel de depósito ofrece acuñar TEST USDG; también necesitas un poco de OKB de testnet para el gas. Consulta [Conectarse a la testnet de X Layer](#testnet).",
+          "En **Qué puedes hacer ahora**, elige **Depositar** e introduce un importe. La cotización muestra los tokens que recibes y lo que pagas; lo que la curva no pueda usar se te devuelve.",
+          "La primera vez, el botón dice **Autorizar USDG**: autoriza, pulsa **Depositar** y confirma en el panel de la transacción. Para pagar con capital de otro proyecto, elige **Otros proyectos** en **Pagar con**."
+        ],
+        "leave": "Salir antes del listado",
+        "leaveSteps": [
+          "Elige **Salir al coste**, la posición y la cantidad. Recibes exactamente lo que costaron esos tokens, sin comisiones, en cualquier momento hasta la transacción de listado.",
+          "En la Etapa 2, **Salida protegida** paga tu coste más la parte de tu ganancia correspondiente al tiempo transcurrido, en la medida en que la demanda externa lo haya financiado. La cotización muestra por separado el coste y el beneficio.",
+          "En **Tesorería y votos**, vota los presupuestos y los gastos de tesorería con **Votar SÍ** o **Votar NO**. Votar nunca bloquea una salida."
+        ],
+        "after": "En el listado y después",
+        "afterSteps": [
+          "Cuando termina la Etapa 2, cualquiera puede pulsar **Listar en Uniswap**. Tus tokens llegan entonces a tu wallet automáticamente; no hay nada que reclamar.",
+          "Conserva tus tokens para recibir el flujo Diamond Hand y pulsa **Cobrar recompensas** en la página del proyecto. Vender o transferir reduce tu cuota de recompensas.",
+          "Opera en [Mercados](/markets); consulta la [Guía del operador](#guideTrader).",
+          "Si el proyecto se disuelve, pulsa **Recuperar capital**, o **Trasladar a otro proyecto** para depositarlo directamente en otra Etapa 1.",
+          "**Portafolio** recoge todas tus posiciones, y la campana de la cabecera muestra lo que requiere tu atención: cobros, votaciones y listados."
+        ]
+      },
+      "guideBuilder": {
+        "title": "Guía del creador",
+        "lede": "Lanzar un proyecto, acompañarlo por las etapas y lo que recibes.",
+        "launch": "Lanzar",
+        "launchSteps": [
+          "Elige el tipo de lanzamiento. **Lanzamiento en Custodia** si el producto puede financiarse con presupuestos de tesorería y sus propios ingresos; **Lanzamiento con Presupuesto** si necesitas retiros votados de la ronda antes del listado. Consulta [Tipos de lanzamiento](#launchTypes).",
+          "Abre **Lanzar un proyecto** y completa los pasos: **Tipo de lanzamiento**, **Datos básicos** (nombre, símbolo, descripción, web), **Capital** (suministro y valoración objetivo, de al menos 100.000 $), **Calendario** (la duración de las dos etapas, dentro de los límites que se muestran), **Reglas** (direcciones de creadores adicionales y, en un Lanzamiento con Presupuesto, el techo de presupuesto) y **Revisión**.",
+          "Pulsa **Lanzar proyecto** y firma. Los términos quedan fijados desde ese momento y no pueden cambiarse cuando alguien ya ha depositado."
+        ],
+        "run": "Gestionar la ronda",
+        "runSteps": [
+          "En la página de tu proyecto, pulsa **Abrir consola del creador**. Completa el **Perfil del proyecto**, elige **Subir imagen** en **Imagen del proyecto** (PNG, JPEG o WebP, hasta 2 MB) y pulsa **Firmar y guardar perfil**.",
+          "Usa **Publicar una novedad** para hitos e incidencias; los patrocinadores las leen en la página del proyecto.",
+          "Cuando el analista publique un informe, respóndelo en **Responder al último informe del analista**. Tu respuesta aparece junto al informe.",
+          "Puedes comprar en la misma curva que todos, hasta el 10% del suministro en total. Tus compras no cuentan para el mínimo de 10 patrocinadores y no tienen cuota de recompensas.",
+          "Lanzamiento con Presupuesto, Etapa 2: en **Tesorería y votos**, pulsa **Proponer un retiro**. Los patrocinadores votan con su capital. Al terminar la votación, cualquiera puede pulsar **Finalizar votación**; pasado el periodo de disputa, **Ejecutar presupuesto** paga el retiro y reduce en proporción el coste de cada posición."
+        ],
+        "end": "Listado, disolución e ingresos",
+        "endSteps": [
+          "Al vencer la Etapa 2, cualquiera lista el proyecto. Tus compras empiezan entonces a liberarse: 30 días de bloqueo inicial y después liberación lineal durante tres años; pulsa **Cobrar tokens consolidados** a medida que se liberan.",
+          "Tras el listado, financia el trabajo con **Proponer un gasto de tesorería**. Votan los titulares de tokens; tus propias direcciones no pueden votar.",
+          "Si el proyecto no debe continuar, pulsa **Disolver proyecto** una vez cumplido el mínimo de la Etapa 1. Entonces cada posición recupera su coste íntegro."
+        ]
+      },
+      "guideTrader": {
+        "title": "Guía del operador",
+        "lede": "Comprar y vender antes del listado en el libro de la Etapa 2, y después del listado en el pool.",
+        "book": "Etapa 2: el libro",
+        "bookSteps": [
+          "Abre un proyecto en la **Etapa 2 · Colchón Serie A**. La pestaña **Mercado** muestra el gráfico de precios y las operaciones recientes.",
+          "En **Qué puedes hacer ahora**, elige **Comprar**, introduce USDG y fija la tolerancia de precio. La cotización muestra los tokens que recibes, la comisión de negociación del 1%, el impacto en el precio y el mínimo que aceptas.",
+          "Tus tokens permanecen en el libro del protocolo hasta el listado. Hasta entonces puedes **Vender** al libro cuando quieras, también con una comisión del 1%. En el listado llegan a tu wallet."
+        ],
+        "pool": "Etapa 3: el pool",
+        "poolSteps": [
+          "Abre **Mercados** y elige un proyecto. La página muestra el precio en velas, las operaciones recientes y los datos del pool.",
+          "En el panel de negociación, elige **Comprar** o **Vender** e introduce lo que pagas. La cotización llega en vivo del pool: precio medio, impacto en el precio, la comisión del pool del 1% y el mínimo recibido con tu tolerancia de deslizamiento (1% por defecto).",
+          "La primera operación con cada activo te pide autorizar el router de intercambio de Portex; después confirma el intercambio en el panel de la transacción. Si antes el precio se mueve más allá de tu tolerancia, no se intercambia nada."
+        ],
+        "risks": "Riesgos",
+        "risksList": [
+          "Los compradores de la Etapa 2 no son patrocinadores: no tienen protección de coste, ni salida protegida, ni cuota de recompensas.",
+          "Tras el listado, el precio lo fija un mercado abierto y puede caer por debajo de lo que pagó cualquiera.",
+          "Las operaciones grandes mueven el precio. Compara el impacto en el precio con la liquidez del pool.",
+          "Vender tokens con cuota de recompensas destruye la misma cantidad de cuota."
+        ]
+      },
+      "guideAnalyst": {
+        "title": "Guía del analista",
+        "lede": "Qué hace el analista de IA y cómo pueden leer los mismos datos las personas y los programas.",
+        "ai": "El analista de IA",
+        "aiList": [
+          "Revisa cada ronda de la Etapa 1, incluido el número de patrocinadores y la parte del capital vinculada al creador, y publica un informe con una puntuación de riesgo y sus hallazgos en la pestaña **Resumen** del proyecto.",
+          "Puede demorar con un veto la graduación de la Etapa 1, dentro de un margen fijo. No puede aprobar, rechazar ni tocar fondos. Consulta [El analista de IA](#analyst).",
+          "El creador puede responder públicamente a cada informe."
+        ],
+        "api": "La API pública",
+        "apiText": "Todo lo que muestra la app está también disponible en JSON, sin cuenta ni clave. La API de testnet está en `https://testnet-api.portex.vc/v2`. Los importes son enteros en unidades base (USDG tiene 6 decimales; los tokens, 18) y los precios van multiplicados por 10^18, salvo en los endpoints de mercado (`/markets`, `candles`, `pool-trades`), que devuelven cadenas decimales en USDG por token.",
+        "endpoints": {
+          "head": ["Endpoint", "Devuelve"],
+          "rows": [
+            [
+              "`GET /raises`",
+              "Todas las rondas con su etapa, precios y cifras clave; añade `?phase=Stage1` para filtrar por etapa."
+            ],
+            [
+              "`GET /raises/{address}`",
+              "Una ronda completa: configuración, libro, tesorería, registro del listado y el último informe."
+            ],
+            [
+              "`GET /raises/{address}/trades`",
+              "La actividad de la Etapa 1 y la Etapa 2 en el libro del protocolo: depósitos, salidas, compras y ventas."
+            ],
+            [
+              "`GET /raises/{address}/candles?interval=1h`",
+              "Velas de precio del libro de la Etapa 2 y del pool, de `1m` a `1d`."
+            ],
+            [
+              "`GET /raises/{address}/pool-trades`",
+              "Los intercambios en el pool de Uniswap v4 tras el listado, con el operador."
+            ],
+            ["`GET /raises/{address}/activity`", "Un historial legible de los eventos on-chain de la ronda."],
+            [
+              "`GET /raises/{address}/proposals`",
+              "Propuestas de presupuesto y de tesorería con sus votos, límites y estado."
+            ],
+            ["`GET /raises/{address}/reports`", "Los informes del analista de IA y las respuestas del creador."],
+            [
+              "`GET /markets`",
+              "Todos los proyectos en la Etapa 3 · Mercado abierto: precio, variación y volumen de 24 horas, liquidez y FDV."
+            ],
+            [
+              "`GET /config`",
+              "Las direcciones desplegadas, el activo de cotización y los parámetros que fija cada versión de plantilla."
+            ]
+          ]
+        },
+        "apiNote": "Cada valor puede contrastarse con los contratos de [Contratos desplegados](#contracts). Las escrituras en la cadena pasan siempre por tu propia wallet, nunca por la API."
+      },
+      "guideAdmin": {
+        "title": "Guía del administrador",
+        "lede": "Los roles del protocolo, lo que la consola Admin permite a cada uno y dónde termina su poder.",
+        "p1": "La entrada **Admin** aparece en la navegación solo cuando la wallet conectada tiene un rol. La consola muestra las acciones de cada rol y explica por qué una acción no está disponible.",
+        "curator": "Curador",
+        "curatorSteps": [
+          "**Parámetros del protocolo**: pulsa **Editar parámetros**, revisa los cambios y pulsa **Fijar parámetros del protocolo**. Los valores se aplican solo a la siguiente versión publicada.",
+          "**Versiones de plantilla**: **Publicar** la siguiente versión, que fija las implementaciones y los parámetros actuales; **Retirar** una versión para que los lanzamientos nuevos ya no puedan usarla. Los lanzamientos existentes conservan la suya.",
+          "**Activo de cotización**: **Admitir un activo de cotización** para las versiones que se publiquen después."
+        ],
+        "attester": "Atestador",
+        "attesterSteps": [
+          "**Vetos** recoge todas las rondas en la Etapa 1 con su último informe, su margen de veto y su espera.",
+          "Introduce una demora y pulsa **Aplicar veto**. Un veto cita el último informe, dura como mucho el máximo por veto y debe caber en el margen restante."
+        ],
+        "council": "Consejo",
+        "councilSteps": [
+          "En **Vetos**, **Levantar veto** retira antes de tiempo un veto activo. El margen ya usado no se recupera."
+        ],
+        "limits": "Límites",
+        "limitsList": [
+          "Los parámetros, las versiones y la admisión del activo de cotización solo afectan a lanzamientos futuros. Ningún rol puede cambiar un lanzamiento en curso.",
+          "Ningún rol puede mover los fondos de los patrocinadores, bloquear una salida ni gastar de una tesorería.",
+          "Un veto solo demora la graduación; no puede rechazar un proyecto que cumplió sus condiciones.",
+          "Los administradores de la API pueden ejecutar el analista a demanda sin límite de frecuencia (**Análisis**, **Analizar ahora**). Es un rol fuera de la cadena."
+        ]
+      },
+      "contracts": {
+        "title": "Contratos desplegados",
+        "lede": "Todos los contratos que usa esta app en la red actual, leídos del registro de despliegue. Copia una dirección o ábrela en el explorador de bloques.",
+        "p1": "Las implementaciones son el código del que se clona cada lanzamiento nuevo; cada lanzamiento las fija, junto con sus parámetros, mediante el hash del paquete de su versión de plantilla.",
+        "p2": "Los pools funcionan sobre un PoolManager de Uniswap v4 desplegado a partir de la versión v4.0.0 sin modificar. La liquidez aportada en el listado pertenece a cada ronda a través del adaptador y nunca se puede retirar."
       }
+    },
+    "heading": "Documentación",
+    "related": "Relacionado",
+    "live": {
+      "testnet": "Testnet",
+      "here": "Esta red",
+      "inline": "({where}: {value}, acortado para pruebas)",
+      "parameter": "Parámetro",
+      "production": "Valor de producción",
+      "current": "{where}, hoy",
+      "shortened": "Acortado para pruebas",
+      "rows": {
+        "stage1": "Duración de la Etapa 1",
+        "stage2": "Duración de la Etapa 2",
+        "voting": "Periodo de votación",
+        "dispute": "Periodo de disputa",
+        "execution": "Ventana de ejecución",
+        "proposalInterval": "Tiempo entre propuestas",
+        "vetoMax": "Veto individual más largo",
+        "vetoTotal": "Margen total de veto",
+        "vetoCooldown": "Espera entre vetos",
+        "treasuryVesting": "Liberación de la asignación de tesorería"
+      },
+      "inlineShort": "({where}: {value})",
+      "block": "{where}: {value}"
+    },
+    "deployment": {
+      "groups": {
+        "protocol": "Protocolo",
+        "market": "Mercado y activo de cotización",
+        "implementations": "Implementaciones fijadas por la versión {version}",
+        "roles": "Roles",
+        "deployment": "Despliegue"
+      },
+      "registry": "Registro",
+      "factory": "Fábrica de rondas",
+      "rollover": "Router de traslado",
+      "router": "Router de intercambio",
+      "adapter": "Adaptador de Uniswap v4",
+      "hook": "Hook de inicialización",
+      "poolManager": "PoolManager",
+      "impl": {
+        "raise": "Ronda",
+        "token": "Token del proyecto",
+        "vesting": "Bóveda de liberación",
+        "governor": "Gobernanza",
+        "claims": "Bóveda de devoluciones",
+        "treasury": "Tesorería"
+      },
+      "curator": "Curador",
+      "attester": "Atestador",
+      "council": "Consejo",
+      "chainId": "ID de cadena",
+      "block": "Bloque de despliegue",
+      "notRecorded": "No registrado en esta red",
+      "bundle": "Hash del paquete · {type} v{version}",
+      "escrow": "Lanzamiento en Custodia",
+      "budget": "Lanzamiento con Presupuesto",
+      "published": "Versiones actuales publicadas el {date}. Cada lanzamiento conserva las implementaciones y los parámetros de la versión con la que se creó.",
+      "networkName": "Nombre de la red",
+      "rpc": "URL de RPC",
+      "currency": "Token de gas",
+      "explorer": "Explorador de bloques",
+      "otherChain": "Esta copia de la app funciona en {name}; los valores de arriba son los de la testnet de X Layer."
     }
   }
 }

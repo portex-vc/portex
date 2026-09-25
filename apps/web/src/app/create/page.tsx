@@ -1,5 +1,6 @@
 "use client";
 import { TypeChoice } from "@/components/create/type-choice";
+import { TestnetTimingNote } from "@/components/testnet-timing";
 import { TypeBadge } from "@/components/raise/type-badge";
 import { LaunchPreview } from "@/components/create/launch-preview";
 import { Segmented } from "@/components/figures";
@@ -289,12 +290,16 @@ export default function CreatePage() {
                 })}
               </div>
               {step === 3 && bounds ? (
-                <p className="text-xs text-fg-2" data-testid="stage-bounds">
-                  {v("stageBounds", {
-                    stage1: `${n.duration(bounds.stage1Min)}–${n.duration(bounds.stage1Max)}`,
-                    stage2: `${n.duration(bounds.stage2Min)}–${n.duration(bounds.stage2Max)}`,
-                  })}
-                </p>
+                <div className="space-y-1.5">
+                  <p className="text-xs text-fg-2" data-testid="stage-bounds">
+                    {v("stageBounds", {
+                      stage1: n.durationRange(bounds.stage1Min, bounds.stage1Max),
+                      stage2: n.durationRange(bounds.stage2Min, bounds.stage2Max),
+                    })}
+                  </p>
+                  {/* Right beside the bounds: why they run in minutes on this testnet. */}
+                  <TestnetTimingNote variant="hint" pinned={template?.parameters} />
+                </div>
               ) : null}
               {step === 3 ? (
                 <p className="text-xs text-fg-2">
@@ -311,11 +316,10 @@ export default function CreatePage() {
                   <p className="mt-1 text-xs leading-relaxed text-fg-2">
                     {v("treasuryIntro")}{" "}
                     {v("treasuryBeforeListing", {
-                      years: n.number(
+                      period: n.period(
                         Number(
                           template?.parameters.treasuryVesting ?? template?.treasury?.vestingDuration ?? 157680000,
-                        ) / 31536000,
-                        0,
+                        ),
                       ),
                     })}
                   </p>

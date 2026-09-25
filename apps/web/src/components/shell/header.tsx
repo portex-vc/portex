@@ -8,6 +8,7 @@ import { useAdminRoles } from "@/lib/use-admin";
 import { cn } from "@/lib/utils";
 import * as Dialog from "@radix-ui/react-dialog";
 import {
+  BookOpen,
   Briefcase,
   ChartCandlestick,
   FlaskConical,
@@ -35,6 +36,7 @@ const LINKS = [
   { href: "/markets", key: "markets", icon: ChartCandlestick },
   { href: "/portfolio", key: "portfolio", icon: Briefcase },
   { href: "/protocol", key: "protocol", icon: ShieldCheck },
+  { href: "/docs", key: "docs", icon: BookOpen },
 ] as const;
 const DEV_LINK = { href: "/dev", key: "dev", icon: FlaskConical } as const;
 const ADMIN_LINK = { href: "/admin", key: "admin", icon: UserCog } as const;

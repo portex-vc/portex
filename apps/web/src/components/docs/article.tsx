@@ -5,6 +5,8 @@ import { Link2 } from "lucide-react";
 import { useTranslations } from "next-intl";
 import type { ReactNode } from "react";
 import { SECTIONS, subId, type Block, type Section } from "./content";
+import { DeployedContracts, NetworkFacts } from "./deployment";
+import { LiveTiming, StepperNote, TimingsTable } from "./live-timing";
 import { rich } from "./rich";
 
 type Raw = (key: string) => unknown;
@@ -21,7 +23,7 @@ function Anchored({
   className: string;
   children: ReactNode;
 }) {
-  const t = useTranslations("wiki");
+  const t = useTranslations("docs");
   return (
     <Tag id={id} className={cn("group scroll-mt-16 lg:scroll-mt-0", className)}>
       {children}
@@ -38,10 +40,10 @@ function Anchored({
 
 function Stepper() {
   const t = useTranslations();
-  const w = useTranslations("wiki.stepper");
+  const w = useTranslations("docs.stepper");
   const stages = ["Stage1", "Stage2", "Stage3"] as const;
   return (
-    <figure className="my-8" data-testid="wiki-stepper">
+    <figure className="my-8" data-testid="docs-stepper">
       <ol className="grid gap-px overflow-hidden rounded-[14px] border border-fg/[0.08] bg-fg/[0.08] sm:grid-cols-3">
         {stages.map((stage, i) => (
           <li key={stage} className="flex flex-col gap-2 bg-surface-1 p-5">
@@ -55,7 +57,12 @@ function Stepper() {
               </span>
             </span>
             <span className="text-[0.9375rem] font-medium leading-6 text-fg">{t(`stages.${stage}.name`)}</span>
-            <span className="num text-xs text-fg-3">{w(`${stage}.when`)}</span>
+            <span className="num text-xs text-fg-3">
+              {w(`${stage}.when`)}
+              {stage !== "Stage3" ? (
+                <LiveTiming k={stage === "Stage1" ? "stage1" : "stage2"} block className="mt-1" />
+              ) : null}
+            </span>
             <span className="text-sm leading-6 text-fg-2">{w(`${stage}.what`)}</span>
           </li>
         ))}
@@ -64,18 +71,21 @@ function Stepper() {
         <span>
           <span className="font-medium text-fg-2">{w("dissolutionLabel")}.</span> {w("dissolution")}
         </span>
-        <span>{w("note")}</span>
+        <StepperNote note={w("note")} />
       </figcaption>
     </figure>
   );
 }
 
-function Figure({ figure }: { figure: "hero" | "mechanism" | "stepper" | "boundary" }) {
+function Figure({ figure }: { figure: Extract<Block, { kind: "figure" }>["figure"] }) {
   const home = useTranslations("home");
   if (figure === "stepper") return <Stepper />;
+  if (figure === "timings") return <TimingsTable />;
+  if (figure === "contracts") return <DeployedContracts />;
+  if (figure === "network") return <NetworkFacts />;
   if (figure === "hero")
     return (
-      <blockquote className="my-6 border-l-2 border-fg/20 pl-5" data-testid="wiki-hero">
+      <blockquote className="my-6 border-l-2 border-fg/20 pl-5" data-testid="docs-hero">
         <p className="text-lg font-medium leading-7 tracking-[-0.01em] text-fg">{home("title")}</p>
         <p className="mt-3 text-[0.9375rem] leading-7 text-fg-2">{home("sub")}</p>
       </blockquote>
@@ -170,6 +180,24 @@ function BlockView({ section, block, raw }: { section: string; block: Block; raw
           ))}
         </ul>
       );
+    case "steps":
+      return (
+        <ol className="my-4 flex flex-col gap-3" data-testid="docs-steps">
+          {(raw(block.key) as string[]).map((item, i) => (
+            <li key={i} className="flex gap-3 text-[0.9375rem] leading-7 text-fg-2">
+              <span
+                aria-hidden
+                className="num mt-[0.3rem] flex size-5 shrink-0 items-center justify-center rounded-full border border-fg/15 text-2xs text-fg-2"
+              >
+                {i + 1}
+              </span>
+              <span>{rich(item)}</span>
+            </li>
+          ))}
+        </ol>
+      );
+    case "related":
+      return <Related ids={block.ids} />;
     case "note":
       return (
         <p
@@ -187,7 +215,7 @@ function BlockView({ section, block, raw }: { section: string; block: Block; raw
       return <Table value={raw(block.key) as { head: string[]; rows: string[][] }} />;
     case "faq":
       return (
-        <dl className="my-4 flex flex-col divide-y divide-fg/[0.07] border-y border-fg/[0.07]" data-testid="wiki-faq">
+        <dl className="my-4 flex flex-col divide-y divide-fg/[0.07] border-y border-fg/[0.07]" data-testid="docs-faq">
           {(raw(block.key) as { q: string; a: string }[]).map((item, i) => (
             <div key={i} className="py-5">
               <dt className="text-[0.9375rem] font-medium leading-6 text-fg">{item.q}</dt>
@@ -198,7 +226,7 @@ function BlockView({ section, block, raw }: { section: string; block: Block; raw
       );
     case "terms":
       return (
-        <dl className="mb-4 mt-7 grid gap-x-8 gap-y-5 sm:grid-cols-[11rem_minmax(0,1fr)]" data-testid="wiki-glossary">
+        <dl className="mb-4 mt-7 grid gap-x-8 gap-y-5 sm:grid-cols-[11rem_minmax(0,1fr)]" data-testid="docs-glossary">
           {(raw(block.key) as { term: string; def: string }[]).map((item, i) => (
             <div key={i} className="contents">
               <dt className="text-sm font-medium text-fg">{item.term}</dt>
@@ -214,15 +242,38 @@ export function sectionTitle(t: ReturnType<typeof useTranslations>, section: Sec
   return section.stage ? stageLabel(t, section.stage) : (raw("title") as string);
 }
 
+/** "Related" links from a guide to the concept sections it relies on. */
+function Related({ ids }: { ids: string[] }) {
+  const t = useTranslations();
+  const d = useTranslations("docs");
+  const byId = new Map(SECTIONS.map((s) => [s.id, s]));
+  return (
+    <p
+      className="mt-6 flex flex-wrap items-baseline gap-x-3 gap-y-1 border-t border-fg/[0.07] pt-4 text-sm"
+      data-testid="docs-related"
+    >
+      <span className="text-xs text-fg-3">{d("related")}</span>
+      {ids.map((id) => {
+        const section = byId.get(id)!;
+        return (
+          <a key={id} href={`#${id}`} className="link text-fg-2">
+            {section.stage ? stageLabel(t, section.stage) : (d.raw(`s.${id}.title`) as string)}
+          </a>
+        );
+      })}
+    </p>
+  );
+}
+
 function SectionView({ section }: { section: Section }) {
   const t = useTranslations();
-  const s = useTranslations(`wiki.s.${section.id}`);
+  const s = useTranslations(`docs.s.${section.id}`);
   const raw: Raw = (key) => s.raw(key);
   return (
     <section
       aria-labelledby={section.id}
       className="border-t border-fg/[0.07] pt-10 first:border-t-0 first:pt-0"
-      data-testid={`wiki-section-${section.id}`}
+      data-testid={`docs-section-${section.id}`}
     >
       <Anchored as="h2" id={section.id} className="t-section text-fg">
         {sectionTitle(t, section, raw)}
@@ -235,10 +286,10 @@ function SectionView({ section }: { section: Section }) {
   );
 }
 
-/** The whole wiki as one article: every section in reading order. */
-export function WikiArticle() {
+/** The whole documentation as one article: every section in reading order. */
+export function DocsArticle() {
   return (
-    <article className="flex min-w-0 max-w-[46rem] flex-col gap-14 pb-10" data-testid="wiki-article">
+    <article className="flex min-w-0 max-w-[46rem] flex-col gap-14 pb-10" data-testid="docs-article">
       {SECTIONS.map((section) => (
         <SectionView key={section.id} section={section} />
       ))}

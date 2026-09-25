@@ -1,6 +1,7 @@
 "use client";
 
 import { Countdown } from "@/components/countdown";
+import { TestnetTimingNote, useTestnetTiming } from "@/components/testnet-timing";
 import type { RaiseDetail } from "@/lib/api";
 import { useNow } from "@/lib/hooks";
 import { displayStage, STAGE_TONE, type DisplayStage } from "@/lib/stages";
@@ -41,6 +42,7 @@ export function StageTimeline({ detail: r }: { detail: RaiseDetail }) {
     return Math.min(1, Math.max(0, (now - w[0]) / (w[1] - w[0])));
   };
 
+  const testnet = useTestnetTiming(r.governance.config.parameters);
   const conditions: [string, React.ReactNode][] =
     r.phase === "Stage1"
       ? [
@@ -169,26 +171,37 @@ export function StageTimeline({ detail: r }: { detail: RaiseDetail }) {
         })}
       </div>
 
-      {dissolved ? (
-        <p className="flex items-start gap-2 text-sm text-fg-2" data-testid="dissolution-note">
-          <span aria-hidden className="mt-1.5 size-1.5 shrink-0 rounded-full bg-fg-3" />
-          <span>
-            {r.dissolvedAt
-              ? v(byTeam ? "dissolvedByTeam" : "dissolvedAtDeadline", { date: n.date(r.dissolvedAt) })
-              : null}{" "}
-            {v("refundExplanation")}
-          </span>
-        </p>
-      ) : conditions.length ? (
-        <dl className="flex flex-wrap items-center gap-x-6 gap-y-2 border-t border-fg/[0.07] pt-4 text-xs">
-          <dt className="micro w-full sm:w-auto">{v("conditions")}</dt>
-          {conditions.map(([label, value]) => (
-            <div key={label} className="flex items-baseline gap-2">
-              <dt className="text-fg-3">{label}</dt>
-              <dd className="num text-fg">{value}</dd>
-            </div>
-          ))}
-        </dl>
+      {dissolved || conditions.length || testnet.shortened ? (
+        <div
+          className={cn(
+            "flex flex-wrap items-start justify-between gap-x-6 gap-y-3",
+            !dissolved && conditions.length ? "border-t border-fg/[0.07] pt-4" : null,
+          )}
+        >
+          {dissolved ? (
+            <p className="flex min-w-0 flex-1 items-start gap-2 text-sm text-fg-2" data-testid="dissolution-note">
+              <span aria-hidden className="mt-1.5 size-1.5 shrink-0 rounded-full bg-fg-3" />
+              <span>
+                {r.dissolvedAt
+                  ? v(byTeam ? "dissolvedByTeam" : "dissolvedAtDeadline", { date: n.date(r.dissolvedAt) })
+                  : null}{" "}
+                {v("refundExplanation")}
+              </span>
+            </p>
+          ) : conditions.length ? (
+            <dl className="flex min-w-0 flex-1 flex-wrap items-center gap-x-6 gap-y-2 text-xs">
+              <dt className="micro w-full sm:w-auto">{v("conditions")}</dt>
+              {conditions.map(([label, value]) => (
+                <div key={label} className="flex items-baseline gap-2">
+                  <dt className="text-fg-3">{label}</dt>
+                  <dd className="num text-fg">{value}</dd>
+                </div>
+              ))}
+            </dl>
+          ) : null}
+          {/* One marker for every date and duration in this view, where testnet timings are shortened. */}
+          <TestnetTimingNote pinned={r.governance.config.parameters} className="ml-auto" />
+        </div>
       ) : null}
     </section>
   );

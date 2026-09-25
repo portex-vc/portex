@@ -1,4 +1,5 @@
 "use client";
+import { TestnetRibbon } from "@/components/testnet-timing";
 import { CopyValue } from "@/components/copy-value";
 import { CHEVRON, SUMMARY } from "@/components/disclosure";
 import { TypeBadge } from "@/components/raise/type-badge";
@@ -150,7 +151,7 @@ export default function ProtocolPage() {
                   ? ([
                       [
                         v("stage1Length"),
-                        `${n.duration(Number(template.parameters.stage1Min))}–${n.duration(Number(template.parameters.stage1Max))}`,
+                        n.durationRange(Number(template.parameters.stage1Min), Number(template.parameters.stage1Max)),
                       ],
                     ] as [string, string][])
                   : []),
@@ -158,7 +159,7 @@ export default function ProtocolPage() {
                   ? ([
                       [
                         v("stage2Length"),
-                        `${n.duration(Number(template.parameters.stage2Min))}–${n.duration(Number(template.parameters.stage2Max))}`,
+                        n.durationRange(Number(template.parameters.stage2Min), Number(template.parameters.stage2Max)),
                       ],
                     ] as [string, string][])
                   : []),
@@ -175,9 +176,10 @@ export default function ProtocolPage() {
               return (
                 <article
                   key={`${template.id}-${template.version}`}
-                  className="surface-1 space-y-5 p-5"
+                  className="surface-1 relative space-y-5 p-5"
                   data-testid={`template-${template.name}`}
                 >
+                  <TestnetRibbon pinned={template.parameters} />
                   <div className="flex flex-wrap items-center gap-3">
                     <TypeBadge template={template.name} />
                     <h3 className="text-sm font-medium">

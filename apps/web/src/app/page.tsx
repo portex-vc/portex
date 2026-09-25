@@ -7,6 +7,7 @@ import { RaiseCard } from "@/components/raise/raise-card";
 import { TypeBadge } from "@/components/raise/type-badge";
 import { useNetworkName } from "@/components/shell/wallet";
 import { ErrorState } from "@/components/states";
+import { TestnetTimingNote } from "@/components/testnet-timing";
 import { Hint } from "@/components/term";
 import { Button } from "@/components/ui/button";
 import { env, isLocalChain } from "@/lib/env";
@@ -240,6 +241,8 @@ export default function HomePage() {
             </li>
           ))}
         </ol>
+        {/* Production copy above, testnet projects on the same page: say so once, as a footnote. */}
+        {raises?.length ? <TestnetTimingNote variant="footnote" className="mt-8" /> : null}
         <div
           className="mt-12 flex flex-col gap-3 rounded-[14px] border border-fg/[0.08] bg-fg/[0.02] p-5 sm:flex-row sm:items-center sm:gap-5"
           data-testid="rollover-callout"

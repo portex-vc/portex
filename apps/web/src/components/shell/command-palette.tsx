@@ -10,6 +10,7 @@ import { walletSheet } from "@/lib/wallet-sheet";
 import * as Dialog from "@radix-ui/react-dialog";
 import {
   ArrowRight,
+  BookOpen,
   Briefcase,
   ChartCandlestick,
   Check,
@@ -152,6 +153,7 @@ function PaletteBody() {
       { id: "g-markets", label: tn("markets"), icon: <ChartCandlestick />, href: "/markets" },
       { id: "g-portfolio", label: tn("portfolio"), icon: <Briefcase />, href: "/portfolio" },
       { id: "g-protocol", label: tn("protocol"), icon: <ShieldCheck />, href: "/protocol" },
+      { id: "g-docs", label: tn("docs"), icon: <BookOpen />, href: "/docs" },
       { id: "g-launch", label: tn("create"), icon: <Rocket />, href: "/create" },
     ].map((p) => ({
       id: p.id,

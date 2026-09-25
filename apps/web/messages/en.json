@@ -9,7 +9,8 @@
     "menu": "Menu",
     "close": "Close",
     "markets": "Markets",
-    "admin": "Admin"
+    "admin": "Admin",
+    "docs": "Docs"
   },
   "locale": {
     "label": "Language"
@@ -159,9 +160,8 @@
     "chain": "Chain",
     "contracts": "Contracts",
     "tests": "{count} tests · invariants green",
-    "docs": "Design doc",
-    "links": "Footer",
-    "wiki": "Wiki"
+    "docs": "Docs",
+    "links": "Footer"
   },
   "glossary": {
     "veto": "The analyst can delay Stage 1 within pinned limits. It cannot approve a launch or touch funds.",
@@ -986,8 +986,8 @@
     "treasuryAllocation": "Treasury allocation",
     "treasuryLocked": "Still locked",
     "treasuryUnlocked": "Unlocked, spendable by vote",
-    "treasurySchedule": "Unlocks evenly over {years} years from listing, about {pct} of supply a year.",
-    "treasuryBeforeListing": "The allocation reaches the treasury at listing and then unlocks over {years} years.",
+    "treasurySchedule": "Unlocks evenly over {period} from listing, about {pct} of supply a year.",
+    "treasuryBeforeListing": "The allocation reaches the treasury at listing and then unlocks over {period}.",
     "treasurySpent": "Spent by vote",
     "governanceTitleToken": "Treasury spending only by token holders' vote",
     "voteNoteToken": "Votes count the tokens you held when the proposal opened. Builders cannot vote on treasury spends.",
@@ -1016,7 +1016,8 @@
     "proposalsEyebrow": "Proposals",
     "capPerSpend": "Cap per spend · share of YES value",
     "votingTimelock": "Voting · timelock",
-    "treasuryVesting": "Treasury unlock period"
+    "treasuryVesting": "Treasury unlock period",
+    "treasuryScheduleShort": "Unlocks evenly over {period} from listing."
   },
   "wallet": {
     "connect": "Connect wallet",
@@ -1436,10 +1437,27 @@
       "never": "Not analysed yet"
     }
   },
-  "wiki": {
-    "eyebrow": "Documentation",
-    "title": "Wiki",
-    "description": "How Portex works: the three stages, what protects your principal and where it ends, the two launch types, exits, the governed treasury, fees and trading after listing.",
+  "testnet": {
+    "ribbon": "Testnet template",
+    "marker": "Testnet timing",
+    "title": "Shortened for testnet",
+    "explanation": "These timings are shortened for testing. On this testnet the same contracts run with governed parameters set to minutes and hours, so a whole lifecycle fits in a day. In production, Stage 1 lasts {stage1} and Stage 2 {stage2}.",
+    "hint": "Shortened for testnet · production: Stage 1 {stage1}, Stage 2 {stage2}",
+    "footnote": "The durations above are production timings; projects on this testnet run shortened ones.",
+    "here": "This testnet",
+    "production": "Production",
+    "rows": {
+      "stage1": "Stage 1",
+      "stage2": "Stage 2",
+      "votes": "Vote · dispute · execution",
+      "veto": "Veto",
+      "treasury": "Treasury unlock"
+    },
+    "vetoValue": "≤{max} · {total} total"
+  },
+  "docs": {
+    "title": "Docs",
+    "description": "How Portex works and how to use it: step-by-step guides for backers, builders, traders, analysts and administrators, the three stages, what protects your principal and where it ends, the governed treasury, fees, trading after listing, and the deployed contracts.",
     "contents": "Contents",
     "anchor": "Link to this section",
     "groups": {
@@ -1447,8 +1465,10 @@
       "stages": "The stages",
       "money": "Money",
       "governance": "Governance",
-      "trading": "Trading and testnet",
-      "reference": "Reference"
+      "trading": "Trading",
+      "reference": "Reference",
+      "guides": "Guides",
+      "network": "Network and contracts"
     },
     "stepper": {
       "Stage1": {
@@ -1464,7 +1484,7 @@
         "what": "The project trades on Uniswap v4. Protection has ended; ordinary market risk applies."
       },
       "dissolution": "A project that does not graduate from Stage 1 is dissolved, and every position claims its full cost.",
-      "note": "Lengths shown are production defaults; testnet values are much shorter. See Governed timings.",
+      "note": "Lengths are production defaults. Where this network pins shorter timings, they appear under each stage.",
       "dissolutionLabel": "Dissolution"
     },
     "s": {
@@ -1516,7 +1536,7 @@
         "price": "How the price moves",
         "priceText": "The book pairs real USDG from outside buyers with virtual depth that shrinks linearly over the stage. At the first moment the price is exactly the final Stage 1 price; at the last, exactly the price the pool will open at. In between it converges gradually, so a burst of speculation cannot run far ahead of real demand.",
         "protects": "What protects you",
-        "protectsNote": "Your cost stays in escrow and can be taken back at any time. Profit is never paid from other backers' principal: it comes only from the reserve that outside buyers funded. Without outside demand, there is no profit and no loss.",
+        "protectsNote": "Your cost stays in escrow and can be taken back at any time. Profit is never paid from other backers' principal: it comes only from the reserve that outside buyers funded. Without outside demand, there is no profit and no loss. On a Budget Launch, a budget that backers approved by vote can reduce your cost.",
         "ends": "How it ends",
         "endsText": "Listing is mandatory at the Stage 2 deadline, whatever the demand. Anyone can execute it. If the call to the venue fails, the whole transaction reverts: cost exits stay open, and anyone can try again."
       },
@@ -1541,11 +1561,7 @@
         "title": "Launch types",
         "lede": "Both types share the same stages, protections, treasury rules and fees. They differ in one thing: whether a voted budget may draw on the raise before listing.",
         "table": {
-          "head": [
-            "",
-            "Escrow Launch",
-            "Budget Launch"
-          ],
+          "head": ["", "Escrow Launch", "Budget Launch"],
           "rows": [
             [
               "Draws on the raise",
@@ -1557,11 +1573,7 @@
               "—",
               "At most 10% of the capital voting YES. Every position's cost is reduced in proportion."
             ],
-            [
-              "What an exit at cost returns",
-              "Your original cost",
-              "Your cost after any voted draws"
-            ],
+            ["What an exit at cost returns", "Your original cost", "Your cost after any voted draws"],
             [
               "Builder income",
               "Treasury budgets that pass a vote (fees and the 10% token allocation), and the project's own revenue",
@@ -1575,7 +1587,7 @@
           ]
         },
         "escrow": "Escrow Launch",
-        "escrowText": "The contract gives the builder no path to backers' funds. The team is paid the way a project on its own feet is paid: from the treasury, whose income is trading fees and a 10% token allocation that unlocks over five years, spent only by proposals that pass a vote; and from the product's own revenue.",
+        "escrowText": "The contract gives the builder no path to backers' funds. The team is paid the way a project on its own feet is paid: from the treasury, whose income is trading fees and a 10% token allocation that unlocks over five years{{treasuryVesting}}, spent only by proposals that pass a vote; and from the product's own revenue.",
         "budget": "Budget Launch",
         "budgetText": "For teams that need capital before listing. The builder chooses a budget ceiling when creating the launch, and it is shown before anyone deposits. In Stage 2 each draw is a proposal that backers vote on with their capital; a draw that passes reduces every position's cost in proportion. Backers can still exit at cost during the vote and the dispute window, so no one is carried into a budget they reject."
       },
@@ -1607,37 +1619,21 @@
         "title": "Fees",
         "lede": "Portex charges no protocol fee. Every fee a launch collects stays with that launch.",
         "table": {
-          "head": [
-            "When",
-            "Fee",
-            "Where it goes"
-          ],
+          "head": ["When", "Fee", "Where it goes"],
           "rows": [
-            [
-              "Stage 1 deposits and exits",
-              "None",
-              "—"
-            ],
+            ["Stage 1 deposits and exits", "None", "—"],
             [
               "Stage 2 buys and sells by outside buyers",
               "1% of each trade",
               "40% stays in the book's reserve, 30% to the Diamond Hand rewards, 30% to the project treasury"
             ],
-            [
-              "Exits at cost and protected exits",
-              "None",
-              "—"
-            ],
+            ["Exits at cost and protected exits", "None", "—"],
             [
               "Swaps in the Portex pool after listing",
               "1% Uniswap v4 pool fee",
               "The fees on the protocol's locked liquidity go to the project treasury"
             ],
-            [
-              "Rollover and dissolution claims",
-              "None",
-              "—"
-            ]
+            ["Rollover and dissolution claims", "None", "—"]
           ]
         },
         "p1": "The reserve share deepens the book that funds protected exits. The reward and treasury shares are held in separate buckets and never mix with principal."
@@ -1650,10 +1646,10 @@
           "The treasury share of Stage 2 trading fees.",
           "Fees earned by the protocol's locked liquidity after listing.",
           "Reward funds that can no longer be distributed.",
-          "10% of the token supply, which arrives at listing and unlocks on a straight line over five years (the production default). Locked tokens can never be spent."
+          "10% of the token supply, which arrives at listing and unlocks on a straight line over five years (the production default){{treasuryVesting}}. Locked tokens can never be spent."
         ],
         "capital": "Before listing: voting by capital",
-        "capitalText": "In Stage 2, proposals are voted by contributed capital, one weight per backer position, never by tokens. A proposal needs a quorum of 40% of eligible capital and 60% approval, and may spend at most 10% of the capital voting YES. Voting lasts three days; a passed proposal then waits through a seven-day dispute window, during which any backer can still exit at cost, and can be executed within the next two days. Exiting cancels that position's vote.",
+        "capitalText": "In Stage 2, proposals are voted by contributed capital, never by tokens: each backer position votes once, weighted by its cost. A proposal needs a quorum of 40% of eligible capital and 60% approval, and may spend at most 10% of the capital voting YES. Voting lasts three days{{voting}}; a passed proposal then waits through a seven-day dispute window{{dispute}}, during which any backer can still exit at cost, and can be executed within the next two days{{execution}}. Exiting cancels that position's vote. One proposal runs at a time, and each new proposal comes at least one day after the previous one was made{{proposalInterval}}.",
         "tokens": "After listing: voting by tokens",
         "tokensText": "In Stage 3, token holders vote with their balance at the end of the block in which the proposal was made, so borrowed tokens cannot sway it. A proposal passes with 60% of the votes cast, and its total value may not exceed 5% of the market value of the tokens voting YES, valued at the lower of the listing price and the current pool price. The builder's addresses cannot vote.",
         "team": "How the team is paid",
@@ -1663,7 +1659,7 @@
         "title": "The AI analyst",
         "lede": "Every raise in Stage 1 is reviewed by an AI analyst that publishes a risk report on the project page. It has one power: it can delay.",
         "list": [
-          "It may place a veto that delays graduation from Stage 1: at most two days per veto and seven days in total, with a one-day cooldown between vetoes, and never beyond the Stage 1 maximum.",
+          "It may place a veto that delays graduation from Stage 1: at most two days per veto{{vetoMax}} and seven days in total{{vetoTotal}}, with a one-day cooldown between vetoes{{vetoCooldown}}, and never beyond the Stage 1 maximum.",
           "It cannot approve a launch, reject one that met its gates, or touch any funds.",
           "Cost exits stay open during a delay.",
           "The council can lift a veto early. The delay budget already used is not restored.",
@@ -1674,15 +1670,11 @@
         "title": "Roles and their limits",
         "lede": "A few addresses have narrow roles, pinned into every launch. None can change a live launch or move backers' funds.",
         "table": {
-          "head": [
-            "Role",
-            "Can",
-            "Cannot"
-          ],
+          "head": ["Role", "Can", "Cannot"],
           "rows": [
             [
               "Curator",
-              "Publish new template versions, whitelist the quote asset, and set governed parameters for future versions",
+              "Publish new template versions, deprecate versions for new launches, whitelist the quote asset, and set governed parameters for future versions",
               "Change a published version or an existing launch; touch funds"
             ],
             [
@@ -1690,20 +1682,17 @@
               "Post the AI analyst's veto, within the delay budget",
               "Approve or reject a launch; touch funds"
             ],
-            [
-              "Council",
-              "Lift an active veto early",
-              "Extend a veto or restore its budget; touch funds"
-            ],
+            ["Council", "Lift an active veto early", "Extend a veto or restore its budget; touch funds"],
             [
               "Builder",
               "Create a launch, post updates, propose budgets and treasury spends, and dissolve the project after the Stage 1 minimum",
               "Receive free tokens, buy more than 10% of the supply, vote on proposals, or spend without a vote"
             ],
+            ["Anyone", "Advance a stage when it is due, execute the listing, and finalize or execute proposals", "—"],
             [
-              "Anyone",
-              "Advance a stage when it is due, execute the listing, and finalize or execute proposals",
-              "—"
+              "API administrator (off-chain)",
+              "Run the AI analyst on demand, without the rate limit",
+              "Anything on-chain"
             ]
           ]
         },
@@ -1712,61 +1701,8 @@
       "timings": {
         "title": "Governed timings",
         "lede": "Stage lengths and governance windows are protocol parameters. The curator sets them for future versions only; each version pins its values, and every launch keeps the values of its version.",
-        "table": {
-          "head": [
-            "Parameter",
-            "Production",
-            "Testnet"
-          ],
-          "rows": [
-            [
-              "Stage 1 length",
-              "15–60 days",
-              "10 minutes – 60 days"
-            ],
-            [
-              "Stage 2 length",
-              "35–70 days",
-              "30 minutes – 70 days"
-            ],
-            [
-              "Voting period",
-              "3 days",
-              "10 minutes"
-            ],
-            [
-              "Dispute window",
-              "7 days",
-              "10 minutes"
-            ],
-            [
-              "Execution window",
-              "2 days",
-              "10 minutes"
-            ],
-            [
-              "Longest single veto",
-              "2 days",
-              "10 minutes"
-            ],
-            [
-              "Total veto budget",
-              "7 days",
-              "30 minutes"
-            ],
-            [
-              "Cooldown between vetoes",
-              "1 day",
-              "10 minutes"
-            ],
-            [
-              "Treasury allocation unlock",
-              "5 years (1,825 days)",
-              "7 days"
-            ]
-          ]
-        },
-        "p1": "The builder picks each launch's stage lengths within these bounds, and they are fixed before the first deposit. The short testnet values let a whole lifecycle play out in an afternoon; production launches use the production defaults."
+        "p1": "The table compares the production defaults with the values a new launch on this network pins today, read live from the current template version.",
+        "p2": "The builder picks each launch's stage lengths within these bounds, and they are fixed before the first deposit. On testnet the timings are shortened so a whole lifecycle can be seen in a day; the contracts are identical, and only the governed parameters differ. Production launches use the production defaults."
       },
       "markets": {
         "title": "Markets and trading",
@@ -1781,14 +1717,13 @@
         ]
       },
       "testnet": {
-        "title": "Testnet and Test USDG",
-        "lede": "Portex runs on X Layer testnet (chain 1952) with a test quote asset.",
+        "title": "Connect to X Layer testnet",
+        "lede": "Portex runs on X Layer testnet with a test quote asset. Your wallet needs this network and a little test OKB for gas.",
         "list": [
-          "**Test USDG** is a freely mintable faucet token with 6 decimals, like USDG. It has no monetary value and is never real USDG.",
-          "When your balance is empty, the deposit and trade panels, and an empty Portfolio, offer to mint 10,000 Test USDG in one transaction.",
-          "Testnet launches can use the short timings in [Governed timings](#timings), so a project can go from Stage 1 to the open market in less than an hour.",
-          "Pools use a Uniswap v4 PoolManager deployed from the unmodified v4.0.0 release.",
-          "Transactions need a little testnet OKB for gas."
+          "When you press **Connect wallet**, the app asks your wallet to switch to X Layer testnet, and to add it if it is missing. You can also add it by hand with the values above.",
+          "Get test OKB for gas from the [OKX X Layer faucet](https://web3.okx.com/xlayer/faucet).",
+          "**TEST USDG** is a freely mintable faucet token with 6 decimals, like USDG. It has no monetary value and is never real USDG. When your balance is empty, the deposit and trade panels, and an empty Portfolio, offer to mint 10,000 TEST USDG in one transaction.",
+          "Testnet launches can use shortened timings, so a project can go from Stage 1 to the open market in less than an hour. See [Governed timings](#timings)."
         ]
       },
       "faq": {
@@ -1834,6 +1769,10 @@
           {
             "q": "Can a launch be changed after I deposit?",
             "a": "No. Its code, parameters and roles are pinned when it is created. New versions apply only to new launches."
+          },
+          {
+            "q": "Where can I check the contracts?",
+            "a": "Every address is listed in [Deployed contracts](#contracts), with a link to the block explorer."
           }
         ]
       },
@@ -1912,9 +1851,225 @@
           {
             "term": "Veto",
             "def": "A delay the AI analyst may place on graduation from Stage 1, within a fixed budget."
+          },
+          {
+            "term": "Bundle hash",
+            "def": "The fingerprint of a template version: its implementations, parameters and roles. Every launch records the one it was created with; see [Deployed contracts](#contracts)."
           }
         ]
+      },
+      "guideBacker": {
+        "title": "Backer guide",
+        "lede": "From your first deposit to listing, or to taking your principal back.",
+        "join": "Join a raise",
+        "joinSteps": [
+          "Open **Projects** and choose a project in **Stage 1 · Incubation**. Its page shows the stage and the time left, and the **Overview** tab holds the description, the AI analyst's report and the builder's updates.",
+          "Press **Connect wallet**. On testnet, if your USDG balance is empty, the deposit panel offers to mint TEST USDG; you also need a little test OKB for gas. See [Connect to X Layer testnet](#testnet).",
+          "In **What you can do now**, choose **Deposit** and enter an amount. The quote shows the tokens you receive and what you pay; any amount the curve cannot use is returned.",
+          "The first time, the button reads **Approve USDG**: approve, then press **Deposit** and confirm in the transaction drawer. To pay with capital from another project, set **Pay from** to **Other projects**."
+        ],
+        "leave": "Leave before listing",
+        "leaveSteps": [
+          "Choose **Exit at cost**, pick the position and the quantity. You receive exactly what those tokens cost, with zero fees, at any time until the listing transaction.",
+          "In Stage 2, **Protected exit** pays your cost plus the elapsed share of your gain, as far as outside demand has funded it. The quote shows the cost and the profit separately.",
+          "Under **Treasury & votes**, vote on budgets and treasury spends with **Vote YES** or **Vote NO**. Voting never blocks an exit."
+        ],
+        "after": "At listing and after",
+        "afterSteps": [
+          "When Stage 2 ends, anyone can press **List on Uniswap**. Your tokens then arrive in your wallet automatically; there is nothing to claim.",
+          "Keep your tokens to receive the Diamond Hand stream, and press **Claim rewards** on the project page. Selling or transferring reduces your reward quota.",
+          "Trade on [Markets](/markets); see the [Trader guide](#guideTrader).",
+          "If the project is dissolved instead, press **Take back principal**, or **Move into another project** to deposit it straight into another Stage 1.",
+          "**Portfolio** lists every position, and the bell in the header shows what needs you: claims, votes and listings."
+        ]
+      },
+      "guideBuilder": {
+        "title": "Builder guide",
+        "lede": "Launching a project, running it through the stages, and what you receive.",
+        "launch": "Launch",
+        "launchSteps": [
+          "Choose the launch type. **Escrow Launch** if the product can fund itself from treasury budgets and its own revenue; **Budget Launch** if you need voted draws on the raise before listing. See [Launch types](#launchTypes).",
+          "Open **Launch a project** and work through the steps: **Launch type**, **Basics** (name, symbol, description, website), **Capital** (supply and target valuation, at least $100,000), **Schedule** (the two stage lengths, within the bounds shown), **Rules** (additional builder addresses and, for a Budget Launch, the budget ceiling) and **Review**.",
+          "Press **Launch project** and sign. The terms are fixed from this moment and cannot be changed after anyone deposits."
+        ],
+        "run": "Run the raise",
+        "runSteps": [
+          "On your project page, press **Open builder console**. Fill in the **Project profile**, choose **Upload image** for the **Project image** (PNG, JPEG or WebP, up to 2 MB), then **Sign & save profile**.",
+          "Use **Post a public update** for milestones and incidents; backers read them on the project page.",
+          "When the analyst publishes a report, answer it under **Respond to the latest analyst report**. Your response appears beside the report.",
+          "You may buy on the same curve as everyone else, up to 10% of the supply in total. Your purchases do not count toward the minimum of 10 backers and carry no reward quota.",
+          "Budget Launch, Stage 2: under **Treasury & votes**, **Propose a draw**. Backers vote by capital. When voting ends, anyone can **Finalize vote**; once the dispute window has passed, **Execute budget** pays the draw and reduces every position's cost in proportion."
+        ],
+        "end": "Listing, dissolution and income",
+        "endSteps": [
+          "At the Stage 2 deadline anyone lists the project. Your purchases then vest: a 30-day cliff, then linear release over three years; press **Claim vested tokens** as they unlock.",
+          "After listing, fund the work with **Propose a treasury spend**. Token holders vote; your own addresses cannot.",
+          "If the project should not continue, **Dissolve project** once the Stage 1 minimum has passed. Every position then takes back its full cost."
+        ]
+      },
+      "guideTrader": {
+        "title": "Trader guide",
+        "lede": "Buying and selling before listing in the Stage 2 book, and after listing in the pool.",
+        "book": "Stage 2: the book",
+        "bookSteps": [
+          "Open a project in **Stage 2 · Series A buffer**. The **Market** tab shows the price chart and the recent trades.",
+          "In **What you can do now**, choose **Buy**, enter USDG and set the price tolerance. The quote shows the tokens you receive, the 1% trading fee, the price impact and the minimum you will accept.",
+          "Your tokens stay in the protocol's ledger until listing. You can **Sell** them back to the book at any time until then, again with a 1% fee. At listing they arrive in your wallet."
+        ],
+        "pool": "Stage 3: the pool",
+        "poolSteps": [
+          "Open **Markets** and choose a project. The page shows the price in candles, the recent trades and the pool's facts.",
+          "In the trade panel, choose **Buy** or **Sell** and enter the amount you pay. The quote comes live from the pool: average price, price impact, the 1% pool fee and the minimum received under your slippage tolerance (1% by default).",
+          "The first trade of each asset asks you to approve the Portex swap router; then confirm the swap in the transaction drawer. If the price moves beyond your tolerance first, nothing is exchanged."
+        ],
+        "risks": "Risks",
+        "risksList": [
+          "Stage 2 buyers are not backers: they have no cost protection, no protected exit and no reward quota.",
+          "After listing, the price is set by an open market and can fall below what anyone paid.",
+          "Large trades move the price. Check the price impact against the pool's liquidity.",
+          "Selling tokens that carry reward quota destroys the same amount of quota."
+        ]
+      },
+      "guideAnalyst": {
+        "title": "Analyst guide",
+        "lede": "What the AI analyst does, and how people and programs can read the same data.",
+        "ai": "The AI analyst",
+        "aiList": [
+          "It reviews each raise in Stage 1, including the number of backers and the share of capital linked to the builder, and publishes a report with a risk score and findings on the project's **Overview** tab.",
+          "It may delay graduation from Stage 1 with a veto, within a fixed budget. It cannot approve, reject or touch funds. See [The AI analyst](#analyst).",
+          "The builder can answer every report publicly."
+        ],
+        "api": "The public API",
+        "apiText": "Everything in the app is also available as JSON, without an account or a key. The testnet API is at `https://testnet-api.portex.vc/v2`. Amounts are integers in base units (USDG has 6 decimals, tokens 18) and prices are scaled by 10^18, except on the market endpoints (`/markets`, `candles`, `pool-trades`), which return decimal strings in USDG per token.",
+        "endpoints": {
+          "head": ["Endpoint", "Returns"],
+          "rows": [
+            [
+              "`GET /raises`",
+              "Every raise with its stage, prices and key figures; add `?phase=Stage1` to filter by stage."
+            ],
+            [
+              "`GET /raises/{address}`",
+              "One raise in full: configuration, book, treasury, listing record and the latest report."
+            ],
+            [
+              "`GET /raises/{address}/trades`",
+              "Stage 1 and Stage 2 activity in the protocol's ledger: deposits, exits, buys and sells."
+            ],
+            [
+              "`GET /raises/{address}/candles?interval=1h`",
+              "Price candles of the Stage 2 book and the pool, from `1m` to `1d`."
+            ],
+            ["`GET /raises/{address}/pool-trades`", "Swaps in the Uniswap v4 pool after listing, with the trader."],
+            ["`GET /raises/{address}/activity`", "A readable feed of the raise's on-chain events."],
+            ["`GET /raises/{address}/proposals`", "Budget and treasury proposals with their votes, caps and state."],
+            ["`GET /raises/{address}/reports`", "The AI analyst's reports and the builder's responses."],
+            [
+              "`GET /markets`",
+              "Every project in Stage 3 · Open market: price, 24-hour change and volume, liquidity and FDV."
+            ],
+            ["`GET /config`", "Deployed addresses, the quote asset and the parameters each template version pins."]
+          ]
+        },
+        "apiNote": "Every value can be checked against the contracts in [Deployed contracts](#contracts). Writes to the chain always go through your own wallet, never through the API."
+      },
+      "guideAdmin": {
+        "title": "Administrator guide",
+        "lede": "The protocol's roles, what the Admin console lets each one do, and where their power ends.",
+        "p1": "The **Admin** item appears in the navigation only when the connected wallet holds a role. The console shows each role's actions and says why an action is unavailable.",
+        "curator": "Curator",
+        "curatorSteps": [
+          "**Protocol parameters**: **Edit parameters**, review the changes, then **Set protocol parameters**. The values apply only to the next published version.",
+          "**Template versions**: **Publish** the next version, which pins the current implementations and parameters; **Deprecate** a version so new launches can no longer use it. Existing launches keep theirs.",
+          "**Quote asset**: **Whitelist a quote asset** for versions published afterwards."
+        ],
+        "attester": "Attester",
+        "attesterSteps": [
+          "**Vetoes** lists every raise in Stage 1 with its latest report, its veto budget and its cooldown.",
+          "Enter a delay and **Apply veto**. A veto cites the latest report, lasts at most the per-veto maximum and must fit in the remaining budget."
+        ],
+        "council": "Council",
+        "councilSteps": [
+          "Under **Vetoes**, **Clear veto** lifts an active veto early. The budget already used is not restored."
+        ],
+        "limits": "Limits",
+        "limitsList": [
+          "Parameters, versions and quote admission affect future launches only. No role can change a live launch.",
+          "No role can move backers' funds, block an exit or spend from a treasury.",
+          "A veto only delays graduation; it cannot reject a project that met its gates.",
+          "API administrators can run the analyst on demand without the rate limit (**Analysis**, **Run analysis now**). This is an off-chain role."
+        ]
+      },
+      "contracts": {
+        "title": "Deployed contracts",
+        "lede": "Every contract this app uses on the current network, read from the deployment record. Copy an address, or open it in the block explorer.",
+        "p1": "The implementations are the code every new launch is cloned from; each launch pins them, with its parameters, through the bundle hash of its template version.",
+        "p2": "Pools run on a Uniswap v4 PoolManager deployed from the unmodified v4.0.0 release. Liquidity added at listing is owned by each raise through the adapter and can never be withdrawn."
       }
+    },
+    "heading": "Documentation",
+    "related": "Related",
+    "live": {
+      "testnet": "Testnet",
+      "here": "This network",
+      "inline": "({where}: {value}, shortened for testing)",
+      "parameter": "Parameter",
+      "production": "Production default",
+      "current": "{where} now",
+      "shortened": "Shortened for testing",
+      "rows": {
+        "stage1": "Stage 1 length",
+        "stage2": "Stage 2 length",
+        "voting": "Voting period",
+        "dispute": "Dispute window",
+        "execution": "Execution window",
+        "proposalInterval": "Time between proposals",
+        "vetoMax": "Longest single veto",
+        "vetoTotal": "Total veto budget",
+        "vetoCooldown": "Cooldown between vetoes",
+        "treasuryVesting": "Treasury allocation unlock"
+      },
+      "inlineShort": "({where}: {value})",
+      "block": "{where}: {value}"
+    },
+    "deployment": {
+      "groups": {
+        "protocol": "Protocol",
+        "market": "Market venue and quote asset",
+        "implementations": "Implementations pinned by version {version}",
+        "roles": "Roles",
+        "deployment": "Deployment"
+      },
+      "registry": "Registry",
+      "factory": "Raise factory",
+      "rollover": "Rollover router",
+      "router": "Swap router",
+      "adapter": "Uniswap v4 adapter",
+      "hook": "Initialize hook",
+      "poolManager": "PoolManager",
+      "impl": {
+        "raise": "Raise",
+        "token": "Project token",
+        "vesting": "Vesting vault",
+        "governor": "Governor",
+        "claims": "Claim vault",
+        "treasury": "Treasury"
+      },
+      "curator": "Curator",
+      "attester": "Attester",
+      "council": "Council",
+      "chainId": "Chain ID",
+      "block": "Deployment block",
+      "notRecorded": "Not recorded on this network",
+      "bundle": "Bundle hash · {type} v{version}",
+      "escrow": "Escrow Launch",
+      "budget": "Budget Launch",
+      "published": "Current versions published {date}. Each launch keeps the implementations and parameters of the version it was created with.",
+      "networkName": "Network name",
+      "rpc": "RPC URL",
+      "currency": "Gas token",
+      "explorer": "Block explorer",
+      "otherChain": "This copy of the app runs on {name}; the values above are for X Layer testnet."
     }
   }
 }

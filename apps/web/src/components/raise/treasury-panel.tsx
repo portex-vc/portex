@@ -90,8 +90,13 @@ export function TreasuryPanel({ detail: r }: { detail: RaiseDetail }) {
         </div>
         <p className="text-2xs leading-relaxed text-fg-3">
           {listed
-            ? v("treasurySchedule", { years: n.number(years, 0), pct: n.pct(Math.round(1000 / years)) })
-            : v("treasuryBeforeListing", { years: n.number(years, 0) })}
+            ? years >= 1
+              ? v("treasurySchedule", {
+                  period: n.period(Number(t.vestingDuration)),
+                  pct: n.pct(Math.round(1000 / years)),
+                })
+              : v("treasuryScheduleShort", { period: n.period(Number(t.vestingDuration)) })
+            : v("treasuryBeforeListing", { period: n.period(Number(t.vestingDuration)) })}
         </p>
       </div>
       {address && (pendingFees > 0n || listed) ? (

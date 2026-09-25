@@ -5,6 +5,7 @@ import { CopyValue } from "@/components/copy-value";
 import { CHEVRON, SUMMARY } from "@/components/disclosure";
 import type { Row } from "@/components/figures";
 import { TypeBadge } from "@/components/raise/type-badge";
+import { TestnetRibbon } from "@/components/testnet-timing";
 import { diffParameters, PARAMETER_GROUPS, toParameters, type ProtocolParameters } from "@/lib/admin";
 import type { ApiConfig } from "@/lib/api";
 import { appChain } from "@/lib/chains";
@@ -149,7 +150,8 @@ function TemplateCard({
   }
 
   return (
-    <article className="surface-1 flex min-w-0 flex-col" data-testid={`versions-${latest.name}`}>
+    <article className="surface-1 relative flex min-w-0 flex-col" data-testid={`versions-${latest.name}`}>
+      <TestnetRibbon pinned={latest.parameters} />
       <header className="flex items-center gap-3 border-b border-fg/[0.07] px-5 py-4">
         <TypeBadge template={latest.name} />
         <h3 className="text-sm font-medium">{tt(`${launchTypeKey(latest.name)}.title`)}</h3>

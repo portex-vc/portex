@@ -19,6 +19,17 @@ export function useNumbers() {
     const cut = fraction.slice(0, precision).padEnd(precision, "0");
     return cut ? `${integer}${separator}${cut}` : integer;
   };
+  const durationOf = (seconds: number) => {
+    const safe = Math.max(0, Math.floor(seconds));
+    const unit = safe >= 86400 ? "day" : safe >= 3600 ? "hour" : safe >= 60 ? "minute" : "second";
+    const size = unit === "day" ? 86400 : unit === "hour" ? 3600 : unit === "minute" ? 60 : 1;
+    return format.number(safe / size, {
+      style: "unit",
+      unit,
+      unitDisplay: "short",
+      maximumFractionDigits: 1,
+    });
+  };
   return {
     number,
     quote: (v: bigint | string | undefined | null) => amount(v, 6, 2),
@@ -40,16 +51,21 @@ export function useNumbers() {
       format.dateTime(new Date(seconds * 1000), { month: "short", day: "numeric", timeZone: "UTC" }),
     signedPct: (bps: number) =>
       format.number(bps / 10000, { style: "percent", maximumFractionDigits: 2, signDisplay: "always" }),
-    duration: (seconds: number) => {
+    /** "15–60 days" when both ends are whole days, else "10 min–60 days". */
+    durationRange: (from: number, to: number) =>
+      from % 86400 === 0 && to % 86400 === 0 && from > 0
+        ? `${format.number(from / 86400, { maximumFractionDigits: 0 })}–${durationOf(to)}`
+        : `${durationOf(from)}–${durationOf(to)}`,
+    /** A schedule length: "5 years" when it is whole years, else a duration ("7 days"). */
+    period: (seconds: number) => {
+      const years = seconds / 31_536_000;
+      if (years >= 1 && Number.isInteger(years))
+        return format.number(years, { style: "unit", unit: "year", unitDisplay: "long" });
       const safe = Math.max(0, Math.floor(seconds));
       const unit = safe >= 86400 ? "day" : safe >= 3600 ? "hour" : safe >= 60 ? "minute" : "second";
       const size = unit === "day" ? 86400 : unit === "hour" ? 3600 : unit === "minute" ? 60 : 1;
-      return format.number(safe / size, {
-        style: "unit",
-        unit,
-        unitDisplay: "short",
-        maximumFractionDigits: 1,
-      });
+      return format.number(safe / size, { style: "unit", unit, unitDisplay: "long", maximumFractionDigits: 1 });
     },
+    duration: durationOf,
   };
 }

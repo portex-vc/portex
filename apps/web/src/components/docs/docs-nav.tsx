@@ -1,5 +1,6 @@
 "use client";
 
+import { useApiConfig, useHealth } from "@/lib/hooks";
 import { cn } from "@/lib/utils";
 import { ChevronDown } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
@@ -58,7 +59,7 @@ function Links({ groups, active, onNavigate }: { groups: NavGroup[]; active: str
                     href={`#${s.id}`}
                     onClick={onNavigate}
                     aria-current={on ? "location" : undefined}
-                    data-testid={`wiki-nav-${s.id}`}
+                    data-testid={`docs-nav-${s.id}`}
                     className={cn(
                       "-ml-px block border-l py-1.5 pl-3 text-[0.8125rem] leading-5 transition-colors duration-150",
                       on ? "border-fg font-medium text-fg" : "border-transparent text-fg-2 hover:text-fg",
@@ -95,15 +96,40 @@ function Links({ groups, active, onNavigate }: { groups: NavGroup[]; active: str
 }
 
 /** Section navigation: sticky beside the article on desktop, a collapsible contents list on phones. */
-export function WikiNav({ groups, label }: { groups: NavGroup[]; label: string }) {
+/**
+ * Live figures (this network's timings, the contract list) load after the first paint and push the text down. If the
+ * page opened on an #anchor and the reader has not scrolled yet, return to the anchor once they have arrived.
+ */
+function useSettleAnchor() {
+  const config = useApiConfig();
+  const health = useHealth();
+  const touched = useRef(false);
+  useEffect(() => {
+    const mark = () => (touched.current = true);
+    const events = ["wheel", "touchmove", "keydown", "mousedown"] as const;
+    events.forEach((e) => window.addEventListener(e, mark, { passive: true }));
+    return () => events.forEach((e) => window.removeEventListener(e, mark));
+  }, []);
+  const ready = Boolean(config.data && health.data);
+  useEffect(() => {
+    if (!ready || touched.current || !window.location.hash) return;
+    const id = requestAnimationFrame(() =>
+      document.getElementById(decodeURIComponent(window.location.hash.slice(1)))?.scrollIntoView(),
+    );
+    return () => cancelAnimationFrame(id);
+  }, [ready]);
+}
+
+export function DocsNav({ groups, label }: { groups: NavGroup[]; label: string }) {
   const ids = groups.flatMap((g) => g.sections.flatMap((s) => [s.id, ...s.subs.map((x) => x.id)]));
   const [stable] = useState(ids);
   const active = useActiveHeading(stable);
+  useSettleAnchor();
   const details = useRef<HTMLDetailsElement>(null);
   const current = groups.flatMap((g) => g.sections).find((s) => s.id === active || s.subs.some((x) => x.id === active));
   return (
     <>
-      <details ref={details} className="surface-1 group lg:hidden" data-testid="wiki-contents">
+      <details ref={details} className="surface-1 group lg:hidden" data-testid="docs-contents">
         <summary className="flex cursor-pointer list-none items-center justify-between px-4 py-3 text-sm font-medium [&::-webkit-details-marker]:hidden">
           <span className="flex min-w-0 items-baseline gap-2">
             {label}
@@ -124,7 +150,7 @@ export function WikiNav({ groups, label }: { groups: NavGroup[]; label: string }
       <nav
         aria-label={label}
         className="scroll-thin sticky top-24 hidden max-h-[calc(100vh-7rem)] overflow-y-auto pb-8 pr-2 lg:block"
-        data-testid="wiki-nav"
+        data-testid="docs-nav"
       >
         <Links groups={groups} active={active} />
       </nav>

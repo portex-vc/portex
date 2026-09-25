@@ -1,12 +1,18 @@
 "use client";
 
+import { TestnetRibbon } from "@/components/testnet-timing";
+import { useApiConfig } from "@/lib/hooks";
 import { LAUNCH_TYPES, type LaunchTemplate } from "@/lib/launch-types";
+import { currentTemplates, isShortened } from "@/lib/testnet-timing";
+import { cn } from "@/lib/utils";
 import { Check } from "lucide-react";
 import { useTranslations } from "next-intl";
 
 export function TypeChoice({ value, onChange }: { value: LaunchTemplate; onChange: (value: LaunchTemplate) => void }) {
   const t = useTranslations("types");
   const tc = useTranslations("create");
+  const { data: config } = useApiConfig();
+  const current = currentTemplates(config?.templates);
   return (
     <fieldset data-testid="type-choice">
       <legend className="mb-5 text-sm text-fg-2">{tc("typeHint")}</legend>
@@ -23,19 +29,27 @@ export function TypeChoice({ value, onChange }: { value: LaunchTemplate; onChang
               aria-describedby={`type-${key}-definition type-${key}-boundary`}
               className="peer sr-only"
             />
-            <div className="flex w-full flex-col gap-5 rounded-xl border border-hairline bg-surface-1 p-5 transition-colors hover:border-hairline-strong peer-checked:border-fg peer-checked:bg-surface-2 peer-focus-visible:outline peer-focus-visible:outline-2 peer-focus-visible:outline-offset-4 peer-focus-visible:outline-fg sm:p-6">
-              <div className="flex items-center justify-between gap-3">
+            <div className="relative flex w-full flex-col gap-5 rounded-xl border border-hairline bg-surface-1 p-5 transition-colors hover:border-hairline-strong peer-checked:border-fg peer-checked:bg-surface-2 peer-focus-visible:outline peer-focus-visible:outline-2 peer-focus-visible:outline-offset-4 peer-focus-visible:outline-fg sm:p-6">
+              <TestnetRibbon pinned={current.find((x) => x.name === template)?.parameters} />
+              {/* The selection mark leads the title, keeping the top-right corner free for the testnet ribbon. */}
+              <div className="flex items-center gap-3 pr-16">
+                <span className="flex size-5 shrink-0 items-center justify-center rounded-full border border-hairline-strong">
+                  {value === template ? <Check className="size-3.5" aria-hidden /> : null}
+                </span>
                 <span
                   id={`type-${key}-name`}
                   className={key === "sealed" ? "text-xl font-medium text-fg" : "text-xl font-medium text-risk"}
                 >
                   {t(`${key}.title`)}
                 </span>
-                <span className="flex size-5 shrink-0 items-center justify-center rounded-full border border-hairline-strong">
-                  {value === template ? <Check className="size-3.5" aria-hidden /> : null}
-                </span>
               </div>
-              <p id={`type-${key}-definition`} className="num text-sm leading-relaxed text-fg-2">
+              <p
+                id={`type-${key}-definition`}
+                className={cn(
+                  "num text-sm leading-relaxed text-fg-2",
+                  isShortened(current.find((x) => x.name === template)?.parameters) && "pr-8",
+                )}
+              >
                 {t(`${key}.definition`)}
               </p>
               <dl className="flex-1 space-y-4 border-t border-hairline pt-5 text-sm">

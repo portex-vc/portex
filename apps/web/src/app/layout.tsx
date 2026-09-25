@@ -9,6 +9,7 @@ import { NextIntlClientProvider } from "next-intl";
 import { getLocale, getMessages, getTranslations } from "next-intl/server";
 import "./globals.css";
 import { Providers } from "./providers";
+import { LanguagePrompt } from "@/components/shell/language-prompt";
 
 export async function generateMetadata(): Promise<Metadata> {
   const t = await getTranslations("metadata");
@@ -34,6 +35,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
             <Header />
             <main className="container flex-1 pb-24 pt-4">{children}</main>
             <Footer />
+            <LanguagePrompt />
           </Providers>
         </NextIntlClientProvider>
       </body>

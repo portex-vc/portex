@@ -161,7 +161,7 @@ function Wordmark({ className, height = 16, reveal }: { className?: string; heig
 /** Mark + wordmark lockup, sized by the mark's height. */
 export function Logo({ className, size = 26 }: { className?: string; size?: number }) {
   return (
-    <span className={cn("inline-flex items-center gap-[0.15em] text-fg", className)} style={{ fontSize: size }}>
+    <span className={cn("inline-flex items-center gap-[0.22em] text-fg", className)} style={{ fontSize: size }}>
       <Mark size={size} />
       <Wordmark height={size * 0.6} className="translate-y-[0.06em]" />
     </span>
@@ -171,7 +171,7 @@ export function Logo({ className, size = 26 }: { className?: string; size?: numb
 /** The lockup drawing itself: the line first, then the letters rise in sequence. */
 export function DrawnLogo({ className, size = 56, delay = 0 }: { className?: string; size?: number; delay?: number }) {
   return (
-    <span className={cn("inline-flex items-center gap-[0.15em] text-fg", className)} style={{ fontSize: size }}>
+    <span className={cn("inline-flex items-center gap-[0.22em] text-fg", className)} style={{ fontSize: size }}>
       <DrawnMark size={size} delay={delay} />
       <Wordmark height={size * 0.6} className="translate-y-[0.06em]" reveal={delay + 780} />
     </span>
@@ -197,7 +197,7 @@ export function SheenLogo({ className, size = 22 }: { className?: string; size?:
   }, [run]);
   return (
     <span
-      className={cn("inline-flex items-center gap-[0.15em] text-fg", className)}
+      className={cn("inline-flex items-center gap-[0.22em] text-fg", className)}
       style={{ fontSize: size }}
       onMouseEnter={start}
       onFocus={start}
