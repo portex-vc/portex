@@ -90,6 +90,7 @@ contract DeployV31Local is Script {
         string memory key = "portex-v31";
         vm.serializeUint(key, "chainId", 31337);
         vm.serializeString(key, "protocol", "3.1");
+        vm.serializeUint(key, "graduationHoldBps", V.GRADUATION_HOLD_BPS);
         vm.serializeBool(key, "simulated", !vm.isContext(VmSafe.ForgeContext.ScriptBroadcast));
         vm.serializeAddress(key, "deployer", DEPLOYER);
         vm.serializeAddress(key, "registry", address(registry));

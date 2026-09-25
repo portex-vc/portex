@@ -144,7 +144,9 @@ export function createV31App({ config, db, clients, indexer, analyst }: V31Deps)
       // Bounds of the newest Escrow Launch version: what a new launch is validated against.
       const stageBounds = templates.filter((t) => t.name === 'ESCROW_LAUNCH').at(-1)?.stageBounds ?? null;
       // `admins`: lowercase ADMIN_ADDRESSES, who may trigger analyses without the rate limit (admin UI role check).
-      return { chainId: config.chainId, isLocal: config.isLocal, protocol: '3.1', stageBounds, admins: config.adminAddresses, addresses: {
+      // Share of the Stage 1 sale backers must hold at the deadline; deployments before the rule was recorded need it all.
+      const graduationHoldBps = Number((dep as { graduationHoldBps?: number }).graduationHoldBps ?? 10_000);
+      return { chainId: config.chainId, isLocal: config.isLocal, protocol: '3.1', stageBounds, graduationHoldBps, admins: config.adminAddresses, addresses: {
         factory: dep.factory, registry: dep.registry, quote, adapter: dep.adapter ?? dep.mockV4Adapter, attester: dep.attester, council: dep.council,
         rolloverRouter: dep.rolloverRouter ?? null, router: routerOf(dep), poolManager: managerOf(dep) },
         quote: { address: quote, symbol: dep.testQuote ? 'TEST USDG' : 'USDG', decimals: 6, testToken: dep.testQuote === true, quoteFrozen: data.quoteFrozen },

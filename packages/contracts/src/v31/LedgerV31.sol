@@ -85,10 +85,13 @@ library LedgerV31 {
         address owner,
         uint256 amount,
         uint256 minTokens,
-        uint256 nonce,
+        uint256, // nonce: accepted for interface compatibility, not enforced (see _validate)
         uint256 deadline
-    ) public returns (uint256 id, uint256 quantity) {
-        _validate(s, nonce, deadline);
+    )
+        public
+        returns (uint256 id, uint256 quantity)
+    {
+        _validate(s, deadline);
         // Protocol deadlines and daily release explicitly use block time (P §§2.4,12.2).
         // forge-lint: disable-next-line(block-timestamp)
         if (s.phase != V.Phase.Stage1 || block.timestamp >= s.deadlines.stage1End) revert V.InvalidPhase();
@@ -133,21 +136,21 @@ library LedgerV31 {
         uint256 id,
         uint256 q,
         uint256 minimum,
-        uint256 nonce,
+        uint256, // nonce: accepted for interface compatibility, not enforced (see _validate)
         uint256 deadline,
         bool protected
     ) public returns (uint256) {
-        _validate(s, nonce, deadline);
+        _validate(s, deadline);
         if (owner != s.positions[id].owner) revert V.Unauthorized();
-        return _settleExit(s, id, q, minimum, nonce, protected);
+        return _settleExit(s, id, q, minimum, protected);
     }
 
-    function _settleExit(S.State storage s, uint256 id, uint256 q, uint256 minimum, uint256 nonce, bool protected)
+    function _settleExit(S.State storage s, uint256 id, uint256 q, uint256 minimum, bool protected)
         internal
         returns (uint256)
     {
         V.Position storage p = s.positions[id];
-        V.ExitQuote memory quote = Views.exitQuote(s, id, q, protected, nonce);
+        V.ExitQuote memory quote = Views.exitQuote(s, id, q, protected, s.nonce);
         if (!quote.validity.available) revert V.InvalidPosition();
         if (quote.result.payout < minimum) revert V.Slippage();
         uint256 basis = s.basis(p);
@@ -177,12 +180,12 @@ library LedgerV31 {
     }
 
     /// @notice Stage 2 buyer ledger purchase with exact 1% fee splitting (PS §3).
-    function buy(S.State storage s, uint256 gross, uint256 minTokens, uint256 nonce, uint256 deadline)
+    function buy(S.State storage s, uint256 gross, uint256 minTokens, uint256, uint256 deadline)
         public
         returns (uint256)
     {
         if (s.isBuilder[msg.sender]) revert V.Unauthorized();
-        _validate(s, nonce, deadline);
+        _validate(s, deadline);
         V.TradeQuote memory r = Views.tradeQuote(s, msg.sender, gross, true);
         if (!r.validity.available) revert V.InvalidAmount();
         if (r.tokens < minTokens) revert V.Slippage();
@@ -209,11 +212,8 @@ library LedgerV31 {
     }
 
     /// @notice Sell only the caller's buyer ledger; net payout never includes fee accruals (PS §3).
-    function sell(S.State storage s, uint256 q, uint256 minPayout, uint256 nonce, uint256 deadline)
-        public
-        returns (uint256)
-    {
-        _validate(s, nonce, deadline);
+    function sell(S.State storage s, uint256 q, uint256 minPayout, uint256, uint256 deadline) public returns (uint256) {
+        _validate(s, deadline);
         V.TradeQuote memory r = Views.tradeQuote(s, msg.sender, q, false);
         if (!r.validity.available) revert V.InvalidAmount();
         if (r.net < minPayout) revert V.Slippage();
@@ -302,9 +302,10 @@ library LedgerV31 {
         }
     }
 
-    /// @notice Internal accounting for the authorized ledger action.
-    function _validate(S.State storage s, uint256 nonce, uint256 deadline) internal view {
-        if (nonce != s.nonce) revert V.StaleNonce();
+    /// @notice Only the caller's deadline binds. Requiring an unchanged state nonce let anyone make someone else's
+    /// deposit, exit or trade fail with a dust trade just before it; every one of them already carries its own
+    /// minimum (tokens or payout), which is what protects the caller when the state moves.
+    function _validate(S.State storage, uint256 deadline) internal view {
         // Protocol deadlines and daily release explicitly use block time (P §§2.4,12.2).
         // forge-lint: disable-next-line(block-timestamp)
         if (block.timestamp > deadline) revert V.Expired();

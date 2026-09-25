@@ -132,6 +132,7 @@ contract DeployXLayerTestnet is Script {
         vm.serializeUint(object, "treasuryVesting", p.treasuryVesting);
         vm.serializeBool(object, "testnetTimings", p.stage1Min < 1 days);
         vm.serializeString(object, "protocol", "3.1");
+        vm.serializeUint(object, "graduationHoldBps", V.GRADUATION_HOLD_BPS);
         vm.serializeBool(object, "simulated", !vm.isContext(VmSafe.ForgeContext.ScriptBroadcast));
         vm.serializeString(object, "network", "X Layer testnet");
         vm.serializeString(object, "quoteLabel", "TEST USDG - unrestricted MockUSDGV31 faucet; no monetary value");

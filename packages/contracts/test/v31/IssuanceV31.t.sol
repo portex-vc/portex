@@ -337,6 +337,26 @@ contract IssuanceV31Test is BaseV31 {
         raise.veto(1, bytes32(0));
     }
 
+    /// The front-run from the 25 September audit: another trader's tiny sale moves the state just before a backer's
+    /// protected exit, which must still settle at no less than the quoted minimum.
+    function test_smallSellBeforeProtectedExit_exitStillSettles() public {
+        _create(false);
+        _fund();
+        _open();
+        _buy(buyer, 5000e6);
+        vm.warp(raise.stageDeadlines().stage2Start + 10 days);
+        uint256 tokens = raise.positionState(ids[0]).tokens;
+        uint256 nonce = raise.stateNonce();
+        uint256 quoted = raise.protectedExitQuote(ids[0], tokens).result.payout;
+        uint256 current = raise.stateNonce();
+        vm.prank(buyer);
+        raise.sell(1e18, 0, current, vm.getBlockTimestamp());
+        assertGt(raise.stateNonce(), nonce);
+        uint256 minimum = quoted * 99 / 100;
+        vm.prank(backers[0]);
+        assertGe(raise.protectedExit(ids[0], tokens, minimum, nonce, vm.getBlockTimestamp()), minimum);
+    }
+
     function test_veto_neverExtendsSixtyDays_missingGatesRefundAnyway() public {
         V.Config memory c = _config(false);
         c.stage1Length = 60 days;
@@ -350,13 +370,12 @@ contract IssuanceV31Test is BaseV31 {
         assertEq(uint256(raise.phase()), uint256(V.Phase.Dissolved));
     }
 
-    function test_staleNonce_deadlineAndSlippage_areAtomic() public {
+    /// Someone else's action between a quote and an exit (here a dust deposit) must not make the exit fail: only
+    /// the caller's own deadline and minimum payout bind.
+    function test_movedState_doesNotBlockExit_deadlineAndSlippageStillBind() public {
         _create(false);
         (uint256 id, uint256 tokens) = _deposit(backers[0], 1000e6);
         uint256 nonce = raise.stateNonce();
-        vm.expectRevert(V.StaleNonce.selector);
-        vm.prank(backers[0]);
-        raise.exitAtCost(id, tokens, 0, nonce - 1, vm.getBlockTimestamp());
         vm.expectRevert(V.Expired.selector);
         vm.prank(backers[0]);
         raise.exitAtCost(id, tokens, 0, nonce, vm.getBlockTimestamp() - 1);
@@ -364,8 +383,12 @@ contract IssuanceV31Test is BaseV31 {
         vm.prank(backers[0]);
         raise.exitAtCost(id, tokens, 1000e6 + 1, nonce, vm.getBlockTimestamp());
         assertEq(raise.stateNonce(), nonce);
-        assertFalse(raise.redeemQuote(id, tokens, nonce - 1).validity.available);
-        assertEq(raise.redeemQuote(id, tokens, nonce - 1).result.payout, 0);
+        _deposit(backers[1], 10e6);
+        assertGt(raise.stateNonce(), nonce);
+        assertTrue(raise.redeemQuote(id, tokens, nonce).validity.available);
+        assertEq(raise.redeemQuote(id, tokens, nonce).result.payout, 1000e6);
+        vm.prank(backers[0]);
+        assertEq(raise.exitAtCost(id, tokens, 1000e6, nonce, vm.getBlockTimestamp()), 1000e6);
     }
 
     function test_tinyPartialZeroCost_finalExitReturnsExactRemainder() public {

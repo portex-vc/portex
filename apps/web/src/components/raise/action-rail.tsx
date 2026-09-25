@@ -12,7 +12,7 @@ import { spotlight } from "@/lib/spotlight";
 import { ProjectAvatar } from "./project-avatar";
 import type { Position, RaiseDetail } from "@/lib/api";
 import { claimsAbi, erc20Abi, raiseAbi, tokenAbi, vestingAbi } from "@/lib/contracts";
-import { useAllowance, useNow, usePosition, useTx } from "@/lib/hooks";
+import { useAllowance, useApiConfig, useNow, usePosition, useTx } from "@/lib/hooks";
 import { minimumOutput, parseTolerance } from "@/lib/quotes";
 import { useActionQuote, type MoneyAction } from "@/lib/use-action-quote";
 import { parseTradeAmount } from "@/lib/trade-amount";
@@ -172,9 +172,8 @@ function MoneyForm({
         [v("unitCost"), `${n.price(q.unitCost ?? 0n)} ${r.quote.symbol}`],
         [v("change"), usd(q.change ?? 0n)],
       );
-    // Stage 1 exits burn nothing: the tokens go back on sale for other backers.
-    if (q.exit && r.phase === "Stage1")
-      rows.push([v("returnedToSale"), tok(parsed)], [v("cost"), usd(q.exit.cost), "protected"]);
+    // A Stage 1 exit is exactly the cost of the tokens returned; the book figures only exist from Stage 2.
+    if (q.exit && r.phase === "Stage1") rows.push([v("cost"), usd(q.exit.cost), "protected"]);
     else if (q.exit)
       rows.push(
         [v("qSold"), tok(q.exit.qSold)],
@@ -387,6 +386,7 @@ function LifecycleActions({ detail: r }: { detail: RaiseDetail }) {
     n = useNumbers();
   const { address } = useAccount();
   const { send, pending } = useTx();
+  const config = useApiConfig();
   const listing = r.phase === "ListingPending";
   const due = r.phase === "Stage1" && now >= r.deadlines.stage1End;
   if (!listing && !due) return null;
@@ -399,9 +399,10 @@ function LifecycleActions({ detail: r }: { detail: RaiseDetail }) {
         [v("listingPrice"), `${n.price(preview.price)} ${r.quote.symbol}`, "total"],
       ]
     : [];
-  // Stage 1 exits return allocation to the sale: the project graduates if backers hold at least 95% of it.
+  // The share of the sale backers must still hold at the deadline comes from the live deployment's rule.
+  const hold = BigInt(config.data?.graduationHoldBps ?? 10_000);
   const gates =
-    BigInt(r.sold) * 10000n >= BigInt(r.allocation) * 9500n &&
+    BigInt(r.sold) * 10_000n >= BigInt(r.allocation) * hold &&
     r.backers >= r.governance.config.parameters.minimumBackers &&
     BigInt(r.E) > 0n;
   const vetoBlocks = due && gates && now < r.deadlines.vetoUntil;
