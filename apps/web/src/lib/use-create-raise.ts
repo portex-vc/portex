@@ -30,13 +30,17 @@ export function useCreateRaise(form: FormState) {
           ? v("templateError")
           : null;
   async function save(raise: Address) {
-    if (form.description.trim() || form.website.trim()) {
+    if (form.description.trim() || form.website.trim() || form.image) {
       const result = await signed.send(
         t("retryMetadata"),
         (signer) =>
           api.postMetadata(
             raise,
-            { description: form.description.trim(), website: form.website.trim() || undefined },
+            {
+              description: form.description.trim(),
+              website: form.website.trim() || undefined,
+              ...(form.image ? { image: form.image } : {}),
+            },
             signer,
           ),
         [["raises"], ["raise", raise]],

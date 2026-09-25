@@ -708,7 +708,11 @@ export const api = {
       method: "POST",
       body: JSON.stringify(body),
     }),
-  postMetadata: async (raise: string, body: { description: string; website?: string }, signer: RequestSigner) => {
+  postMetadata: async (
+    raise: string,
+    body: { description: string; website?: string; image?: string },
+    signer: RequestSigner,
+  ) => {
     const path = `/v2/raises/${raise}/metadata`;
     const raw = JSON.stringify(body);
     return request<{ ok: boolean }>(path, {

@@ -272,7 +272,10 @@ export function createV31App({ config, db, clients, indexer, analyst }: V31Deps)
     const { json } = await signed(c, row.builder);
     if (typeof json.description !== 'string' || json.description.length > 2000 || (json.website !== undefined && (typeof json.website !== 'string' || json.website.length > 500 || (json.website && !/^https?:\/\/\S+$/.test(json.website))))) throw new ApiError(400, 'BAD_REQUEST', 'invalid description or website');
     const old = db.query('SELECT profile FROM v31_profiles WHERE raiseAddr=?').get(row.address) as { profile: string } | null;
-    const { image } = storedProfileImage(old?.profile, config);
+    // The launch form may send the image it uploaded; absent keeps the stored one.
+    const checked = json.image === undefined ? null : validateImageRef(json.image, config);
+    if (checked && !checked.ok) throw new ApiError(400, 'BAD_REQUEST', checked.message);
+    const image = checked ? (checked.ok ? checked.image : null) : storedProfileImage(old?.profile, config).image;
     const profile = { ...profileFromRow(old?.profile, '', ''), ...(image ? { image } : {}), description: json.description, website: json.website ?? '' };
     db.query('INSERT OR REPLACE INTO v31_profiles VALUES (?,?)').run(row.address, JSON.stringify(profile));
     writes++;

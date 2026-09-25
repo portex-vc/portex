@@ -3,6 +3,7 @@ import { TypeChoice } from "@/components/create/type-choice";
 import { TestnetTimingNote } from "@/components/testnet-timing";
 import { TypeBadge } from "@/components/raise/type-badge";
 import { LaunchPreview } from "@/components/create/launch-preview";
+import { ProjectImageField } from "@/components/builder/image-upload";
 import { Segmented } from "@/components/figures";
 import { ActionButton } from "@/components/action-button";
 import { Button } from "@/components/ui/button";
@@ -289,6 +290,16 @@ export default function CreatePage() {
                   );
                 })}
               </div>
+              {step === 1 ? (
+                <ProjectImageField
+                  symbol={form.symbol.trim() || "?"}
+                  imageUrl={form.imageUrl || null}
+                  disabled={!address || create.pending}
+                  onChange={(next) =>
+                    setForm((prev) => ({ ...prev, image: next?.uri ?? "", imageUrl: next?.url ?? "" }))
+                  }
+                />
+              ) : null}
               {step === 3 && bounds ? (
                 <div className="space-y-1.5">
                   <p className="text-xs text-fg-2" data-testid="stage-bounds">

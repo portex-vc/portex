@@ -7,6 +7,9 @@ export interface FormState {
   symbol: string;
   description: string;
   website: string;
+  /** Uploaded project image (the upload's `uri`) and its display URL; empty when none. */
+  image: string;
+  imageUrl: string;
   supply: string;
   targetMode: "price" | "valuation";
   targetPrice: string;
@@ -22,6 +25,8 @@ export const DEFAULT_FORM: FormState = {
   symbol: "",
   description: "",
   website: "",
+  image: "",
+  imageUrl: "",
   supply: "1000000",
   targetMode: "valuation",
   targetPrice: "0.1",
