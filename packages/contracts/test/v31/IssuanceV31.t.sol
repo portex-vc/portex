@@ -2,6 +2,7 @@
 pragma solidity ^0.8.28;
 
 import {BaseV31} from "./BaseV31.sol";
+import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
 import {TypesV31 as V} from "../../src/v31/TypesV31.sol";
 import {GovernanceV31} from "../../src/v31/GovernanceV31.sol";
 import {StorageV31 as S} from "../../src/v31/StorageV31.sol";
@@ -78,7 +79,8 @@ contract IssuanceV31Test is BaseV31 {
             assertEq(_exit(ids[i], raise.positionState(ids[i]).tokens, false), basis);
         }
         (uint256 sold,,,,,) = raise.accounting();
-        assertEq(sold, SUPPLY / 5);
+        // Every exited token went back on sale.
+        assertEq(sold, 0);
         assertEq(raise.reserveState().E, 0);
         vm.warp(raise.stageDeadlines().stage1End);
         raise.advanceStage1();
@@ -154,16 +156,93 @@ contract IssuanceV31Test is BaseV31 {
         assertEq(quote.balanceOf(backers[9]) - before, 100000e6 - expected);
     }
 
-    function test_stage1Exit_doesNotRewindCurveOrSaleCap() public {
+    /// A Stage 1 exit pays the exact proportional cost and returns the exited allocation to the sale: the curve
+    /// steps back, nothing burns, and the next backer can buy those tokens at the price they were sold at.
+    function test_stage1Exit_returnsAllocationToSale_atProportionalCost() public {
         _create(false);
         (uint256 id, uint256 quantity) = _deposit(backers[0], 1000e6);
         (uint256 sold,,,,,) = raise.accounting();
-        assertEq(_exit(id, quantity, false), 1000e6);
-        (uint256 afterSold,,,,,) = raise.accounting();
-        assertEq(afterSold, sold);
+        assertEq(sold, quantity);
+        // Exit half: exactly half the cost comes back, and half the tokens return to the sale.
+        uint256 half = quantity / 2;
+        uint256 halfCost = Math.mulDiv(1000e6, half, quantity);
+        assertEq(_exit(id, half, false), halfCost);
+        (uint256 afterHalf,,,,,) = raise.accounting();
+        assertEq(afterHalf, quantity - half);
+        // Exit the rest: the remainder of the cost, and the curve is back at zero.
+        assertEq(_exit(id, quantity - half, false) + halfCost, 1000e6);
+        (uint256 afterAll,,,,,) = raise.accounting();
+        assertEq(afterAll, 0);
+        assertEq(token.burned(), 0);
+        // The next backer buys the same tokens at the same price the first one paid.
         (, uint256 next) = _deposit(backers[1], 1000e6);
-        assertLt(next, quantity);
-        assertEq(token.burned(), quantity);
+        assertEq(next, quantity);
+        _assertBook();
+    }
+
+    /// Audit 2026-09-25 (H): filling the sale and then exiting down to crumbs must not graduate.
+    function test_fillThenExitToCrumbs_dissolvesAtDeadline() public {
+        _create(false);
+        _fund();
+        for (uint256 i; i < 10; ++i) {
+            uint256 tokens = raise.positionState(ids[i]).tokens;
+            _exit(ids[i], tokens - 1, false);
+        }
+        (uint256 sold,,,,,) = raise.accounting();
+        assertEq(sold, 10);
+        vm.warp(raise.stageDeadlines().stage1End);
+        raise.advanceStage1();
+        assertEq(uint256(raise.phase()), uint256(V.Phase.Dissolved));
+        _assertBook();
+    }
+
+    /// The allocation returned by exits can be bought again, and a refilled sale graduates normally.
+    function test_exitThenRefill_graduates() public {
+        _create(false);
+        _fund();
+        uint256 tokens = raise.positionState(ids[0]).tokens;
+        _exit(ids[0], tokens, false);
+        (uint256 sold,,,,,) = raise.accounting();
+        assertEq(sold, SUPPLY / 5 - tokens);
+        _deposit(buyer, 100000e6);
+        (sold,,,,,) = raise.accounting();
+        assertEq(sold, SUPPLY / 5);
+        _open();
+        _assertBook();
+    }
+
+    /// One last-second exit cannot dissolve a full raise: graduation needs 95% of the sale held, not 100%.
+    function test_lastSecondSmallExit_stillGraduates_unsoldBurned() public {
+        _create(false);
+        _fund();
+        vm.warp(raise.stageDeadlines().stage1End - 1);
+        uint256 q = raise.positionState(ids[0]).tokens / 4;
+        _exit(ids[0], q, false);
+        (uint256 sold,,,,,) = raise.accounting();
+        assertEq(sold, SUPPLY / 5 - q);
+        assertGt(sold * 10_000, (SUPPLY / 5) * 9500);
+        uint256 burned = token.burned();
+        vm.warp(raise.stageDeadlines().stage1End);
+        raise.advanceStage1();
+        assertEq(uint256(raise.phase()), uint256(V.Phase.Stage2));
+        // The allocation nobody holds at the deadline is burned, and Stage 2 opens at the curve's last price.
+        assertEq(token.burned() - burned, q);
+        assertEq(raise.reserveState().E, 16666666667 - Math.mulDiv(1500e6, q, raise.positionState(ids[0]).tokens + q));
+        _assertBook();
+    }
+
+    /// A large withdrawal at the deadline leaves the project short of its target, so it dissolves.
+    function test_lastSecondLargeExit_dissolves() public {
+        _create(false);
+        _fund();
+        vm.warp(raise.stageDeadlines().stage1End - 1);
+        uint256 q = raise.positionState(ids[0]).tokens / 2;
+        _exit(ids[0], q, false);
+        (uint256 sold,,,,,) = raise.accounting();
+        assertLt(sold * 10_000, (SUPPLY / 5) * 9500);
+        vm.warp(raise.stageDeadlines().stage1End);
+        raise.advanceStage1();
+        assertEq(uint256(raise.phase()), uint256(V.Phase.Dissolved));
         _assertBook();
     }
 
@@ -226,8 +305,10 @@ contract IssuanceV31Test is BaseV31 {
         vm.expectRevert(V.Expired.selector);
         raise.advanceStage1();
         assertEq(raise.stateNonce(), nonce);
-        uint256 q = raise.positionState(ids[0]).tokens / 2;
-        assertEq(_exit(ids[0], q, false), 750e6);
+        // A cost exit stays open during the delay; this one leaves more than 95% of the sale held.
+        uint256 tokens = raise.positionState(ids[0]).tokens;
+        uint256 q = tokens / 4;
+        assertEq(_exit(ids[0], q, false), Math.mulDiv(1500e6, q, tokens));
         vm.warp(raise.stageDeadlines().vetoUntil);
         raise.advanceStage1();
         assertEq(uint256(raise.phase()), uint256(V.Phase.Stage2));

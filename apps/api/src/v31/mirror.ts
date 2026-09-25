@@ -250,7 +250,11 @@ export function exitQuote(s: RaiseMath, p: PositionMath, q: bigint, isProtected:
   out.result.cost = q === p.tokens ? basis : mulDiv(basis, q, p.tokens);
   out.result.burn = q;
   out.result.payout = out.result.cost;
-  if (phase === PHASE.Stage1) return out;
+  // Stage 1: the exited tokens return to the sale inventory; nothing burns.
+  if (phase === PHASE.Stage1) {
+    out.result.burn = 0n;
+    return out;
+  }
   const t = stage2Time(s.stage2Start, s.stage2End, s.stage2Length, now);
   const d = decay(s.book, s.x0, s.lastT, t);
   out.depthBurn = d.burn;

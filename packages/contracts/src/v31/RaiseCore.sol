@@ -201,7 +201,9 @@ contract RaiseCore is Initializable {
         // Protocol deadlines and daily release explicitly use block time (P §§2.4,12.2).
         // forge-lint: disable-next-line(block-timestamp)
         if (s.phase != V.Phase.Stage1 || block.timestamp < s.deadlines.stage1End) revert V.InvalidPhase();
-        bool gates = s.sold == s.config.supply / 5 && s.liveBackers >= s.parameters.minimumBackers && s.book.E != 0
+        // Stage 1 exits return allocation to the sale, so this measures what backers still hold at the deadline.
+        bool gates = s.sold >= Math.mulDiv(s.config.supply / 5, V.GRADUATION_HOLD_BPS, 10_000, Math.Rounding.Ceil)
+            && s.liveBackers >= s.parameters.minimumBackers && s.book.E != 0
             && Math.mulDiv(2 * s.book.E, V.NORMALIZED_PRICE, s.config.targetPrice) != 0;
         // Protocol deadlines and daily release explicitly use block time (P §§2.4,12.2).
         // forge-lint: disable-next-line(block-timestamp)

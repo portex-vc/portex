@@ -158,6 +158,9 @@ library LedgerV31 {
         _reducePosition(s, p, id, q, quote.result.cost);
         if (s.phase == V.Phase.Stage1) {
             s.book.E -= quote.result.cost;
+            // The exited allocation goes back on sale (the curve steps back): graduation then measures the
+            // allocation actually held at the deadline, not what was ever sold.
+            s.sold -= q;
         } else {
             (s.book,) = Market.shrink(s.book, quote.result.cost);
             s.book.R -= quote.result.profit;

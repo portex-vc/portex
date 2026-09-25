@@ -682,6 +682,7 @@
     "profit": "Profit",
     "qSold": "Quantity sold",
     "burn": "Tokens burned",
+    "returnedToSale": "Returned to the sale",
     "payout": "Payout",
     "fee": "Trading fee",
     "priceImpact": "Price impact",
@@ -1519,7 +1520,7 @@
         "protectsNote": "Your deposit stays in escrow, apart from every other balance. Nothing can be spent in Stage 1: no fees, no budgets and no token transfers. Your tokens are a ledger entry held by the protocol, so no one can open a pool before listing.",
         "ends": "How it ends",
         "endsList": [
-          "**Graduation** to Stage 2 at the deadline, if the whole Stage 1 allocation sold, which takes the price to the project's own target valuation (at least $100,000), and at least 10 backers other than the builder hold positions.",
+          "**Graduation** to Stage 2 at the deadline, if backers still hold at least 95% of the Stage 1 allocation and at least 10 backers other than the builder hold positions. Selling the whole allocation takes the price to the project's own target valuation (at least $100,000).",
           "**Dissolution** otherwise, or earlier if the builder dissolves the project after the Stage 1 minimum. Every position then claims its full cost. See [Dissolution](#dissolution).",
           "The AI analyst may **delay** graduation within a fixed budget, but cannot prevent it. See [The AI analyst](#analyst)."
         ]
@@ -1595,7 +1596,7 @@
         "title": "Exits",
         "lede": "Until listing, a backer can always leave. There are two ways out.",
         "cost": "Exit at cost",
-        "costText": "Available in Stage 1, in Stage 2 and while listing is pending, for any part of a position. You receive exactly the cost of the tokens you return (your cost × tokens returned ÷ tokens held), with zero fees, and those tokens are burned. Votes, AI delays and failed listing attempts never block it.",
+        "costText": "Available in Stage 1, in Stage 2 and while listing is pending, for any part of a position. You receive exactly the cost of the tokens you return (your cost × tokens returned ÷ tokens held), with zero fees. In Stage 1 those tokens go back on sale for other backers; after Stage 1 they are burned. Votes, AI delays and failed listing attempts never block it.",
         "protected": "Protected exit (Stage 2)",
         "protectedText": "Backers can also leave with profit. The payout is your cost plus the elapsed share of your gain: if the book values your tokens above your cost, you receive that gain multiplied by the share of Stage 2 that has passed. Early in the stage you receive about your cost; near the end, about the full market value.",
         "protectedSource": "The profit is paid only from the real reserve that outside buyers funded, never from other backers' escrow. The book keeps only as many of your tokens as it needs to fund the profit; the rest are burned. Without outside demand, the profit is zero and you receive your cost.",

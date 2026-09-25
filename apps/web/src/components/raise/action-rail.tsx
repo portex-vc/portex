@@ -172,7 +172,10 @@ function MoneyForm({
         [v("unitCost"), `${n.price(q.unitCost ?? 0n)} ${r.quote.symbol}`],
         [v("change"), usd(q.change ?? 0n)],
       );
-    if (q.exit)
+    // Stage 1 exits burn nothing: the tokens go back on sale for other backers.
+    if (q.exit && r.phase === "Stage1")
+      rows.push([v("returnedToSale"), tok(parsed)], [v("cost"), usd(q.exit.cost), "protected"]);
+    else if (q.exit)
       rows.push(
         [v("qSold"), tok(q.exit.qSold)],
         [v("burn"), tok(q.exit.burn)],
@@ -396,8 +399,9 @@ function LifecycleActions({ detail: r }: { detail: RaiseDetail }) {
         [v("listingPrice"), `${n.price(preview.price)} ${r.quote.symbol}`, "total"],
       ]
     : [];
+  // Stage 1 exits return allocation to the sale: the project graduates if backers hold at least 95% of it.
   const gates =
-    BigInt(r.sold) === BigInt(r.allocation) &&
+    BigInt(r.sold) * 10000n >= BigInt(r.allocation) * 9500n &&
     r.backers >= r.governance.config.parameters.minimumBackers &&
     BigInt(r.E) > 0n;
   const vetoBlocks = due && gates && now < r.deadlines.vetoUntil;

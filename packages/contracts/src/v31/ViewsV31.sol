@@ -46,7 +46,11 @@ library ViewsV31 {
         r.result.cost = q == p.tokens ? basis : Math.mulDiv(basis, q, p.tokens);
         r.result.burn = q;
         r.result.payout = r.result.cost;
-        if (phase == V.Phase.Stage1) return r;
+        // Stage 1: the exited allocation returns to the sale inventory for later backers; nothing burns.
+        if (phase == V.Phase.Stage1) {
+            r.result.burn = 0;
+            return r;
+        }
         PS.Book memory b;
         (b, r.depthBurn,) = Market.decay(s.book, s.x0, s.lastT, s.time());
         if (protected) (r.result,, r.bookBurn) = Market.protectedQuote(b, PS.Position(basis, p.tokens), q, s.time());

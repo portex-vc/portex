@@ -140,6 +140,9 @@ abstract contract BaseV31 is Test {
     }
 
     function _open() internal {
+        // Stage 1 exits return allocation to the sale; graduation needs it held again, so top it up first.
+        (uint256 sold,,,,,) = raise.accounting();
+        if (sold < raise.getConfig().supply / 5) _deposit(address(0xF111), 1_000_000e6);
         vm.warp(raise.stageDeadlines().stage1End);
         raise.advanceStage1();
         assertEq(uint256(raise.phase()), uint256(V.Phase.Stage2));

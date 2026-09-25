@@ -115,10 +115,13 @@ The protocol pins bytecode, not the behaviour of external upgradeable tokens; ad
 - Define normalized cumulative cost `F(x)=(p_start·x+(p_target−p_start)·x²/(2A))/SCALE`; native USDG due is
   `C(x,q)=ceil((F(x+q)−F(x))/10^12)`. A deposit buys the greatest integer `q` with `C(x,q) ≤ deposit` and `x+q ≤ A`;
   debit only `C`, return change, reject `q=0`, and bind `minTokens`, nonce and deadline.
-- The native amount debited is basis; exits burn sold tokens and do not rewind `x` or replenish the sale cap.
+- The native amount debited is basis. A Stage 1 exit pays `floor(basis·q/tokens)` (the final exit takes the remainder),
+  and the exited `q` returns to the sale: `x` steps back by `q` and later deposits buy it on the curve. Nothing burns.
 - Track historicalRemaining separately, reducing it by `floor(historicalRemaining·q/tokens_i)` on exits, with the final-exit remainder rule.
 - Contributions from the pinned builder addresses always create builderPurchase positions; count distinct non-builder addresses with live backer tokens and basis.
-- Set `p_end=floor(p(x_end))`; reaching the terminal curve target and the minimum live non-builder backer count satisfies the Stage 1 gates.
+- Set `p_end=floor(p(x_end))`. The Stage 1 gates: at the deadline backers still hold at least 95 % of the sale
+  (`x ≥ ceil(0.95·A)`; a strict 100 % would let one last-second exit dissolve a full raise), and the minimum live
+  non-builder backer count. The unsold rest `A−x` burns when Stage 2 opens at `p_end`.
 - Minimum backers is 10; voting lasts 3 days, execution grace 2 days, each AI veto at most 2 days, cumulative veto
   at most 7 days, cooldown 1 day (implementation defaults, pinned at creation; no veto extends the 60-day maximum).
   Demo deployments (Stage 2 bounds shorter than 35 days) scale these timers so a Budget vote fits the shortest

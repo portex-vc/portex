@@ -186,22 +186,23 @@ contract ListingV31Test is BaseV31 {
         assertEq(raise.stateNonce(), nonce);
     }
 
-    function test_dustBook_R10100T1_listsAndLocksQuote() public {
+    function test_dustBook_R121741T1_listsAndLocksQuote() public {
         V.Config memory c = _config(false);
         c.supply = 1e6;
         c.targetPrice = 1e35;
         _createWith(c, false);
         _fund();
+        _open();
+        // Stage 1 exits return allocation to the sale, so the dust book is reached through Stage 2 cost exits.
         for (uint256 i; i < 10; ++i) {
             _exit(ids[i], raise.positionState(ids[i]).tokens - 1, false);
         }
-        _open();
         for (uint256 i; i < 10; ++i) {
             _exit(ids[i], 1, false);
         }
         V.ReserveState memory b = raise.reserveState();
         V.Deadlines memory d = raise.stageDeadlines();
-        while (b.V > 7500) {
+        while (b.T > 2) {
             uint256 target = Math.mulDiv(b.V, 3, 5);
             uint256 elapsed = Math.mulDiv(b.X0 - target, c.stage2Length, b.X0, Math.Rounding.Ceil);
             vm.warp(d.stage2Start + elapsed);
@@ -209,19 +210,19 @@ contract ListingV31Test is BaseV31 {
             b = raise.reserveState();
         }
         assertEq(b.T, 2);
-        assertEq(_buy(buyer, 10161), 1);
+        assertEq(_buy(buyer, 122476), 1);
         vm.warp(d.stage2End);
         raise.advanceDepth();
         b = raise.reserveState();
         assertEq(b.E + b.V, 0);
-        assertEq(b.R, 10100);
+        assertEq(b.R, 121741);
         assertEq(b.T, 1);
         V.ListingPreview memory p = raise.listingPreview();
         assertTrue(p.validity.available);
         assertEq(uint256(p.branch), uint256(V.Branch.ZeroQuote));
-        assertEq(p.desiredQuote, 10100);
+        assertEq(p.desiredQuote, 121741);
         assertEq(p.usedQuote + p.usedToken + p.liquidity, 0);
-        assertEq(p.quoteDust, 10100);
+        assertEq(p.quoteDust, 121741);
         uint256 burned = token.burned();
         raise.list();
         assertEq(uint256(raise.phase()), uint256(V.Phase.Stage3));
@@ -229,7 +230,7 @@ contract ListingV31Test is BaseV31 {
         assertEq(raise.listingRecord().liquidity, 0);
         assertEq(token.burned() - burned, p.bookBurn + p.liquidityReserveBurn + c.supply * 30 / 100);
         (,,,, uint256 dust,) = raise.accounting();
-        assertEq(dust, 10100);
+        assertEq(dust, 121741);
         assertEq(quote.balanceOf(address(adapter)), 0);
         assertEq(quote.balanceOf(treasury), 0);
         assertEq(raise.buyerTokens(buyer), 0);
