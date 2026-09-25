@@ -145,15 +145,15 @@ contract DeployXLayerTestnetTest is Test {
         assertTrue(vm.parseJsonBool(json, ".testnetTimings"));
         for (uint256 i; i < 2; ++i) {
             V.Parameters memory p = registry.getVersion(i == 0 ? V.ESCROW_LAUNCH : V.BUDGET_LAUNCH, 1).parameters;
-            assertEq(p.stage1Min, 10 minutes);
+            assertEq(p.stage1Min, 5 minutes);
             assertEq(p.stage1Max, 60 days);
-            assertEq(p.stage2Min, 30 minutes);
+            assertEq(p.stage2Min, 10 minutes);
             assertEq(p.stage2Max, 70 days);
             assertEq(p.treasuryVesting, 7 days);
             assertLe(uint256(p.voting) + p.dispute + p.execution, p.stage2Min);
         }
-        assertEq(vm.parseJsonUint(json, ".stage1Min"), 10 minutes);
-        assertEq(vm.parseJsonUint(json, ".stage2Min"), 30 minutes);
+        assertEq(vm.parseJsonUint(json, ".stage1Min"), 5 minutes);
+        assertEq(vm.parseJsonUint(json, ".stage2Min"), 10 minutes);
         assertEq(vm.parseJsonUint(json, ".treasuryVesting"), 7 days);
         assertEq(vm.parseJsonUint(json, ".deploymentBlock"), block.number);
     }

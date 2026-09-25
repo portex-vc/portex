@@ -39,7 +39,7 @@ spend capped at 5% of the market value of the YES tokens.
 
 **Governed timings.** Stage lengths, vote and veto windows and the treasury schedule are curator parameters. Each
 published version pins them, and every launch keeps its version's values. Production defaults are Stage 1 15–60 days
-and Stage 2 35–70 days. The testnet deployment uses short values (Stage 1 from 10 minutes, Stage 2 from 30 minutes)
+and Stage 2 35–70 days. The testnet deployment uses short values (Stage 1 from 5 minutes, Stage 2 from 10 minutes)
 so whole lifecycles are visible in hours.
 
 The normative specifications are [`docs/PORTEX_PROTOCOL.md`](docs/PORTEX_PROTOCOL.md),

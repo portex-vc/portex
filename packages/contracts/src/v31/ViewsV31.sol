@@ -19,7 +19,8 @@ library ViewsV31 {
     }
 
     /// @notice Live exact-cost or protected-exit quote, including the separately burned book inventory (PS §§2–5).
-    function exitQuote(S.State storage s, uint256 id, uint256 q, bool protected, uint256 nonce)
+    /// @dev The nonce argument is kept for interface compatibility; a quote no longer expires when the state moves.
+    function exitQuote(S.State storage s, uint256 id, uint256 q, bool protected, uint256)
         public
         view
         returns (V.ExitQuote memory r)
@@ -31,9 +32,7 @@ library ViewsV31 {
         V.Position storage p = s.positions[id];
         V.Phase phase = s.effectivePhase();
         V.Reason reason = V.Reason.None;
-        if (nonce != s.nonce) {
-            reason = V.Reason.StaleNonce;
-        } else if (phase == V.Phase.Stage3 || phase == V.Phase.Dissolved || (protected && phase != V.Phase.Stage2)) {
+        if (phase == V.Phase.Stage3 || phase == V.Phase.Dissolved || (protected && phase != V.Phase.Stage2)) {
             reason = V.Reason.PhaseClosed;
         } else if (p.owner == address(0) || p.class == V.Class.Buyer || (protected && p.class != V.Class.Backer)) {
             reason = V.Reason.InvalidPosition;
@@ -46,7 +45,11 @@ library ViewsV31 {
         r.result.cost = q == p.tokens ? basis : Math.mulDiv(basis, q, p.tokens);
         r.result.burn = q;
         r.result.payout = r.result.cost;
-        if (phase == V.Phase.Stage1) return r;
+        // Stage 1: the exited allocation returns to the sale inventory for later backers; nothing burns.
+        if (phase == V.Phase.Stage1) {
+            r.result.burn = 0;
+            return r;
+        }
         PS.Book memory b;
         (b, r.depthBurn,) = Market.decay(s.book, s.x0, s.lastT, s.time());
         if (protected) (r.result,, r.bookBurn) = Market.protectedQuote(b, PS.Position(basis, p.tokens), q, s.time());

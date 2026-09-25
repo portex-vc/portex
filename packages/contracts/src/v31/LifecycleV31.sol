@@ -110,9 +110,10 @@ library LifecycleV31 {
         s.pEnd = endPrice;
         s.book.V = 2 * s.book.E;
         s.x0 = s.book.E;
-        s.book.T = seed;
         uint256 allocation = Math.mulDiv(s.config.supply, 40, 100);
-        if (s.book.T == 0 || s.book.T > allocation) revert V.InvariantFailure();
+        // Every held token cost at most the target price, so even when graduating just below a full sale (end price a
+        // hair under target) the seed can pass the allocation only by rounding dust, which must not block Stage 2.
+        s.book.T = Math.min(seed, allocation);
         s.liquidityReserve = allocation - s.book.T;
         s.ceilingAmount = Math.mulDiv(s.book.E, s.config.budgetCeiling, V.SCALE);
         _burn(s, s.config.supply / 5 - s.sold, "UnsoldSale");

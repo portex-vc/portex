@@ -15,6 +15,9 @@ library TypesV31 {
     uint16 internal constant SPEND_CAP_BPS = 500;
     /// @notice Published-template default: the 10% treasury allocation unlocks linearly over five years.
     uint64 internal constant TREASURY_VESTING = 1825 days;
+    /// @notice Stage 1 graduates when backers still hold at least 95% of the sale at the deadline. Exits return
+    /// allocation to the sale, so a strict 100% would let one last-second exit dissolve a full raise.
+    uint16 internal constant GRADUATION_HOLD_BPS = 9500;
 
     enum Phase {
         Stage1,
