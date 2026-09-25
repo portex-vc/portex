@@ -55,6 +55,8 @@ export interface ApiConfig {
   protocolParameters?: ParametersV2 | null;
   /** `quoteFrozen(q)` and `quoteCodeHash(q)` for the config quote and every version's pinned quote. */
   quotes?: Record<string, { frozen: boolean; codeHash: string }>;
+  /** Share of the Stage 1 sale (bps) backers must hold at the deadline to graduate; absent means all of it. */
+  graduationHoldBps?: number;
   stageBounds?: {
     stage1Min: Uint | number;
     stage1Max: Uint | number;

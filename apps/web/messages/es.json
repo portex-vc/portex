@@ -1519,7 +1519,7 @@
         "protectsNote": "Tu depósito permanece en custodia, separado de cualquier otro saldo. En la Etapa 1 no se puede gastar nada: ni comisiones, ni presupuestos, ni transferencias de tokens. Tus tokens son un apunte en el libro del protocolo, así que nadie puede abrir un pool antes del listado.",
         "ends": "Cómo termina",
         "endsList": [
-          "**Graduación** a la Etapa 2 al vencer el plazo, si se vendió toda la asignación de la Etapa 1 (lo que lleva el precio a la valoración objetivo del proyecto, de al menos 100.000 $) y al menos 10 patrocinadores distintos del creador mantienen posiciones.",
+          "**Graduación** a la Etapa 2 al vencer el plazo, si los patrocinadores aún mantienen al menos el 95 % de la asignación de la Etapa 1 y al menos 10 patrocinadores distintos del creador mantienen posiciones. Vender toda la asignación lleva el precio a la valoración objetivo del proyecto (al menos 100.000 $).",
           "**Disolución** en caso contrario, o antes si el creador disuelve el proyecto una vez cumplido el mínimo de la Etapa 1. Entonces cada posición recupera su coste íntegro. Consulta [Disolución](#dissolution).",
           "El analista de IA puede **demorar** la graduación dentro de un margen fijo, pero no puede impedirla. Consulta [El analista de IA](#analyst)."
         ]
@@ -1595,7 +1595,7 @@
         "title": "Salidas",
         "lede": "Hasta el listado, un patrocinador siempre puede irse. Hay dos formas de hacerlo.",
         "cost": "Salida al coste",
-        "costText": "Disponible en la Etapa 1, en la Etapa 2 y mientras el listado está pendiente, para cualquier parte de una posición. Recibes exactamente el coste de los tokens que devuelves (tu coste × tokens devueltos ÷ tokens que tienes), sin comisiones, y esos tokens se queman. Ni las votaciones, ni las demoras de la IA, ni los intentos de listado fallidos la bloquean nunca.",
+        "costText": "Disponible en la Etapa 1, en la Etapa 2 y mientras el listado está pendiente, para cualquier parte de una posición. Recibes exactamente el coste de los tokens que devuelves (tu coste × tokens devueltos ÷ tokens que tienes), sin comisiones. En la Etapa 1 esos tokens vuelven a la venta para otros patrocinadores; después de la Etapa 1 se queman. Ni las votaciones, ni las demoras de la IA, ni los intentos de listado fallidos la bloquean nunca.",
         "protected": "Salida protegida (Etapa 2)",
         "protectedText": "Los patrocinadores también pueden irse con beneficio. El pago es tu coste más la parte de tu ganancia correspondiente al tiempo transcurrido: si el libro valora tus tokens por encima de tu coste, recibes esa ganancia multiplicada por la fracción de la Etapa 2 que ya ha pasado. Al principio de la etapa recibes más o menos tu coste; cerca del final, más o menos el valor de mercado completo.",
         "protectedSource": "El beneficio se paga solo con la reserva real que financiaron los compradores externos, nunca con la custodia de otros patrocinadores. El libro se queda solo con los tokens necesarios para financiar el beneficio; el resto se queman. Sin demanda externa, el beneficio es cero y recibes tu coste.",
