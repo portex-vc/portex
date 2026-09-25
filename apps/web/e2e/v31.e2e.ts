@@ -237,11 +237,24 @@ test("D — Budget proposal, position votes, finalize, execute and proportional 
   await audit(page, "raise-stage2budget-governanceexecuted", true);
 });
 
-async function fillWizard(page: Page) {
+/** A 1×1 PNG for the project image upload. */
+const PNG = Buffer.from(
+  "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==",
+  "base64",
+);
+
+async function fillWizard(page: Page, withImage = false) {
   await page.getByTestId("create-next").click();
   await page.locator("#create-name").fill("Frontier Lab");
   await page.locator("#create-symbol").fill("FRONT");
   await page.locator("#create-description").fill("A launch created through the v3.1 frontend.");
+  if (withImage) {
+    // The Basics step uploads the project image before launch; it is saved with the description afterwards.
+    await page
+      .getByTestId("project-image-input")
+      .setInputFiles({ name: "logo.png", mimeType: "image/png", buffer: PNG });
+    await expect(page.getByTestId("project-image").locator("img")).toBeVisible({ timeout: 20_000 });
+  }
   await page.getByTestId("create-next").click();
   await page.getByTestId("create-next").click();
   await page.getByTestId("create-next").click();
@@ -388,7 +401,7 @@ test("E — listing pending keeps sells/cost exits, lists permissionlessly, then
 test("F — wizard validates and creates an Escrow Launch with signed v2 metadata", async ({ page }) => {
   await page.goto("/create");
   await connect(page, 3);
-  await fillWizard(page);
+  await fillWizard(page, true);
   await expect(page.getByTestId("create-submit")).toBeEnabled();
   await page.getByTestId("create-submit").click();
   await page.getByTestId("confirm-transaction").click();
@@ -402,6 +415,7 @@ test("F — wizard validates and creates an Escrow Launch with signed v2 metadat
   expect(r.phase).toBe("Stage1");
   expect(r.template).toBe("ESCROW_LAUNCH");
   expect(r.description).toBe("A launch created through the v3.1 frontend.");
+  expect(r.profile?.imageUrl, "the image uploaded in the wizard is on the project").toMatch(/\/v2\/uploads\/[\da-f]{64}\.png$/);
   expect(r.config.stage1Length).toBe(String(30 * 86400));
 });
 
