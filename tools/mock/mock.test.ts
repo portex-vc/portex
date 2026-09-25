@@ -15,6 +15,9 @@ import { PERSONA_MIX } from './lib/wallets';
 import { rng } from './lib/random';
 import { BlockNotFoundError, HttpRequestError, InvalidParamsRpcError } from 'viem';
 import { isRangeError, isTransient } from './lib/chain';
+import { countOccupancy, gapFor } from './lib/occupancy';
+import type { ProjectState } from './lib/state';
+import type { RaiseSnapshot } from './lib/protocol';
 
 describe('catalog', () => {
   test('72 valid projects with unique tickers and a mix of launch types', () => {
@@ -79,7 +82,7 @@ describe('config and personas', () => {
     expect(c.steady.dissolveShare).toBe(0.45);
     expect(c.stage2.quietTradesPerHour).toBe(12);
     expect(c.stage3.quietSwapsPerHour).toBe(10);
-    expect(c.occupancy).toMatchObject({ stage1Min: 2, stage2Min: 2, maxGapFillsPerHour: 1 });
+    expect(c.occupancy).toMatchObject({ stage1Min: 2, stage2Min: 2, stage3Min: 1, maxGapFillsPerHour: 1 });
     expect(c.volume.dailyUsdg).toEqual([5000, 40000]);
   });
 
@@ -128,5 +131,83 @@ describe('rpc error classification', () => {
     expect(isRangeError(range) || isRangeError(new Error(String(range.details)))).toBe(true);
     expect(isTransient(new Error('-32602 block range greater than 100 max'))).toBe(false);
     expect(isTransient(new Error('execution reverted: StaleNonce()'))).toBe(false);
+  });
+});
+
+describe('stage occupancy', () => {
+  const now = 1_000_000;
+  const hour = 3600;
+  const targets = { stage1Min: 2, stage2Min: 2, stage3Min: 1 };
+  let n = 0;
+  const project = (
+    phase: string,
+    fate: ProjectState['fate'] = 'graduate',
+    snap: Partial<RaiseSnapshot> = {},
+    extra: Partial<ProjectState> = {},
+  ) => {
+    const p = {
+      ticker: `P${n++}`,
+      raise: `0x${String(n).padStart(40, '0')}`,
+      fate,
+      stage2Length: 2 * hour,
+      lastPhase: phase,
+      ...extra,
+    } as ProjectState;
+    const s = {
+      phase,
+      start: now - hour,
+      stage1End: now + 5 * hour,
+      stage2Start: 0,
+      stage2End: now + 9 * hour,
+      ...snap,
+    } as RaiseSnapshot;
+    return { p, s };
+  };
+  const occ = (items: { p: ProjectState; s: RaiseSnapshot }[]) => {
+    const snaps = new Map(items.map((x) => [x.p, x.s]));
+    return countOccupancy(
+      items.map((x) => x.p),
+      (p) => snaps.get(p),
+      now,
+      hour,
+    );
+  };
+
+  test('an empty Stage 3 with nothing about to list asks for a fast-track graduate first', () => {
+    const full = [project('Stage1'), project('Stage1'), project('Stage2'), project('Stage2')];
+    const o = occ(full);
+    expect(o).toEqual({ stage1: 2, stage2: 2, stage3: 0, listingSoon: 0 });
+    expect(gapFor(o, targets)).toBe('stage3');
+    // Stage 3 gaps outrank Stage 2 gaps.
+    expect(gapFor(occ([project('Stage1')]), targets)).toBe('stage3');
+  });
+
+  test('a project listing within the look-ahead covers the Stage 3 gap', () => {
+    const base = [project('Stage1'), project('Stage1'), project('Stage2'), project('Stage2')];
+    const pending = occ([...base, project('ListingPending', 'graduate', { stage2End: now - 60 })]);
+    expect(pending.listingSoon).toBe(1);
+    expect(gapFor(pending, targets)).toBeNull();
+    const ending = occ([...base, project('Stage2', 'graduate', { stage2End: now + 1800 })]);
+    expect(ending).toMatchObject({ stage2: 2, listingSoon: 1 });
+    expect(gapFor(ending, targets)).toBeNull();
+    // A fast-track graduate (short Stage 1 and Stage 2) counts as listing soon, so no second fast-track follows it.
+    const fast = occ([...base, project('Stage1', 'graduate', { stage1End: now + 600 }, { stage2Length: 1800 })]);
+    expect(fast.listingSoon).toBe(1);
+    expect(gapFor(fast, targets)).toBeNull();
+  });
+
+  test('listed projects satisfy Stage 3; then Stage 2 and Stage 1 gaps follow in that order', () => {
+    const listed = project('Stage3', 'graduate', {}, { done: false });
+    expect(gapFor(occ([listed, project('Stage1'), project('Stage1'), project('Stage2')]), targets)).toBe('stage2');
+    expect(gapFor(occ([listed, project('Stage1'), project('Stage2'), project('Stage2')]), targets)).toBe('stage1');
+    expect(
+      gapFor(occ([listed, project('Stage1'), project('Stage1'), project('Stage2'), project('Stage2')]), targets),
+    ).toBeNull();
+    // Dissolving Stage 1 projects never count toward listing, and raises by others are ignored.
+    const o = occ([
+      project('Stage1', 'dissolve-deadline', { stage1End: now + 600 }),
+      project('Stage3', 'graduate', {}, { external: true }),
+    ]);
+    expect(o).toEqual({ stage1: 0, stage2: 0, stage3: 0, listingSoon: 0 });
   });
 });

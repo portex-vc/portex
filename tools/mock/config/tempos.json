@@ -51,6 +51,7 @@
   "occupancy": {
     "stage1Min": 2,
     "stage2Min": 2,
+    "stage3Min": 1,
     "maxGapFillsPerHour": 1,
     "gapStage1Minutes": [10, 40],
     "gapStage2Minutes": [480, 720],

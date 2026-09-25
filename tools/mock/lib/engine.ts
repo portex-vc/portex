@@ -57,6 +57,7 @@ import {
   type ReviewRecord,
 } from './state';
 import { ofKind, type Persona } from './wallets';
+import { countOccupancy, gapFor, type Gap, type Occupancy } from './occupancy';
 import type { MindService } from '../ai/mind';
 import { raiseFacts, type RaiseFacts } from '../ai/context';
 import { mindFor } from '../ai/personas';
@@ -354,6 +355,10 @@ export class Engine {
       chainTime: new Date(hour * 3600 * 1000).toISOString().slice(0, 13) + ':00',
       ...counts,
       userRaises: users || undefined,
+      // The controller's view: targets, projects listing within the look-ahead, and the gap it would fill next.
+      targets: `s1>=${this.config.occupancy.stage1Min} s2>=${this.config.occupancy.stage2Min} s3>=${this.config.occupancy.stage3Min}`,
+      listingSoon: this.occupancy().listingSoon,
+      gap: gapFor(this.occupancy(), this.config.occupancy) ?? 'none',
       trades: markets.reduce((n, p) => n + p.market.trades, 0),
       swaps: markets.reduce((n, p) => n + p.market.swaps, 0),
     });
@@ -687,13 +692,12 @@ export class Engine {
     const o = this.config.occupancy;
     tempo.nextLaunchAt ??= this.now;
     const occ = this.occupancy();
-    const gap2 = occ.stage2 < o.stage2Min;
-    const gap1 = occ.stage1 < o.stage1Min;
+    const gap = gapFor(occ, o);
     const due = this.now >= tempo.nextLaunchAt;
     const canFill =
       this.now - (tempo.lastGapFillAt ?? 0) >= 3600 / Math.max(1, o.maxGapFillsPerHour) &&
       tempo.nextLaunchAt - this.now > o.gapLeadMinutes * 60;
-    if (!due && !((gap1 || gap2) && canFill)) return;
+    if (!due && !(gap && canFill)) return;
     if (this.activeCount() >= this.config.maxActiveProjects) {
       if (due) {
         log.info('launch-deferred', { active: this.activeCount(), max: this.config.maxActiveProjects });
@@ -704,43 +708,32 @@ export class Engine {
     const batch = due ? Math.max(1, Math.round(this.between(s.launchBatch))) : 1;
     for (let i = 0; i < batch; i++) {
       // The first launch fills the emptiest stage soonest; any others follow the regular cadence.
-      const spec =
-        i === 0 ? this.nextSpec(gap1, gap2, due ? 'cadence' : 'gap') : this.nextSpec(false, false, 'cadence');
+      const spec = i === 0 ? this.nextSpec(gap, due ? 'cadence' : 'gap') : this.nextSpec(null, 'cadence');
       if (!(await this.launch(spec))) break;
-      log.info('launch-plan', { reason: spec.reason, fate: spec.fate, stage1: occ.stage1, stage2: occ.stage2 });
+      log.info('launch-plan', { reason: spec.reason, fate: spec.fate, ...occ });
     }
     if (due) tempo.nextLaunchAt = this.now + Math.round(this.between(s.launchEveryMinutes) * 60);
     else tempo.lastGapFillAt = this.now;
   }
 
-  /**
-   * Mock projects per stage, looking ahead: a project leaving a stage within lookaheadMinutes no longer counts
-   * there, and a graduating Stage 1 project about to open Stage 2 already counts for Stage 2.
-   */
-  occupancy(): { stage1: number; stage2: number } {
-    const ahead = this.now + this.config.occupancy.lookaheadMinutes * 60;
-    let stage1 = 0;
-    let stage2 = 0;
-    for (const p of Object.values(this.state.projects)) {
-      if (p.external || p.done) continue;
-      if (!p.raise) {
-        stage1++; // launch in flight
-        continue;
-      }
-      const s = this.snaps.get(this.key(p));
-      if (!s) continue;
-      if (s.phase === 'Stage1') {
-        if (s.stage1End > ahead) stage1++;
-        else if (p.fate === 'graduate' && s.stage1End + p.stage2Length > ahead) stage2++;
-      } else if (s.phase === 'Stage2' && s.stage2End > ahead) stage2++;
-    }
-    return { stage1, stage2 };
+  /** Catalog projects per stage, with the look-ahead (see lib/occupancy.ts). */
+  occupancy(): Occupancy {
+    return countOccupancy(
+      Object.values(this.state.projects),
+      (p) => this.snaps.get(this.key(p)),
+      this.now,
+      this.config.occupancy.lookaheadMinutes * 60,
+    );
   }
 
-  /** Fate and stage lengths for the next launch: a Stage 2 gap wants a quick Stage 1 and a long Stage 2. */
-  private nextSpec(gap1: boolean, gap2: boolean, why: 'cadence' | 'gap'): LaunchSpec {
+  /**
+   * Fate and stage lengths for the next launch. An empty Stage 3 gets a fast-track graduate (registry-minimum Stage 1
+   * and Stage 2); a Stage 2 gap a graduate with a quick Stage 1 and a long Stage 2; otherwise the regular mix.
+   */
+  private nextSpec(gap: Gap, why: 'cadence' | 'gap'): LaunchSpec {
     const o = this.config.occupancy;
-    if (gap2) {
+    if (gap === 'stage3') return { fate: 'graduate', stage1: 'min', stage2: 'min', reason: `${why}:stage3-gap` };
+    if (gap === 'stage2') {
       return {
         fate: 'graduate',
         stage1Minutes: o.gapStage1Minutes,
@@ -754,7 +747,7 @@ export class Engine {
         ? 'dissolve-builder'
         : 'dissolve-deadline'
       : 'graduate';
-    return { fate, stage1: 'long', stage2: 'long', reason: gap1 ? `${why}:stage1-gap` : why };
+    return { fate, stage1: 'long', stage2: 'long', reason: gap === 'stage1' ? `${why}:stage1-gap` : why };
   }
 
   /** Take the next catalog project and create its raise. Returns false when the catalog is exhausted. */

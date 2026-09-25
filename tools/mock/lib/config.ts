@@ -33,6 +33,8 @@ export interface MockConfig {
   occupancy: {
     stage1Min: number;
     stage2Min: number;
+    /** Stage 3 keeps at least this many listed projects; an empty Stage 3 gets a fast-track graduate. */
+    stage3Min: number;
     maxGapFillsPerHour: number;
     /** A Stage 2 gap is filled by a launch with a short Stage 1 (floored at the registry minimum) and a long Stage 2. */
     gapStage1Minutes: Range;
