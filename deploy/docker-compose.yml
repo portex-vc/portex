@@ -26,6 +26,9 @@ services:
       - "8790"
 
   mock:
+    # Opt-in: only one runner may drive the persona wallets. update.sh enables it when
+    # /opt/portex/mock.enabled exists on the server.
+    profiles: [mock]
     image: portex-server:latest
     depends_on:
       - api
