@@ -19,7 +19,8 @@ services:
       # X Layer's public RPC: 100-block log pages; its nodes can lag the head by a block or two.
       LOG_PAGE: "100"
       CONFIRMATIONS: "3"
-      ANALYST_INTERVAL_MS: "0"
+      # The AI analyst reviews Stage 1 raises every 15 minutes (reports only: no attester key, so no on-chain vetoes).
+      ANALYST_INTERVAL_MS: "900000"
     volumes:
       - /opt/portex/data/api:/data
     expose:
