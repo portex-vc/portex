@@ -32,7 +32,7 @@ export function useCreateRaise(form: FormState) {
   async function save(raise: Address) {
     if (form.description.trim() || form.website.trim() || form.image) {
       const result = await signed.send(
-        t("retryMetadata"),
+        t("saveMetadata"),
         (signer) =>
           api.postMetadata(
             raise,

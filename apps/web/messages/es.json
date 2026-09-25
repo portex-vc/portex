@@ -226,6 +226,14 @@
       "failed": "No completada",
       "cancelled": "Cancelada antes de firmar"
     },
+    "signedStatus": {
+      "review": "Revisa antes de firmar",
+      "signing": "Esperando la firma de tu wallet",
+      "pending": "Firmada · guardando",
+      "confirmed": "Firmada y guardada",
+      "failed": "No se guardó",
+      "cancelled": "Cancelada antes de firmar"
+    },
     "reviewHeading": "Lo que vas a firmar",
     "reviewHint": "A continuación se abre tu wallet. No se envía nada hasta que firmes.",
     "cancelledStep": "Cancelada. No se firmó nada.",
@@ -253,6 +261,7 @@
     "fixErrors": "Corrige los errores de validación.",
     "backend": "Esperando la configuración del protocolo.",
     "noTemplate": "No hay una versión de plantilla disponible.",
+    "saveMetadata": "Guardar los datos del proyecto",
     "retryMetadata": "Reintentar guardar los datos",
     "viewCreated": "Ver la captación creada",
     "typeHint": "Elija cómo puede recibir financiación el equipo. Esta elección determina la plantilla del contrato del lanzamiento.",

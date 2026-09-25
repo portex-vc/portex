@@ -226,6 +226,14 @@
       "failed": "未完成",
       "cancelled": "已在签名前取消"
     },
+    "signedStatus": {
+      "review": "签名前请核对",
+      "signing": "等待钱包签名",
+      "pending": "已签名 · 正在保存",
+      "confirmed": "已签名并保存",
+      "failed": "未保存",
+      "cancelled": "已在签名前取消"
+    },
     "reviewHeading": "你将签署的内容",
     "reviewHint": "接下来会打开你的钱包；在你签名之前不会发送任何内容。",
     "cancelledStep": "已取消，未签署任何内容。",
@@ -253,6 +261,7 @@
     "fixErrors": "请修正校验错误",
     "backend": "正在等待协议配置。",
     "noTemplate": "没有可用的模板版本。",
+    "saveMetadata": "保存项目资料",
     "retryMetadata": "重试保存项目资料",
     "viewCreated": "查看已创建的募资",
     "typeHint": "选择团队获得资金的方式。此选择将确定发行所用的合约模板。",

@@ -407,7 +407,13 @@ test("F — wizard validates and creates an Escrow Launch with signed v2 metadat
   await page.getByTestId("confirm-transaction").click();
   await page.waitForURL(/\/raise\/0x[\da-f]{40}/i);
   const drawer = page.getByTestId("transaction-drawer");
-  if (await drawer.isVisible()) await page.keyboard.press("Escape");
+  if (await drawer.isVisible()) {
+    // Saving the details is a signed message and an API write: the drawer must not claim anything on-chain.
+    await expect(drawer).toContainText("Save project details");
+    await expect(drawer).toContainText("Signed and saved");
+    await expect(drawer).not.toContainText("on-chain");
+    await page.keyboard.press("Escape");
+  }
   await expect(page.getByRole("heading", { name: "Frontier Lab", exact: true })).toBeVisible();
   await audit(page, "create-success", true);
   const address = page.url().match(/0x[\da-f]{40}/i)![0];

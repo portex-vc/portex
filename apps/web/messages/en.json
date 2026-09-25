@@ -226,6 +226,14 @@
       "failed": "Not completed",
       "cancelled": "Cancelled before signing"
     },
+    "signedStatus": {
+      "review": "Review before signing",
+      "signing": "Waiting for your wallet signature",
+      "pending": "Signed · saving",
+      "confirmed": "Signed and saved",
+      "failed": "Not saved",
+      "cancelled": "Cancelled before signing"
+    },
     "reviewHeading": "What you are signing",
     "reviewHint": "Your wallet opens next. Nothing is sent until you sign.",
     "cancelledStep": "Cancelled. Nothing was signed.",
@@ -253,6 +261,7 @@
     "fixErrors": "Fix the validation errors.",
     "backend": "Waiting for protocol configuration.",
     "noTemplate": "No usable template version is available.",
+    "saveMetadata": "Save project details",
     "retryMetadata": "Retry saving project details",
     "viewCreated": "View the created raise",
     "typeHint": "Choose how the team may receive funding. This choice sets the contract template for the launch.",

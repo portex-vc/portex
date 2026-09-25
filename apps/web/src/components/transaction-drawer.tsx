@@ -87,7 +87,7 @@ export function TransactionDrawer() {
                   ) : (
                     <StatusIcon className="size-3.5 shrink-0" aria-hidden />
                   )}
-                  {t(`status.${status}`)}
+                  {t(tx.signedRequest ? `signedStatus.${status === "reverted" ? "failed" : status}` : `status.${status}`)}
                 </Dialog.Description>
               </div>
               <Dialog.Close asChild>
