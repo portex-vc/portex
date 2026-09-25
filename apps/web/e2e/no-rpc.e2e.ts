@@ -6,8 +6,10 @@ import { ANVIL_PORT, API_URL, RPC_URL, TESTNET_WEB_URL } from "./env";
 import { actor, api, client, connectAs, indexed } from "./helpers";
 
 /**
- * Founder rule: the browser never talks to an RPC endpoint. Displayed data comes from the Portex API;
- * simulate, gas estimate and receipt waits go through the connected wallet's own EIP-1193 provider.
+ * Founder rule: the browser never exposes a keyed RPC endpoint, and displayed data comes from the Portex API. While
+ * browsing, the page makes no RPC request at all. While a transaction is in flight, the testnet build sends its
+ * simulate, gas-estimate and receipt calls to X Layer's keyless public RPC (a browser wallet's own node connection
+ * can stall them without showing a prompt); the local build hands them to its burner wallet.
  *
  * Every request of the browser context is recorded while every route is visited (disconnected, and connected as a
  * backer and as the builder), and while a transaction is signed. A request counts as RPC when its body is JSON-RPC
@@ -29,6 +31,17 @@ const RPC_HOSTS = [
   `localhost:${ANVIL_PORT}`,
 ];
 const LOCAL_WALLET_TAG = "source=portex-local-wallet";
+/** X Layer's keyless public RPCs, and the only calls the testnet build may send them while a transaction is in flight. */
+const PUBLIC_RPC_HOSTS = ["testrpc.xlayer.tech", "xlayertestrpc.okx.com", "rpc.xlayer.tech", "xlayerrpc.okx.com"];
+const TX_METHODS = [
+  "eth_call",
+  "eth_estimateGas",
+  "eth_chainId",
+  "eth_blockNumber",
+  "eth_getBlockByNumber",
+  "eth_getTransactionReceipt",
+  "eth_getTransactionByHash",
+];
 
 interface RpcHit {
   route: string;
@@ -248,6 +261,28 @@ test("No RPC — testnet build: every route and a signed transaction make zero R
     });
   });
 
+  // X Layer's keyless public RPC, played here by the local node the test runs on.
+  for (const host of PUBLIC_RPC_HOSTS) {
+    await context.route(`https://${host}/**`, async (route) => {
+      const request = route.request();
+      const cors = {
+        "access-control-allow-origin": "*",
+        "access-control-allow-headers": "*",
+        "access-control-allow-methods": "POST, OPTIONS",
+      };
+      if (request.method() === "OPTIONS") return route.fulfill({ status: 204, headers: cors });
+      const res = await fetch(RPC_URL, {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: request.postData() ?? "",
+      });
+      await route.fulfill({
+        status: res.status,
+        headers: { ...cors, "content-type": "application/json" },
+        body: await res.text(),
+      });
+    });
+  }
   const recorder = recordRpc(context);
   // A fresh account (never used by the other specs), unlocked on the node so the stand-in wallet can send for it.
   const user = actor(16).address;
@@ -267,16 +302,21 @@ test("No RPC — testnet build: every route and a signed transaction make zero R
   await visitAll(page, TESTNET_WEB_URL, routes, recorder);
   expect(describe(recorder.hits), "testnet, connected").toEqual([]);
 
-  // The test USDG faucet: simulate, estimate, send and receipt, all through the wallet.
+  // The test USDG faucet: the checks go to the keyless public RPC, and the wallet only signs and sends.
   recorder.at(`${TESTNET_WEB_URL}/portfolio faucet`);
   await page.goto(`${TESTNET_WEB_URL}/portfolio`);
   await page.getByTestId("test-usdg-faucet").getByRole("button").click();
   await page.getByTestId("confirm-transaction").click();
   await expect(page.getByTestId("transaction-drawer")).toHaveAttribute("data-status", "confirmed", { timeout: 45_000 });
-  expect(describe(recorder.hits), "testnet, transaction").toEqual([]);
+  expect(recorder.hits.length, "the transaction's checks reached the public RPC").toBeGreaterThan(0);
+  for (const hit of recorder.hits) {
+    const url = new URL(hit.url);
+    expect(PUBLIC_RPC_HOSTS, `${hit.url} is a keyless public X Layer RPC`).toContain(url.host);
+    expect(`${url.pathname}${url.search}`, `${hit.url} carries no key`).toMatch(/^\/(terigon)?$/);
+    for (const method of hit.methods) expect(TX_METHODS, `${method} is a transaction-time call`).toContain(method);
+  }
   const calls = await page.evaluate(() => (window as unknown as { walletCalls: string[] }).walletCalls);
-  for (const method of ["eth_call", "eth_estimateGas", "eth_sendTransaction", "eth_getTransactionReceipt"])
-    expect(calls, `wallet handled ${method}`).toContain(method);
+  expect(calls, "wallet handled eth_sendTransaction").toContain("eth_sendTransaction");
   await page.keyboard.press("Escape");
   // The header balance is the API's indexed balance.
   await indexed();

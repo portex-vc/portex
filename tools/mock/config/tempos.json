@@ -36,7 +36,7 @@
   },
   "bootstrap": {
     "launches": 5,
-    "spacingMinutes": 7,
+    "spacingMinutes": 2,
     "fates": ["graduate", "graduate", "dissolve-builder", "graduate", "graduate"],
     "tradeMultiplier": 2
   },

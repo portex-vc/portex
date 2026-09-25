@@ -114,13 +114,13 @@ The live deployment is recorded in
 
 | Contract | Address |
 |---|---|
-| Registry | `0xA4Bf6891695208Bf7509028eF7FB1290B3c87171` |
-| Raise factory | `0x8A8E443c04579eec0427C05aE1f4779A60887bF6` |
-| Rollover router | `0x83812Fc1C1A341e21C0B48be8Af67Bd2aaa02f72` |
-| Swap router | `0xd8A83B1A9D4270437ca66a2F7a7F38Fc93A206e1` |
-| Uniswap v4 adapter | `0xA2B2Cc3687846AAecf01366D05224b22cA132b53` |
-| Uniswap v4 PoolManager | `0xEa2Be594B450a8Fc8D0CA89E78011369C9F5e61F` |
-| TEST USDG | `0xE35e546a090B8844bd05335F0A5D7f21ED4FEaa3` |
+| Registry | `0x0FED47910548F642Bb72606ffE6Bd57B7bAD2809` |
+| Raise factory | `0x581541C43D7F646CC20A04b8eC28FCD18401d4Ab` |
+| Rollover router | `0x077F9939Da328bc8d709A7c8Ec59C7340872cBD0` |
+| Swap router | `0xC3F8721ad7ff715B0d98466ab475466558c3EEEB` |
+| Uniswap v4 adapter | `0x65bA94b064360F7250ACa39778646cBf4eFec45f` |
+| Uniswap v4 PoolManager | `0xea0fB8EDDb73be085de3774ace89098aD2b4dBB5` |
+| TEST USDG | `0x5D33B6b2e5327b0Cd4A32dF66226DD0A90525020` |
 
 There is no official Uniswap v4 deployment on X Layer testnet, so the deploy script deploys its own PoolManager
 from the pinned, unmodified v4-core v4.0.0 bytecode. A test proves it is byte-identical to the upstream build.

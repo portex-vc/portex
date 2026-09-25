@@ -23,7 +23,7 @@ if [[ "$PORTEX_TIMINGS" != 'testnet' && "$PORTEX_TIMINGS" != 'production' ]]; th
   exit 1
 fi
 if [[ "$PORTEX_TIMINGS" == 'testnet' ]]; then
-  echo 'Governed timings: testnet profile (Stage 1 from 10 minutes, Stage 2 from 30 minutes; 10-minute votes).'
+  echo 'Governed timings: testnet profile (Stage 1 from 5 minutes, Stage 2 from 10 minutes; 3-minute votes).'
 fi
 
 PORTEX_CONTRACTS_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/../packages/contracts" && pwd)"
