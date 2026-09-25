@@ -76,7 +76,10 @@ const TAIL = OPEN[OPEN.length - 1];
 // One curve from the first backer to the open market, cut where its styling changes.
 const LINE: Pt[] = [...sample(0, B1, stage1, 12), ...sample(B1, B2, (x) => book(stage2(x))).slice(1), ...OPEN];
 const [VALUE, MARKET_PATH] = smooth(LINE, [LINE.length - OPEN.length - 1]);
-const [EXIT] = smooth([[BUY, COST], [B1, COST], ...sample(B1, B2, (x) => exitAt(stage2(x)), 16).slice(1)]);
+// Exit value: the protected line through Stage 1, lifting off in Stage 2; from listing on it is the price itself,
+// so Stage 3 reuses the price path exactly and the two lines overlap.
+const [EXIT_PROTECTED] = smooth([[BUY, COST], [B1, COST], ...sample(B1, B2, (x) => exitAt(stage2(x)), 16).slice(1)]);
+const EXIT = `${EXIT_PROTECTED} ${MARKET_PATH}`;
 
 export function MechanismVisual() {
   const t = useTranslations();
@@ -119,67 +122,46 @@ export function MechanismVisual() {
               <stop offset="100%" className={styles.floorBottom} />
             </linearGradient>
             <clipPath id={`${id}-reveal`}>
-              <rect x={0} y={-20} width={W} height={H + 40} className={styles.reveal} />
+              <rect x={-6} y={-20} width={W + 12} height={H + 40} className={styles.sweep} />
             </clipPath>
           </defs>
 
-          <rect x={B2} y={0} width={W - B2} height={H} fill={`url(#${id}-hatch)`} className={styles.fade} />
+          {/* the frame: stage boundaries and baseline */}
           {[B1, B2].map((x) => (
             <line key={x} x1={x} x2={x} y1={0} y2={H} className="stroke-fg/[0.08]" strokeWidth={1} />
           ))}
           <line x1={0} x2={W} y1={H - 0.5} y2={H - 0.5} className="stroke-fg/[0.08]" strokeWidth={1} />
 
-          {/* protected: this backer's cost, from the buy-in until listing */}
-          <rect
-            x={BUY}
-            y={COST}
-            width={B2 - BUY}
-            height={H - COST - 1}
-            fill={`url(#${id}-floor)`}
-            className={styles.fade}
-          />
-          <line
-            x1={BUY}
-            x2={B2}
-            y1={COST}
-            y2={COST}
-            pathLength={1}
-            className={`stroke-protected ${styles.drawFloor}`}
-            strokeWidth={2.25}
-          />
-          <circle cx={B2} cy={COST} r={4} className={`fill-bg stroke-protected ${styles.popEnd}`} strokeWidth={2} />
-
-          {/* the price, from the first backer on; from the buy-in it is the market value of this backer's tokens */}
-          <path
-            d={VALUE}
-            pathLength={1}
-            fill="none"
-            className={`stroke-fg ${styles.drawValue}`}
-            strokeWidth={1.75}
-            strokeLinejoin="round"
-          />
-          <path
-            d={MARKET_PATH}
-            pathLength={1}
-            fill="none"
-            className={`stroke-fg ${styles.drawMarket}`}
-            strokeWidth={1.75}
-            strokeLinejoin="round"
-          />
-
-          {/* exit value: on the protected line through Stage 1, lifting off in Stage 2, the market at listing */}
+          {/* Everything that happens over time is revealed by one left-to-right sweep, which stops at the
+              buy-in and at listing: nothing exists to the right of the moment being drawn. */}
           <g clipPath={`url(#${id}-reveal)`}>
+            <rect x={B2} y={0} width={W - B2} height={H} fill={`url(#${id}-hatch)`} />
+            {/* protected: this backer's cost, from the buy-in until listing */}
+            <rect x={BUY} y={COST} width={B2 - BUY} height={H - COST - 1} fill={`url(#${id}-floor)`} />
+            <line
+              x1={BUY}
+              x2={B2}
+              y1={COST}
+              y2={COST}
+              className={`stroke-protected ${styles.glow}`}
+              strokeWidth={2.25}
+            />
+            {/* the price, from the first backer on; from the buy-in it is the market value of this backer's tokens */}
+            <path d={VALUE} fill="none" className="stroke-fg" strokeWidth={1.75} strokeLinejoin="round" />
+            <path d={MARKET_PATH} fill="none" className="stroke-fg" strokeWidth={1.75} strokeLinejoin="round" />
+            {/* what this backer can exit with */}
             <path
               d={EXIT}
               fill="none"
-              className="stroke-fg"
-              strokeOpacity={0.8}
-              strokeWidth={1.5}
+              className="stroke-info"
+              strokeWidth={1.6}
               strokeDasharray="4 4"
               strokeLinecap="round"
+              strokeLinejoin="round"
             />
           </g>
-          <circle cx={B2} cy={MARKET} r={3} className={`fill-fg ${styles.popMeet}`} />
+          <circle cx={B2} cy={COST} r={4} className={`fill-bg stroke-protected ${styles.popListing}`} strokeWidth={2} />
+          <circle cx={B2} cy={MARKET} r={3} className={`fill-fg ${styles.popListing}`} />
           <circle cx={TAIL[0]} cy={TAIL[1]} r={3} className={`fill-fg ${styles.popTail}`} />
 
           {/* the buy-in */}
@@ -204,16 +186,7 @@ export function MechanismVisual() {
         </span>
         <span className="inline-flex items-center gap-2">
           <svg width="16" height="2" aria-hidden className="overflow-visible">
-            <line
-              x1="0"
-              x2="16"
-              y1="1"
-              y2="1"
-              className="stroke-fg"
-              strokeOpacity={0.8}
-              strokeWidth={1.5}
-              strokeDasharray="4 4"
-            />
+            <line x1="0" x2="16" y1="1" y2="1" className="stroke-info" strokeWidth={1.6} strokeDasharray="4 4" />
           </svg>
           {t("home.visual.exit")}
         </span>
