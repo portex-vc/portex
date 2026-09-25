@@ -60,6 +60,8 @@ export function computeMetrics(input: ScorerInput, burstWindowSec = BURST_WINDOW
   }
   let clusterShareBps = 0; let clusterFunder: string | null = null; let clusterSize = 0;
   for (const [funder, c] of byFunder) {
+    // One wallet with its own funder is not a cluster; its weight is already the largest-backer share.
+    if (c.wallets < 2) continue;
     const s = share(c.principal);
     if (s > clusterShareBps) { clusterShareBps = s; clusterFunder = funder; clusterSize = c.wallets; }
   }

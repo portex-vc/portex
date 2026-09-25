@@ -124,7 +124,7 @@ describe('heuristic scorer', () => {
     expect(r.metrics.clusterSize).toBe(20);
     expect(r.veto).toBe(true);
     const crit = r.findings.filter((f) => f.severity === 'critical').map((f) => f.title);
-    expect(crit).toContain('Funding-source clustering');
+    expect(crit).toContain('Several wallets funded by one address');
     expect(r.riskScoreBps).toBeGreaterThanOrEqual(HEURISTIC_CONFIG.cluster.critWeight);
   });
 
@@ -133,7 +133,7 @@ describe('heuristic scorer', () => {
     expect(r.metrics.builderLinkedShareBps).toBe(6000);
     expect(r.veto).toBe(true);
     const titles = r.findings.map((f) => f.title);
-    expect(titles).toContain('Builder-linked capital');
+    expect(titles).toContain('Money from wallets the builder funded');
   });
 
   test('metrics: herfindahl and burstiness on synthetic data', () => {
@@ -164,7 +164,7 @@ describe('heuristic scorer', () => {
     }
     const r = scoreHeuristic(input);
     expect(r.metrics.duplicateFeedbackShareBps).toBeGreaterThanOrEqual(8000);
-    expect(r.findings.map((f) => f.title)).toContain('Duplicate feedback');
+    expect(r.findings.map((f) => f.title)).toContain('Copied feedback');
   });
 
   test('3-backer honest demo: low risk, no critical findings, no veto', () => {
@@ -174,7 +174,7 @@ describe('heuristic scorer', () => {
     expect(r.findings.filter((f) => f.severity === 'warn')).toHaveLength(0);
     expect(r.riskScoreBps).toBeLessThan(1000);
     // concentration is explained, not penalised
-    const info = r.findings.find((f) => f.title === 'Too few backers to assess concentration');
+    const info = r.findings.find((f) => f.title === 'Too early to judge how spread out the money is');
     expect(info?.severity).toBe('info');
     // no feedback this early is informational, not a warning
     expect(r.findings.find((f) => f.title === 'No feedback yet')?.severity).toBe('info');
@@ -212,7 +212,7 @@ describe('heuristic scorer', () => {
       input.feedback = [{ author: addr(), rating: 4, text: 'works', isBacker: true, createdAt: 1_800_000_100 }];
       const r = scoreHeuristic(input);
       const concentration = r.findings.filter((f) =>
-        ['Single-backer dominance', 'Top-5 concentration', 'High Herfindahl index'].includes(f.title));
+        ['One backer holds a large share', 'Five backers hold most of the money', 'Money concentrated in a few wallets'].includes(f.title));
       expect(concentration).toHaveLength(0);
     }
   });

@@ -8,7 +8,8 @@ import { computeMetrics } from '../analyst/metrics.ts';
 import { panelVerdict, reportHashOf, reportPreimage } from '../analyst/panel.ts';
 import type { Report, Scorer, ScorerInput, ScorerResult } from '../analyst/types.ts';
 import { RaiseCoreAbi } from '../generated/v31-abis.ts';
-import { getRaiseV31 } from './db.ts';
+import { getRaiseV31, listRaisesV31 } from './db.ts';
+import { getDeploymentV31 } from './deployment.ts';
 import { historySynced, stateRow, stateRows } from './state-db.ts';
 
 /** The analysis inputs are not indexed yet; retry shortly (the API answers 503 INDEXING). */
@@ -39,13 +40,15 @@ export class AnalystV31 {
     const events = this.db.query("SELECT args,timestamp FROM v31_events WHERE raiseAddr=? AND name='Deposited' ORDER BY blockNumber,logIndex")
       .all(row.address) as { args: string; timestamp: number }[];
     const feedback = this.db.query('SELECT author,rating,text,isBacker,createdAt FROM v31_feedback WHERE raiseAddr=?').all(row.address) as ScorerInput['feedback'];
+    const protocol = protocolAddresses(this.db, this.config.chainId);
     const funding = backers.map((b) => {
       const logs = this.db.query("SELECT args FROM v31_events WHERE contract='quote' AND name='Transfer' AND address=? AND lower(json_extract(args,'$.to'))=?")
         .all(cfg.quote, b.user.toLowerCase()) as { args: string }[];
       const sources = new Map<string, bigint>();
       for (const log of logs) {
         const { from, value } = JSON.parse(log.args);
-        if (!from || value === undefined || /^0x0{40}$/i.test(from)) continue;
+        // Mints and protocol payouts (exits, claims, pool swaps, rollovers) are not anyone funding the wallet.
+        if (!from || value === undefined || /^0x0{40}$/i.test(from) || protocol.has(from.toLowerCase())) continue;
         sources.set(from, (sources.get(from) ?? 0n) + BigInt(value));
       }
       const biggest = [...sources].sort((a, b) => a[1] > b[1] ? -1 : 1)[0];
@@ -86,4 +89,28 @@ export class AnalystV31 {
       JSON.stringify(core.findings), JSON.stringify(metrics), JSON.stringify(core.panel), reportHash, uri, postedTx);
     return { ...core, reportHash, uri, postedTx, builderResponse: null };
   }
+}
+
+/**
+ * Contracts whose USDG transfers are protocol payouts, never a person funding a wallet: every raise and its modules
+ * (token, governor, vesting, claims, adapter, treasury) and the deployment's contracts (Uniswap PoolManager, swap and
+ * rollover routers, factory, registry, hooks). A seller in the pool gets USDG from the PoolManager; counting that as
+ * a common funder produced a false "one actor behind many wallets" finding.
+ */
+export function protocolAddresses(db: DB, chainId: number): Set<string> {
+  const out = new Set<string>();
+  const add = (value: unknown) => {
+    if (typeof value === 'string' && /^0x[0-9a-fA-F]{40}$/.test(value)) out.add(value.toLowerCase());
+  };
+  const dep = getDeploymentV31(chainId);
+  for (const [key, value] of Object.entries(dep ?? {})) if (!/deployer|attester|council|curator|owner|admin/i.test(key)) add(value);
+  for (const r of listRaisesV31(db)) {
+    for (const value of [r.address, r.token, r.governor, r.vesting, r.claims, r.adapter]) add(value);
+    try {
+      add((JSON.parse(r.config || '{}') as { treasury?: string }).treasury);
+    } catch {
+      /* A raise without a parsed config still has its module addresses above. */
+    }
+  }
+  return out;
 }

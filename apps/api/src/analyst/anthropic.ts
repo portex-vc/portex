@@ -63,7 +63,9 @@ export function usdgFromUnits(units: string | bigint): string {
 export function modelMetrics(metrics: Metrics | undefined): Record<string, unknown> {
   if (!metrics) return {};
   const { totalPrincipal, ...rest } = metrics;
-  return { ...rest, totalPrincipalUsdg: usdgFromUnits(totalPrincipal) };
+  // Rounded to the cent (half up): a backer reads 9,846.96 USDG, not 9,846.963217.
+  const cents = (BigInt(totalPrincipal) + 5_000n) / 10_000n;
+  return { ...rest, totalPrincipalUsdg: usdgFromUnits(cents * 10_000n) };
 }
 
 /** The user message for one scoring call: metrics with amounts in whole USDG, then the untrusted feedback. */

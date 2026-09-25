@@ -291,7 +291,7 @@ test('integration: deploy, index, clustered deposits, analyze -> on-chain veto',
     expect(report.veto).toBe(true);
     expect(report.riskScoreBps).toBeGreaterThanOrEqual(5000);
     expect(report.metrics.clusterShareBps).toBe(10_000);
-    expect(report.findings.some((f) => f.title === 'Funding-source clustering' && f.severity === 'critical')).toBe(true);
+    expect(report.findings.some((f) => f.title === 'Several wallets funded by one address' && f.severity === 'critical')).toBe(true);
     expect(report.panel.length).toBeGreaterThanOrEqual(1);
     expect(report.reportHash).toMatch(/^0x[0-9a-f]{64}$/);
     expect(report.uri).toBe(`${API}/v1/raises/${raise}/reports#${report.reportHash}`);

@@ -62,6 +62,8 @@ describe('anthropic scorer output validation (hostile-input hardening)', () => {
     const shown = modelMetrics(metrics);
     expect(shown.totalPrincipalUsdg).toBe('4500');
     expect('totalPrincipal' in shown).toBe(false);
+    // Rounded to the cent for backers: 9,846.963217 USDG reads as 9846.96.
+    expect(modelMetrics({ ...metrics, totalPrincipal: '9846963217' }).totalPrincipalUsdg).toBe('9846.96');
     const message = buildUserMessage({ builder: '0xb', backers: [], feedback: [], metrics } as never);
     expect(message).toContain('"totalPrincipalUsdg": "4500"');
     expect(message).not.toContain('4500000000');

@@ -45,6 +45,9 @@ export const HEURISTIC_CONFIG = {
 const PRODUCTION_MIN_INCUBATION_SEC = 30 * 86_400;
 
 const pct = (bps: number) => `${(bps / 100).toFixed(1)}%`;
+/** 0x1234…abcd, as the report shows addresses to backers. */
+const short = (address: string) => `${address.slice(0, 6)}…${address.slice(-4)}`;
+const backersText = (n: number) => `${n} backer${n === 1 ? '' : 's'}`;
 
 function threshold(
   findings: Finding[], value: number, cfg: { warn: number; crit: number; warnWeight: number; critWeight: number },
@@ -82,48 +85,48 @@ export function scoreHeuristic(input: ScorerInput, cfg = HEURISTIC_CONFIG): Scor
   let score = 0;
 
   if (m.backerCount === 0) {
-    findings.push({ severity: 'info', title: 'No backers yet', detail: 'The raise has no principal deposited.' });
+    findings.push({ severity: 'info', title: 'No backers yet', detail: 'Nobody has deposited in this raise yet.' });
     score += 500;
   } else if (m.backerCount < cfg.fewBackers.count) {
-    findings.push({ severity: 'warn', title: 'Very few backers', detail: `Only ${m.backerCount} backer(s); concentration metrics are fragile at this sample size.` });
+    findings.push({ severity: 'warn', title: 'Very few backers', detail: `Only ${backersText(m.backerCount)} so far, so these figures can change quickly.` });
     score += cfg.fewBackers.weight;
   }
 
   // ---- concentration: only when the sample size makes the metric meaningful ------------
   if (m.backerCount > 0 && m.backerCount < cfg.minBackersForConcentration) {
     findings.push({
-      severity: 'info', title: 'Too few backers to assess concentration',
-      detail: `Only ${m.backerCount} backer(s) — with fewer than ${cfg.minBackersForConcentration}, the top-5 share is trivially 100% and the Herfindahl index says nothing.`,
+      severity: 'info', title: 'Too early to judge how spread out the money is',
+      detail: `With only ${backersText(m.backerCount)}, it is too early to tell whether the money is spread across many people.`,
     });
   } else if (m.backerCount >= cfg.minBackersForConcentration) {
     if (equalSplitBaseline('top1', m.backerCount) < cfg.top1Share.warn) {
-      score += threshold(findings, m.top1ShareBps, cfg.top1Share, 'Single-backer dominance',
-        (v) => `The largest backer holds ${pct(v)} of principal.`);
+      score += threshold(findings, m.top1ShareBps, cfg.top1Share, 'One backer holds a large share',
+        (v) => `The largest backer put in ${pct(v)} of the money.`);
     }
     if (equalSplitBaseline('top5', m.backerCount) < cfg.top5Share.warn) {
-      score += threshold(findings, m.top5ShareBps, cfg.top5Share, 'Top-5 concentration',
-        (v) => `The five largest backers hold ${pct(v)} of principal.`);
+      score += threshold(findings, m.top5ShareBps, cfg.top5Share, 'Five backers hold most of the money',
+        (v) => `The five largest backers put in ${pct(v)} of the money.`);
     }
     if (equalSplitBaseline('hhi', m.backerCount) < cfg.herfindahl.warn) {
-      score += threshold(findings, m.herfindahlBps, cfg.herfindahl, 'High Herfindahl index',
-        (v) => `Herfindahl concentration index is ${pct(v)} (10k = one holder).`);
+      score += threshold(findings, m.herfindahlBps, cfg.herfindahl, 'Money concentrated in a few wallets',
+        (v) => `Most of the money sits with a few backers (concentration ${pct(v)}, where 100% would be a single backer).`);
     }
   }
 
   // ---- funding-source clustering / builder self-dealing (the veto drivers) -------------
-  score += threshold(findings, m.clusterShareBps, cfg.cluster, 'Funding-source clustering',
-    (v) => `${pct(v)} of principal sits in ${m.clusterSize} wallets whose quote tokens came from a single sender${m.clusterFunder ? ` (${m.clusterFunder})` : ''} — consistent with one actor behind many wallets.`);
-  score += threshold(findings, m.builderLinkedShareBps, cfg.builderLinked, 'Builder-linked capital',
-    (v) => `${pct(v)} of principal was deposited by wallets funded by the builder — the builder may be backing their own raise.`);
+  score += threshold(findings, m.clusterShareBps, cfg.cluster, 'Several wallets funded by one address',
+    (v) => `${m.clusterSize} wallets holding ${pct(v)} of the money got their USDG from the same address${m.clusterFunder ? ` (${short(m.clusterFunder)})` : ''}. One person may be behind several wallets.`);
+  score += threshold(findings, m.builderLinkedShareBps, cfg.builderLinked, 'Money from wallets the builder funded',
+    (v) => `${pct(v)} of the money came from wallets the builder funded, so the builder may be backing their own project.`);
 
   // ---- deposit-time burstiness (raise-relative window, meaningful sample only) ---------
   if (input.deposits.length >= cfg.burstMinDeposits) {
-    score += threshold(findings, m.burstShareBps, cfg.burst, 'Deposit burst',
-      (v) => `${pct(v)} of all deposited principal arrived within a single ${m.burstWindowSec}s window (${Math.round(m.burstWindowSec / 60)} min = 1/${cfg.burstWindowFraction} of this raise's minimum incubation) — coordinated funding pattern.`);
+    score += threshold(findings, m.burstShareBps, cfg.burst, 'Money arrived in one burst',
+      (v) => `${pct(v)} of the money arrived within ${Math.max(1, Math.round(m.burstWindowSec / 60))} minutes, which can mean coordinated funding.`);
   }
 
-  score += threshold(findings, m.duplicateFeedbackShareBps, cfg.duplicateFeedback, 'Duplicate feedback',
-    (v) => `${pct(v)} of feedback texts are near-duplicates — astroturfing signal.`);
+  score += threshold(findings, m.duplicateFeedbackShareBps, cfg.duplicateFeedback, 'Copied feedback',
+    (v) => `${pct(v)} of the feedback texts are near-copies of each other, a sign of fake reviews.`);
 
   // ---- feedback presence: informational early, warning only once incubation ran --------
   if (m.backerCount > 0 && m.feedbackCount === 0) {
@@ -143,12 +146,12 @@ export function scoreHeuristic(input: ScorerInput, cfg = HEURISTIC_CONFIG): Scor
     m.builderLinkedShareBps >= cfg.vetoBuilderLinkedBps;
 
   const rationale = veto
-    ? 'Veto: capital concentration indicates a single actor behind most of the raise (see critical findings). Stage 1 principal can always be taken back at cost; the veto only delays graduation.'
+    ? 'Delay recommended: one person appears to be behind most of the money (see the findings). Backers can still take their money back at cost; a delay only postpones graduation.'
     : findings.some((f) => f.severity === 'critical')
-      ? 'Elevated risk from concentration/feedback signals, below the veto threshold.'
+      ? 'Serious warning signs, but not enough to recommend a delay.'
       : findings.length > 0
-        ? 'Moderate risk signals detected; distribution and feedback look broadly organic.'
-        : 'No suspicious concentration, funding clustering, or feedback anomalies detected.';
+        ? 'A few things to watch; the backing and feedback look broadly genuine.'
+        : 'Nothing unusual: the money is spread out, no wallets share a funder, and no feedback looks copied.';
 
   return {
     riskScoreBps: Math.min(10_000, score),
