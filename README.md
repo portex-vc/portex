@@ -172,7 +172,7 @@ overrides any value in `tools/mock/config/tempos.json`.
 |---|---|---|
 | Web app | Netlify (`apps/web/netlify.toml`) | `Deploy web` workflow: after CI passes on `main`, builds `@portex/web` and publishes it. |
 | API, database and activity runner | DigitalOcean droplet, Docker Compose (`deploy/`) | `Deploy server` workflow: after CI passes on `main`, the commit is shipped to the server, which unpacks it as a new release and rebuilds (`deploy/update.sh`). The SQLite database, uploads and runner state live on the droplet's data volume. |
-| Domains | Cloudflare (`portex.vc`) | `testnet.portex.vc` → Netlify, `testnet-api.portex.vc` → the droplet, both proxied. Both origins accept traffic only from Cloudflare's IP ranges: a Netlify firewall rule set on the site, and an allowlist in Caddy on the droplet, which serves a Cloudflare Origin CA certificate. |
+| Domains | Cloudflare (`portex.vc`) | `testnet.portex.vc` → Netlify, `testnet-api.portex.vc` → the droplet, both proxied. The API is reached through a Cloudflare Tunnel (the droplet dials out to Cloudflare, so no inbound port serves it); the Netlify site accepts only Cloudflare's IP ranges through a firewall rule set. |
 
 The workflows need these repository secrets: `DEPLOY_SSH_KEY`, `DEPLOY_HOST`, `DEPLOY_KNOWN_HOSTS`,
 `NETLIFY_AUTH_TOKEN` and `NETLIFY_SITE_ID`. Server secrets (funder key, model keys, Pinata) live only in the server's
