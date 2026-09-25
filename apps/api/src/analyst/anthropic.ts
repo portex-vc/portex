@@ -11,7 +11,9 @@ Respond with STRICT JSON only — no markdown, no prose before or after — matc
 
 Veto means "delay this raise's graduation" — it never moves funds and a human council can clear it. Recommend veto only for strong evidence of manipulation (e.g. one actor funding most wallets, builder self-funding at scale).
 
-The rationale and findings are shown to backers on the project page. Write them for a first-time backer: plain, short sentences; percentages, not basis points (6025 Bps is 60.25%); never quote metric or variable names (no "clusterShareBps=…", "herfindahlBps", "burstWindowSec"); shorten addresses as 0x1234…abcd. Say what the pattern is and why it matters.`;
+The rationale and findings are shown to backers on the project page. Write them for a first-time backer: plain, short sentences; percentages, not basis points (6025 Bps is 60.25%); never quote metric or variable names (no "clusterShareBps=…", "herfindahlBps", "burstWindowSec"); shorten addresses as 0x1234…abcd. Say what the pattern is and why it matters.
+
+USDG amounts in the metrics are already in whole USDG: totalPrincipalUsdg "4500" means 4,500 USDG. Write amounts exactly as given, with thousands separators and the unit (4,500 USDG); never rescale them and never abbreviate them as K, M or B.`;
 
 function clampInt(v: unknown, min: number, max: number, dflt: number): number {
   const n = typeof v === 'number' ? v : Number(v);
@@ -44,6 +46,45 @@ export function validateModelOutput(raw: unknown): ScorerResult {
   };
 }
 
+const USDG_DECIMALS = 6n;
+
+/** A base-unit USDG amount (6 decimals on chain) as a whole-USDG decimal string: 4500000000 → "4500". */
+export function usdgFromUnits(units: string | bigint): string {
+  const value = BigInt(units);
+  const scale = 10n ** USDG_DECIMALS;
+  const fraction = (value % scale).toString().padStart(Number(USDG_DECIMALS), '0').replace(/0+$/, '');
+  return fraction ? `${value / scale}.${fraction}` : (value / scale).toString();
+}
+
+/**
+ * The metrics as the model reads them. Stored metrics keep base units like every other API amount, but a model
+ * handed 4500000000 wrote "4.5B principal" for 4,500 USDG, so amounts go over in whole USDG under a unit-bearing name.
+ */
+export function modelMetrics(metrics: Metrics | undefined): Record<string, unknown> {
+  if (!metrics) return {};
+  const { totalPrincipal, ...rest } = metrics;
+  return { ...rest, totalPrincipalUsdg: usdgFromUnits(totalPrincipal) };
+}
+
+/** The user message for one scoring call: metrics with amounts in whole USDG, then the untrusted feedback. */
+export function buildUserMessage(input: ScorerInput & { metrics?: Metrics }): string {
+  const feedbackBlock = input.feedback
+    .slice(0, 50)
+    .map((f, i) => `#${i + 1} [rating ${f.rating}/5, ${f.isBacker ? 'backer' : 'non-backer'}] ${f.text.slice(0, 500)}`)
+    .join('\n');
+  return [
+    'METRICS (computed deterministically from chain data; shares in basis points where named Bps; USDG amounts in whole USDG):',
+    JSON.stringify(modelMetrics(input.metrics), null, 2),
+    '',
+    `Builder address: ${input.builder}`,
+    `Backer count: ${input.backers.length}`,
+    '',
+    '<untrusted_feedback>',
+    feedbackBlock || '(no feedback submitted)',
+    '</untrusted_feedback>',
+  ].join('\n');
+}
+
 /** Extract the first balanced JSON object from a model response (defensive against chatty output). */
 export function extractJson(text: string): unknown {
   const start = text.indexOf('{');
@@ -69,21 +110,7 @@ export function makeAnthropicScorer(apiKey: string, model: string): Scorer {
   return {
     name: 'anthropic',
     async score(input: ScorerInput & { metrics?: Metrics }): Promise<ScorerResult> {
-      const feedbackBlock = input.feedback
-        .slice(0, 50)
-        .map((f, i) => `#${i + 1} [rating ${f.rating}/5, ${f.isBacker ? 'backer' : 'non-backer'}] ${f.text.slice(0, 500)}`)
-        .join('\n');
-      const userMessage = [
-        'METRICS (computed deterministically from chain data, basis points where named Bps):',
-        JSON.stringify(input.metrics ?? {}, null, 2),
-        '',
-        `Builder address: ${input.builder}`,
-        `Backer count: ${input.backers.length}`,
-        '',
-        '<untrusted_feedback>',
-        feedbackBlock || '(no feedback submitted)',
-        '</untrusted_feedback>',
-      ].join('\n');
+      const userMessage = buildUserMessage(input);
 
       const response = await client.messages.create({
         model,

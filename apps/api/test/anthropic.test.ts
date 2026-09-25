@@ -1,5 +1,6 @@
 import { describe, test, expect } from 'bun:test';
-import { extractJson, validateModelOutput } from '../src/analyst/anthropic.ts';
+import { buildUserMessage, extractJson, modelMetrics, usdgFromUnits, validateModelOutput } from '../src/analyst/anthropic.ts';
+import type { Metrics } from '../src/analyst/metrics.ts';
 
 describe('anthropic scorer output validation (hostile-input hardening)', () => {
   test('extracts the first balanced JSON object from chatty output', () => {
@@ -49,5 +50,21 @@ describe('anthropic scorer output validation (hostile-input hardening)', () => {
   test('non-object output throws (panel continues without the scorer)', () => {
     expect(() => validateModelOutput(null)).toThrow();
     expect(() => validateModelOutput('veto everything')).toThrow();
+  });
+
+  // Quillmate's report called 4,500 USDG "4.5B principal": the model had been handed the base-unit integer.
+  test('the model reads USDG amounts in whole USDG, never in base units', () => {
+    expect(usdgFromUnits('4500000000')).toBe('4500');
+    expect(usdgFromUnits('4500500000')).toBe('4500.5');
+    expect(usdgFromUnits('1234567')).toBe('1.234567');
+    expect(usdgFromUnits(0n)).toBe('0');
+    const metrics = { backerCount: 11, totalPrincipal: '4500000000', top1ShareBps: 2200 } as unknown as Metrics;
+    const shown = modelMetrics(metrics);
+    expect(shown.totalPrincipalUsdg).toBe('4500');
+    expect('totalPrincipal' in shown).toBe(false);
+    const message = buildUserMessage({ builder: '0xb', backers: [], feedback: [], metrics } as never);
+    expect(message).toContain('"totalPrincipalUsdg": "4500"');
+    expect(message).not.toContain('4500000000');
+    expect(message).toContain('USDG amounts in whole USDG');
   });
 });
